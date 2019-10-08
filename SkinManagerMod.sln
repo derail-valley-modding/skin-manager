@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.438
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SkinManagerMod", "SkinManagerMod\SkinManagerMod.csproj", "{BBDCEB20-83D5-4FC8-88F9-0E08DF1B1DDE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BBDCEB20-83D5-4FC8-88F9-0E08DF1B1DDE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BBDCEB20-83D5-4FC8-88F9-0E08DF1B1DDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BBDCEB20-83D5-4FC8-88F9-0E08DF1B1DDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BBDCEB20-83D5-4FC8-88F9-0E08DF1B1DDE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EB6D89B0-895A-489F-9E92-3F1107037291}
+	EndGlobalSection
+EndGlobal
