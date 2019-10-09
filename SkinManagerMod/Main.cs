@@ -263,6 +263,11 @@ namespace SkinManagerMod
 
             foreach (var cmp in cmps)
             {
+                if (!cmp.material || !cmp.material.mainTexture)
+                {
+                    continue;
+                }
+
                 var mainTextureName = cmp.material.mainTexture.name;
 
                 if (skin.ContainsTexture(mainTextureName))
