@@ -176,7 +176,7 @@ namespace SkinManagerMod
                         var files = Directory.GetFiles(subDir);
                         var skin = new Skin(dirInfo.Name);
 
-                        foreach(var file in files)
+                        foreach (var file in files)
                         {
                             FileInfo fileInfo = new FileInfo(file);
                             string fileName = Path.GetFileNameWithoutExtension(fileInfo.Name);
@@ -185,7 +185,7 @@ namespace SkinManagerMod
 
                             foreach (var cmp in cmps)
                             {
-                                if (cmp.material.mainTexture.name == fileName)
+                                if (cmp.material && cmp.material.mainTexture && cmp.material.mainTexture.name == fileName)
                                 {
                                     texture = DuplicateTexture(cmp.material.mainTexture as Texture2D);
                                     texture.LoadImage(fileData);
