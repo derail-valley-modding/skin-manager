@@ -26,7 +26,6 @@ namespace SkinManagerMod
 
         static List<string> excludedExports = new List<string>
         {
-            "bogie2_d",
             "car_lods",
             "SH_glass_01d",
             "windows_01d",
@@ -54,7 +53,9 @@ namespace SkinManagerMod
 
         static void OnGUI(UnityModManager.ModEntry modEntry)
         {
-            GUILayout.BeginHorizontal(GUILayout.Width(420));
+            GUILayout.Label("Export Textures");
+
+            GUILayout.BeginHorizontal(GUILayout.Width(250));
 
             GUILayout.BeginVertical();
 
@@ -65,11 +66,11 @@ namespace SkinManagerMod
 
             if (showDropdown)
             {
-                scrollViewVector = GUILayout.BeginScrollView(scrollViewVector, GUILayout.Height(200), GUILayout.Width(220));
+                scrollViewVector = GUILayout.BeginScrollView(scrollViewVector, GUILayout.Height(350));
 
                 foreach (var entry in prefabMap)
                 {
-                    if (GUILayout.Button(entry.Value, GUILayout.Width(200)))
+                    if (GUILayout.Button(entry.Value, GUILayout.Width(220)))
                     {
                         showDropdown = false;
                         trainCarSelected = entry.Key;
@@ -83,7 +84,7 @@ namespace SkinManagerMod
 
             if (trainCarSelected != TrainCarType.NotSet)
             {
-                if (GUILayout.Button("Dump Textures", GUILayout.Width(200)))
+                if (GUILayout.Button("Export Textures", GUILayout.Width(180)))
                 {
                     DumpTextures(trainCarSelected);
                 }
@@ -96,7 +97,7 @@ namespace SkinManagerMod
         {
             var obj = CarTypes.GetCarPrefab(trainCar);
 
-            var path = modPath + "Dump\\" + obj.name;
+            var path = modPath + "Exported\\" + obj.name;
 
             if (!Directory.Exists(path))
             {
