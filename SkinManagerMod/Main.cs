@@ -35,6 +35,11 @@ namespace SkinManagerMod
             "window_d"
         };
 
+        static Dictionary<string, string> aliasNames = new Dictionary<string, string>
+        {
+            { "exterior_d", "body" }
+        };
+
         static bool Load(UnityModManager.ModEntry modEntry)
         {
             var harmony = HarmonyInstance.Create(modEntry.Info.Id);
@@ -185,11 +190,16 @@ namespace SkinManagerMod
                             string fileName = Path.GetFileNameWithoutExtension(fileInfo.Name);
                             byte[] fileData = File.ReadAllBytes(file);
                             Texture2D texture = null;
+                            string textureName = "";
 
                             foreach (var cmp in cmps)
                             {
-                                if (cmp.material && cmp.material.mainTexture && cmp.material.mainTexture.name == fileName)
+                                if (!cmp.material || !cmp.material.mainTexture)
+                                    continue;
+
+                                if (cmp.material.mainTexture.name == fileName || (aliasNames.ContainsKey(cmp.material.mainTexture.name) && aliasNames[cmp.material.mainTexture.name] == fileName))
                                 {
+                                    textureName = cmp.material.mainTexture.name;
                                     texture = DuplicateTexture(cmp.material.mainTexture as Texture2D);
                                     texture.LoadImage(fileData);
 
@@ -197,9 +207,9 @@ namespace SkinManagerMod
                                 }
                             }
 
-                            if (texture)
+                            if (texture && textureName != "")
                             {
-                                var skinTexture = new SkinTexture(fileName, texture);
+                                var skinTexture = new SkinTexture(textureName, texture);
 
                                 skin.skinTextures.Add(skinTexture);
                             }
