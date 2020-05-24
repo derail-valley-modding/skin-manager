@@ -6,8 +6,9 @@ using System.IO;
 using UnityModManagerNet;
 using Harmony12;
 using UnityEngine;
-using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using DV;
+using DV.JObjectExtstensions;
 
 namespace SkinManagerMod
 {
@@ -27,6 +28,8 @@ namespace SkinManagerMod
 
         public static Dictionary<TrainCarType, SkinGroup> skinGroups = new Dictionary<TrainCarType, SkinGroup>();
 
+        public static Dictionary<TrainCarType, string> selectedSkin = new Dictionary<TrainCarType, string>();
+
         static List<string> excludedExports = new List<string>
         {
             "car_lods",
@@ -37,7 +40,10 @@ namespace SkinManagerMod
 
         static Dictionary<string, string> aliasNames = new Dictionary<string, string>
         {
-            { "exterior_d", "body" }
+            { "exterior_d", "body" },
+            { "LocoDiesel_exterior_d", "body" },
+            { "SH_exterior_d", "body" },
+            { "SH_tender_01d", "body" }
         };
 
         static bool Load(UnityModManager.ModEntry modEntry)
@@ -54,7 +60,10 @@ namespace SkinManagerMod
 
             LoadSkins();
 
-            ModUI.Init();
+            foreach (TrainCarType carType in prefabMap.Keys)
+            {
+                selectedSkin.Add(carType, "Random");
+            }
 
             modEntry.OnGUI = OnGUI;
 
@@ -124,16 +133,52 @@ namespace SkinManagerMod
                     continue;
                 }
 
-                var mainTexture = cmp.material.mainTexture;
+                var materials = cmp.materials;
 
-                if (mainTexture && mainTexture is Texture2D && !textureList.ContainsKey(mainTexture.name))
+                foreach(var m in materials)
                 {
-                    textureList.Add(mainTexture.name, mainTexture);
+                    Debug.Log("Material : " + m.mainTexture);
+                }
 
-                    if (!excludedExports.Contains(mainTexture.name))
-                    {
-                        SaveTextureAsPNG(DuplicateTexture(mainTexture as Texture2D), path + "\\" + mainTexture.name + ".png");
-                    }
+                var diffuse = GetMaterialTexture(cmp, "_MainTex");
+                var normal = GetMaterialTexture(cmp, "_BumpMap");
+                var specular = GetMaterialTexture(cmp, "_MetallicGlossMap");
+
+                ExportTexture(path, diffuse, textureList);
+                ExportTexture(path, normal, textureList);
+                ExportTexture(path, specular, textureList);
+            }
+        }
+
+        public static Texture2D GetMaterialTexture(MeshRenderer cmp, string materialName)
+        {
+            if (cmp.material == null || !cmp.material.HasProperty(materialName))
+            {
+                return null;
+            }
+
+            var texture = cmp.material.GetTexture(materialName);
+
+            if (texture is Texture2D)
+            {
+                return (Texture2D)texture;
+            } else
+            {
+                return null;
+            }
+        }
+
+        public static void ExportTexture(string path, Texture2D texture, Dictionary<string, Texture> textureList)
+        {
+            if (texture && texture is Texture2D && !textureList.ContainsKey(texture.name))
+            {
+                textureList.Add(texture.name, texture);
+
+                if (!excludedExports.Contains(texture.name))
+                {
+                    var tex = DuplicateTexture(texture as Texture2D);
+
+                    SaveTextureAsPNG(tex, path + "\\" + texture.name + ".png");
                 }
             }
         }
@@ -189,29 +234,48 @@ namespace SkinManagerMod
                             FileInfo fileInfo = new FileInfo(file);
                             string fileName = Path.GetFileNameWithoutExtension(fileInfo.Name);
                             byte[] fileData = File.ReadAllBytes(file);
-                            Texture2D texture = null;
-                            string textureName = "";
 
                             foreach (var cmp in cmps)
                             {
-                                if (!cmp.material || !cmp.material.mainTexture)
+                                if (!cmp.material)
                                     continue;
 
-                                if (cmp.material.mainTexture.name == fileName || (aliasNames.ContainsKey(cmp.material.mainTexture.name) && aliasNames[cmp.material.mainTexture.name] == fileName))
-                                {
-                                    textureName = cmp.material.mainTexture.name;
-                                    texture = DuplicateTexture(cmp.material.mainTexture as Texture2D);
-                                    texture.LoadImage(fileData);
+                                var diffuse = GetMaterialTexture(cmp, "_MainTex");
+                                var normal = GetMaterialTexture(cmp, "_BumpMap");
+                                var specular = GetMaterialTexture(cmp, "_MetallicGlossMap");
 
-                                    break;
+                                if (diffuse != null)
+                                {                                   
+                                    if ((diffuse.name == fileName || aliasNames.ContainsKey(diffuse.name) && aliasNames[diffuse.name] == fileName) && !skin.ContainsTexture(diffuse.name)) {
+
+                                        var texture = DuplicateTexture((Texture2D)diffuse);
+                                        texture.LoadImage(fileData);
+
+                                        skin.skinTextures.Add(new SkinTexture(diffuse.name, texture));
+                                    }
                                 }
-                            }
 
-                            if (texture && textureName != "")
-                            {
-                                var skinTexture = new SkinTexture(textureName, texture);
+                                if (normal != null)
+                                {
+                                    if ((normal.name == fileName || aliasNames.ContainsKey(normal.name) && aliasNames[normal.name] == fileName) && !skin.ContainsTexture(normal.name)) {
+                                        var texture = DuplicateTexture((Texture2D)normal);
+                                        texture.LoadImage(fileData);
 
-                                skin.skinTextures.Add(skinTexture);
+                                        skin.skinTextures.Add(new SkinTexture(normal.name, texture));
+                                    }
+                                }
+
+
+                                if (specular != null)
+                                {   
+                                    if ((specular.name == fileName || aliasNames.ContainsKey(specular.name) && aliasNames[specular.name] == fileName) && !skin.ContainsTexture(specular.name))
+                                    {
+                                        var texture = DuplicateTexture((Texture2D)specular);
+                                        texture.LoadImage(fileData);
+
+                                        skin.skinTextures.Add(new SkinTexture(specular.name, texture));
+                                    }
+                                }
                             }
                         }
 
@@ -223,18 +287,18 @@ namespace SkinManagerMod
             }
         }
 
-        public static void ReplaceTexture(TrainCar trainCar)
+        public static Skin FindTrainCarSkin(TrainCar trainCar)
         {
             if (!skinGroups.ContainsKey(trainCar.carType))
             {
-                return;
+                return null;
             }
 
             var skinGroup = skinGroups[trainCar.carType];
 
             if (skinGroup.skins.Count == 0)
             {
-                return;
+                return null;
             }
 
             Skin skin;
@@ -245,41 +309,35 @@ namespace SkinManagerMod
 
                 if (skinName == "__default")
                 {
-                    return;
+                    return null;
                 }
 
                 skin = skinGroup.GetSkin(skinName);
 
                 if (skin == null)
                 {
-                    return;
+                    return null;
                 }
             }
             else
             {
-                string selectedSkin = ModUI.selectedSkin[trainCar.carType];
+                string selectedSkin = Main.selectedSkin[trainCar.carType];
 
                 if (selectedSkin == "Random")
                 {
-                    var range = UnityEngine.Random.Range(0, skinGroup.skins.Count + 1);
-
-                    // default skin if it hits out of index
-                    if (range == skinGroup.skins.Count)
-                    {
-                        SetCarState(trainCar.logicCar.carGuid, "__default");
-
-                        return;
-                    }
+                    var range = UnityEngine.Random.Range(0, skinGroup.skins.Count);
 
                     skin = skinGroup.skins[range];
 
                     SetCarState(trainCar.logicCar.carGuid, skin.name);
-                } else if (selectedSkin == "Default")
+                }
+                else if (selectedSkin == "Default")
                 {
                     SetCarState(trainCar.logicCar.carGuid, "__default");
 
-                    return;
-                } else
+                    return null;
+                }
+                else
                 {
                     skin = skinGroup.GetSkin(selectedSkin);
 
@@ -287,22 +345,97 @@ namespace SkinManagerMod
                 }
             }
 
+            return skin;
+        }
+
+        public static void ReplaceTexture(TrainCar trainCar)
+        {
+            var skin = FindTrainCarSkin(trainCar);
+
+            if (skin == null)
+            {
+                return;
+            }
+
             var cmps = trainCar.gameObject.GetComponentsInChildren<MeshRenderer>();
 
             foreach (var cmp in cmps)
             {
-                if (!cmp.material || !cmp.material.mainTexture)
+                if (!cmp.material)
                 {
                     continue;
                 }
 
-                var mainTextureName = cmp.material.mainTexture.name;
+                var diffuse = GetMaterialTexture(cmp, "_MainTex");
+                var normal = GetMaterialTexture(cmp, "_BumpMap");
+                var specular = GetMaterialTexture(cmp, "_MetallicGlossMap");
 
-                if (skin.ContainsTexture(mainTextureName))
+                if (diffuse != null && skin.ContainsTexture(diffuse.name))
                 {
-                    var skinTexture = skin.GetTexture(mainTextureName);
+                    var skinTexture = skin.GetTexture(diffuse.name);
 
-                    cmp.material.mainTexture = skinTexture.textureData;
+                    cmp.material.SetTexture("_MainTex", skinTexture.textureData);
+                }
+
+                if (normal != null && skin.ContainsTexture(normal.name))
+                {
+                    var skinTexture = skin.GetTexture(normal.name);
+
+                    cmp.material.SetTexture("_BumpMap", skinTexture.textureData);
+                }
+
+                if (specular != null && skin.ContainsTexture(specular.name))
+                {
+                    var skinTexture = skin.GetTexture(specular.name);
+
+                    cmp.material.SetTexture("_MetallicGlossMap", skinTexture.textureData);
+                }
+            }
+
+
+        }
+
+        public static void ReplaceInteriorTexture(TrainCar trainCar)
+        {
+            var skin = FindTrainCarSkin(trainCar);
+
+            if (skin == null)
+            {
+                return;
+            }
+
+            var cmps = trainCar.interior.GetComponentsInChildren<MeshRenderer>();
+
+            foreach (var cmp in cmps)
+            {
+                if (!cmp.material)
+                {
+                    continue;
+                }
+
+                var diffuse = GetMaterialTexture(cmp, "_MainTex");
+                var normal = GetMaterialTexture(cmp, "_BumpMap");
+                var specular = GetMaterialTexture(cmp, "_MetallicGlossMap");
+
+                if (diffuse != null && skin.ContainsTexture(diffuse.name))
+                {
+                    var skinTexture = skin.GetTexture(diffuse.name);
+
+                    cmp.material.SetTexture("_MainTex", skinTexture.textureData);
+                }
+
+                if (normal != null && skin.ContainsTexture(normal.name))
+                {
+                    var skinTexture = skin.GetTexture(normal.name);
+
+                    cmp.material.SetTexture("_BumpMap", skinTexture.textureData);
+                }
+
+                if (specular != null && skin.ContainsTexture(specular.name))
+                {
+                    var skinTexture = skin.GetTexture(specular.name);
+
+                    cmp.material.SetTexture("_MetallicGlossMap", skinTexture.textureData);
                 }
             }
         }
@@ -401,7 +534,7 @@ namespace SkinManagerMod
         }
     }
 
-    [HarmonyPatch(typeof(CarSpawner), "SpawnExistingCar")]
+    [HarmonyPatch(typeof(CarSpawner), "SpawnLoadedCar")]
     class CarSpawner_SpawnExistingCar_Patch
     {
         static void Postfix(TrainCar __result)
@@ -410,58 +543,111 @@ namespace SkinManagerMod
         }
     }
 
+    [HarmonyPatch(typeof(TrainCar), "LoadInterior")]
+    class TrainCar_LoadInterior_Patch
+    {
+        static void Postfix(TrainCar __instance)
+        {
+            Main.ReplaceInteriorTexture(__instance);
+        }
+    }
+
     [HarmonyPatch(typeof(SaveGameManager), "Save")]
     class SaveGameManager_Save_Patch
     {
-        static void Prefix(ShopInstantiator __instance)
+        static void Prefix(SaveGameManager __instance)
         {
-            CarsSkinSaveData[] carsSaveData = GetCarsSaveData();
+            JObject carsSaveData = GetCarsSaveData();
 
-            SaveGameManager.data.SetObject("Mod_Skins", carsSaveData, (JsonSerializerSettings)null);
+            SaveGameManager.data.SetJObject("Mod_Skins", carsSaveData);
         }
 
-        static CarsSkinSaveData[] GetCarsSaveData()
+        static JObject GetCarsSaveData()
         {
-            CarsSkinSaveData[] carsSkinSaveDatas = new CarsSkinSaveData[Main.trainCarState.Count];
+            JObject carsSaveData = new JObject();
+
+            JObject[] array = new JObject[Main.trainCarState.Count];
 
             int i = 0;
 
             foreach (KeyValuePair<string, string> entry in Main.trainCarState)
             {
-                carsSkinSaveDatas[i] = new CarsSkinSaveData(entry.Key, entry.Value);
+                JObject dataObject = new JObject();
+
+                dataObject.SetString("guid", entry.Key);
+                dataObject.SetString("name", entry.Value);
+
+                array[i] = dataObject;
+
                 i++;
             }
 
-            return carsSkinSaveDatas;
+            JObject[] skinArray = new JObject[Main.selectedSkin.Count];
+
+            i = 0;
+
+            foreach (KeyValuePair<TrainCarType, string> entry in Main.selectedSkin)
+            {
+                JObject dataObject = new JObject();
+
+                dataObject.SetInt("type", (int)entry.Key);
+                dataObject.SetString("skin", entry.Value);
+
+                skinArray[i] = dataObject;
+                i++;
+            }
+
+            carsSaveData.SetJObjectArray("carsData", array);
+            carsSaveData.SetJObjectArray("carSkins", skinArray);
+
+            return carsSaveData;
         }
     }
 
     [HarmonyPatch(typeof(CarsSaveManager), "Load")]
     class CarsSaveManager_Load_Patch
     {
-        static void Prefix(CarsSaveData savedData)
+        static void Prefix(JObject savedData)
         {
             if (savedData == null)
             {
                 Debug.LogError((object)"Given save data is null, loading will not be performed");
                 return;
             }
-            if (savedData.tracksHash != CarsSaveManager.TracksHash)
-            {
-                Debug.LogWarning((object)"Given save data was made in a different scene, loading will not be performed");
-                Debug.Log((object)("DEBUG: Current rail track hash '" + CarsSaveManager.TracksHash + "' doesn't match save data hash '" + savedData.tracksHash + "', will not load"));
-                return;
-            }
 
-            CarsSkinSaveData[] carsSaveData = SaveGameManager.data.GetObject<CarsSkinSaveData[]>("Mod_Skins");
+            JObject carsSaveData = SaveGameManager.data.GetJObject("Mod_Skins");
 
             if (carsSaveData != null)
             {
-                foreach(var carSave in carsSaveData)
+                JObject[] jobjectArray = carsSaveData.GetJObjectArray("carsData");
+
+                if (jobjectArray != null)
                 {
-                    if (!Main.trainCarState.ContainsKey(carSave.guid))
+                    foreach (JObject jobject in jobjectArray)
                     {
-                        Main.trainCarState.Add(carSave.guid, carSave.name);
+                        var guid = jobject.GetString("guid");
+                        var name = jobject.GetString("name");
+
+                        if (!Main.trainCarState.ContainsKey(guid))
+                        {
+                            Main.trainCarState.Add(guid, name);
+                        }
+                    }
+                }
+
+                JObject[] jobjectSkinArray = carsSaveData.GetJObjectArray("carSkins");
+
+                if (jobjectArray != null)
+                {
+                    foreach (JObject jobject in jobjectSkinArray)
+                    {
+                        TrainCarType type = (TrainCarType)jobject.GetInt("type").Value;
+                        string skin = jobject.GetString("skin");
+
+                        if (Main.selectedSkin.ContainsKey(type))
+                        {
+                            Main.selectedSkin[type] = skin;
+                        }
                     }
                 }
             }
@@ -485,14 +671,11 @@ namespace SkinManagerMod
 
         static Vector2 scrollViewVector;
 
-        public static Dictionary<TrainCarType, string> selectedSkin = new Dictionary<TrainCarType, string>();
+       
         //static Dictionary<TrainCarType, string> prefabMap;
         public static void Init()
         {
-            foreach (TrainCarType carType in Main.prefabMap.Keys)
-            {
-                selectedSkin.Add(carType, "Random");
-            }
+
         }
 
         public static void DrawModUI()
@@ -511,7 +694,7 @@ namespace SkinManagerMod
             TrainCarType carType = trainCar.carType;
 
             SkinGroup skinGroup = Main.skinGroups[carType];
-            string selectSkin = selectedSkin[carType];
+            string selectSkin = Main.selectedSkin[carType];
 
             float menuHeight = 60f;
 
@@ -564,13 +747,13 @@ namespace SkinManagerMod
                 if (GUILayout.Button("Random", GUILayout.Width(buttonWidth)))
                 {
                     showDropdown = false;
-                    selectedSkin[carType] = "Random";
+                    Main.selectedSkin[carType] = "Random";
                 }
 
                 if (GUILayout.Button("Default", GUILayout.Width(buttonWidth)))
                 {
                     showDropdown = false;
-                    selectedSkin[carType] = "Default";
+                    Main.selectedSkin[carType] = "Default";
                 }
 
                 foreach (Skin skin in skinGroup.skins)
@@ -578,7 +761,7 @@ namespace SkinManagerMod
                     if (GUILayout.Button(skin.name, GUILayout.Width(buttonWidth)))
                     {
                         showDropdown = false;
-                        selectedSkin[carType] = skin.name;
+                        Main.selectedSkin[carType] = skin.name;
                     }
                 }
 
