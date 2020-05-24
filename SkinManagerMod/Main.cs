@@ -128,16 +128,9 @@ namespace SkinManagerMod
 
             foreach (var cmp in cmps)
             {
-                if (!cmp.material || !cmp.material.mainTexture)
+                if (!cmp.material)
                 {
                     continue;
-                }
-
-                var materials = cmp.materials;
-
-                foreach(var m in materials)
-                {
-                    Debug.Log("Material : " + m.mainTexture);
                 }
 
                 var diffuse = GetMaterialTexture(cmp, "_MainTex");
@@ -145,7 +138,7 @@ namespace SkinManagerMod
                 var specular = GetMaterialTexture(cmp, "_MetallicGlossMap");
 
                 ExportTexture(path, diffuse, textureList);
-                ExportTexture(path, normal, textureList);
+                ExportTexture(path, normal, textureList, true);
                 ExportTexture(path, specular, textureList);
             }
         }
@@ -168,15 +161,20 @@ namespace SkinManagerMod
             }
         }
 
-        public static void ExportTexture(string path, Texture2D texture, Dictionary<string, Texture> textureList)
+        public static void ExportTexture(string path, Texture2D texture, Dictionary<string, Texture> textureList, bool isNormal = false)
         {
-            if (texture && texture is Texture2D && !textureList.ContainsKey(texture.name))
+            if (texture != null && !textureList.ContainsKey(texture.name))
             {
                 textureList.Add(texture.name, texture);
 
                 if (!excludedExports.Contains(texture.name))
                 {
-                    var tex = DuplicateTexture(texture as Texture2D);
+                    var tex = DuplicateTexture(texture as Texture2D, isNormal);
+
+                    if (isNormal)
+                    {
+                        tex = DTXnm2RGBA(tex);
+                    }
 
                     SaveTextureAsPNG(tex, path + "\\" + texture.name + ".png");
                 }
@@ -190,19 +188,33 @@ namespace SkinManagerMod
             Debug.Log(_bytes.Length / 1024 + "Kb was saved as: " + _fullPath);
         }
 
-        static Texture2D DuplicateTexture(Texture2D source)
+        static Texture2D DuplicateTexture(Texture2D source, bool isNormal)
         {
-            RenderTexture renderTex = RenderTexture.GetTemporary(
-                        source.width,
-                        source.height,
-                        0,
-                        RenderTextureFormat.Default,
-                        RenderTextureReadWrite.sRGB);
+            RenderTexture renderTex;
+            Texture2D readableText;
+
+            if (isNormal)
+            {
+                readableText = new Texture2D(source.width, source.height, TextureFormat.ARGB32, true, true);
+                renderTex = RenderTexture.GetTemporary(
+                            source.width,
+                            source.height,
+                            0,
+                            RenderTextureFormat.ARGB32,
+                            RenderTextureReadWrite.Linear);
+            } else
+            {
+                readableText = new Texture2D(source.width, source.height);
+                renderTex = RenderTexture.GetTemporary(
+                            source.width,
+                            source.height,
+                            0,
+                            RenderTextureFormat.Default);
+            }
 
             Graphics.Blit(source, renderTex);
             RenderTexture previous = RenderTexture.active;
             RenderTexture.active = renderTex;
-            Texture2D readableText = new Texture2D(source.width, source.height);
             readableText.ReadPixels(new Rect(0, 0, renderTex.width, renderTex.height), 0, 0);
             readableText.Apply();
             RenderTexture.active = previous;
@@ -248,7 +260,7 @@ namespace SkinManagerMod
                                 {                                   
                                     if ((diffuse.name == fileName || aliasNames.ContainsKey(diffuse.name) && aliasNames[diffuse.name] == fileName) && !skin.ContainsTexture(diffuse.name)) {
 
-                                        var texture = DuplicateTexture((Texture2D)diffuse);
+                                        var texture = new Texture2D(diffuse.width, diffuse.height);
                                         texture.LoadImage(fileData);
 
                                         skin.skinTextures.Add(new SkinTexture(diffuse.name, texture));
@@ -258,7 +270,7 @@ namespace SkinManagerMod
                                 if (normal != null)
                                 {
                                     if ((normal.name == fileName || aliasNames.ContainsKey(normal.name) && aliasNames[normal.name] == fileName) && !skin.ContainsTexture(normal.name)) {
-                                        var texture = DuplicateTexture((Texture2D)normal);
+                                        var texture = new Texture2D(normal.width, normal.height, TextureFormat.ARGB32, true, true);
                                         texture.LoadImage(fileData);
 
                                         skin.skinTextures.Add(new SkinTexture(normal.name, texture));
@@ -270,7 +282,7 @@ namespace SkinManagerMod
                                 {   
                                     if ((specular.name == fileName || aliasNames.ContainsKey(specular.name) && aliasNames[specular.name] == fileName) && !skin.ContainsTexture(specular.name))
                                     {
-                                        var texture = DuplicateTexture((Texture2D)specular);
+                                        var texture = new Texture2D(specular.width, specular.height);
                                         texture.LoadImage(fileData);
 
                                         skin.skinTextures.Add(new SkinTexture(specular.name, texture));
@@ -285,6 +297,23 @@ namespace SkinManagerMod
                     skinGroups.Add(prefab.Key, skinGroup);
                 }
             }
+        }
+
+        static Texture2D DTXnm2RGBA(Texture2D tex)
+        {
+            Color[] colors = tex.GetPixels();
+            for (int i = 0; i < colors.Length; i++)
+            {
+                Color c = colors[i];
+                c.r = c.a * 2 - 1;  //red<-alpha (x<-w)
+                c.g = c.g * 2 - 1; //green is always the same (y)
+                Vector2 xy = new Vector2(c.r, c.g); //this is the xy vector
+                c.b = Mathf.Sqrt(1 - Mathf.Clamp01(Vector2.Dot(xy, xy))); //recalculate the blue channel (z)
+                colors[i] = new Color(c.r * 0.5f + 0.5f, c.g * 0.5f + 0.5f, c.b * 0.5f + 0.5f); //back to 0-1 range
+            }
+            tex.SetPixels(colors); //apply pixels to the texture
+            tex.Apply();
+            return tex;
         }
 
         public static Skin FindTrainCarSkin(TrainCar trainCar)
@@ -325,7 +354,15 @@ namespace SkinManagerMod
 
                 if (selectedSkin == "Random")
                 {
-                    var range = UnityEngine.Random.Range(0, skinGroup.skins.Count);
+                    var range = UnityEngine.Random.Range(0, skinGroup.skins.Count + 1);
+
+                    // default skin if it hits out of index
+                    if (range == skinGroup.skins.Count)
+                    {
+                        SetCarState(trainCar.logicCar.carGuid, "__default");
+
+                        return null;
+                    }
 
                     skin = skinGroup.skins[range];
 
