@@ -32,10 +32,6 @@ namespace SkinManagerMod
 
         static List<string> excludedExports = new List<string>
         {
-            "car_lods",
-            "SH_glass_01d",
-            "windows_01d",
-            "window_d"
         };
 
         static Dictionary<string, string> aliasNames = new Dictionary<string, string>
@@ -112,9 +108,12 @@ namespace SkinManagerMod
             GUILayout.EndHorizontal();
         }
 
-        public static void DumpTextures(TrainCarType trainCar)
+        public static void DumpTextures(TrainCarType trainCarType)
         {
-            var obj = CarTypes.GetCarPrefab(trainCar);
+            MeshRenderer[] cmps;
+            Dictionary<string, Texture> textureList;
+
+            var obj = CarTypes.GetCarPrefab(trainCarType);
 
             var path = modPath + "Exported\\" + obj.name;
 
@@ -123,8 +122,8 @@ namespace SkinManagerMod
                 Directory.CreateDirectory(path);
             }
 
-            var cmps = obj.GetComponentsInChildren<MeshRenderer>();
-            var textureList = new Dictionary<string, Texture>();
+            cmps = obj.GetComponentsInChildren<MeshRenderer>();
+            textureList = new Dictionary<string, Texture>();
 
             foreach (var cmp in cmps)
             {
@@ -136,10 +135,38 @@ namespace SkinManagerMod
                 var diffuse = GetMaterialTexture(cmp, "_MainTex");
                 var normal = GetMaterialTexture(cmp, "_BumpMap");
                 var specular = GetMaterialTexture(cmp, "_MetallicGlossMap");
+                var emission = GetMaterialTexture(cmp, "_EmissionMap");
 
                 ExportTexture(path, diffuse, textureList);
                 ExportTexture(path, normal, textureList, true);
                 ExportTexture(path, specular, textureList);
+                ExportTexture(path, emission, textureList);
+            }
+
+            var trainCar = obj.GetComponent<TrainCar>();
+
+            if (trainCar.interiorPrefab != null)
+            {
+                cmps = trainCar.interiorPrefab.GetComponentsInChildren<MeshRenderer>();
+                textureList = new Dictionary<string, Texture>();
+
+                foreach (var cmp in cmps)
+                {
+                    if (!cmp.material)
+                    {
+                        continue;
+                    }
+
+                    var diffuse = GetMaterialTexture(cmp, "_MainTex");
+                    var normal = GetMaterialTexture(cmp, "_BumpMap");
+                    var specular = GetMaterialTexture(cmp, "_MetallicGlossMap");
+                    var emission = GetMaterialTexture(cmp, "_EmissionMap");
+
+                    ExportTexture(path, diffuse, textureList);
+                    ExportTexture(path, normal, textureList, true);
+                    ExportTexture(path, specular, textureList);
+                    ExportTexture(path, emission, textureList);
+                }
             }
         }
 
@@ -234,8 +261,16 @@ namespace SkinManagerMod
                     var skinGroup = new SkinGroup(prefab.Key);
                     var carPrefab = CarTypes.GetCarPrefab(prefab.Key);
                     var cmps = carPrefab.gameObject.GetComponentsInChildren<MeshRenderer>();
+                    MeshRenderer[] interiorCmps = null;
 
-                    foreach (var subDir in subDirectories)
+                    var trainCar = carPrefab.GetComponent<TrainCar>();
+
+                    if (trainCar.interiorPrefab != null)
+                    {
+                        interiorCmps = trainCar.interiorPrefab.GetComponentsInChildren<MeshRenderer>();
+                    }
+
+                   foreach (var subDir in subDirectories)
                     {
                         var dirInfo = new DirectoryInfo(subDir);
                         var files = Directory.GetFiles(subDir);
@@ -255,6 +290,7 @@ namespace SkinManagerMod
                                 var diffuse = GetMaterialTexture(cmp, "_MainTex");
                                 var normal = GetMaterialTexture(cmp, "_BumpMap");
                                 var specular = GetMaterialTexture(cmp, "_MetallicGlossMap");
+                                var emission = GetMaterialTexture(cmp, "_EmissionMap");
 
                                 if (diffuse != null)
                                 {                                   
@@ -279,13 +315,84 @@ namespace SkinManagerMod
 
 
                                 if (specular != null)
-                                {   
+                                {
                                     if ((specular.name == fileName || aliasNames.ContainsKey(specular.name) && aliasNames[specular.name] == fileName) && !skin.ContainsTexture(specular.name))
                                     {
                                         var texture = new Texture2D(specular.width, specular.height);
                                         texture.LoadImage(fileData);
 
                                         skin.skinTextures.Add(new SkinTexture(specular.name, texture));
+                                    }
+                                }
+
+                                if (emission != null)
+                                {
+                                    if ((emission.name == fileName || aliasNames.ContainsKey(emission.name) && aliasNames[emission.name] == fileName) && !skin.ContainsTexture(emission.name))
+                                    {
+                                        var texture = new Texture2D(emission.width, emission.height);
+                                        texture.LoadImage(fileData);
+
+                                        skin.skinTextures.Add(new SkinTexture(emission.name, texture));
+                                    }
+                                }
+                            }
+
+                            if (interiorCmps != null)
+                            {
+                                foreach (var cmp in interiorCmps)
+                                {
+                                    if (!cmp.material)
+                                        continue;
+
+                                    var diffuse = GetMaterialTexture(cmp, "_MainTex");
+                                    var normal = GetMaterialTexture(cmp, "_BumpMap");
+                                    var specular = GetMaterialTexture(cmp, "_MetallicGlossMap");
+                                    var emission = GetMaterialTexture(cmp, "_EmissionMap");
+
+                                    if (diffuse != null)
+                                    {
+                                        if ((diffuse.name == fileName || aliasNames.ContainsKey(diffuse.name) && aliasNames[diffuse.name] == fileName) && !skin.ContainsTexture(diffuse.name))
+                                        {
+
+                                            var texture = new Texture2D(diffuse.width, diffuse.height);
+                                            texture.LoadImage(fileData);
+
+                                            skin.skinTextures.Add(new SkinTexture(diffuse.name, texture));
+                                        }
+                                    }
+
+                                    if (normal != null)
+                                    {
+                                        if ((normal.name == fileName || aliasNames.ContainsKey(normal.name) && aliasNames[normal.name] == fileName) && !skin.ContainsTexture(normal.name))
+                                        {
+                                            var texture = new Texture2D(normal.width, normal.height, TextureFormat.ARGB32, true, true);
+                                            texture.LoadImage(fileData);
+
+                                            skin.skinTextures.Add(new SkinTexture(normal.name, texture));
+                                        }
+                                    }
+
+
+                                    if (specular != null)
+                                    {
+                                        if ((specular.name == fileName || aliasNames.ContainsKey(specular.name) && aliasNames[specular.name] == fileName) && !skin.ContainsTexture(specular.name))
+                                        {
+                                            var texture = new Texture2D(specular.width, specular.height);
+                                            texture.LoadImage(fileData);
+
+                                            skin.skinTextures.Add(new SkinTexture(specular.name, texture));
+                                        }
+                                    }
+
+                                    if (emission != null)
+                                    {
+                                        if ((emission.name == fileName || aliasNames.ContainsKey(emission.name) && aliasNames[emission.name] == fileName) && !skin.ContainsTexture(emission.name))
+                                        {
+                                            var texture = new Texture2D(emission.width, emission.height);
+                                            texture.LoadImage(fileData);
+
+                                            skin.skinTextures.Add(new SkinTexture(emission.name, texture));
+                                        }
                                     }
                                 }
                             }
@@ -406,6 +513,7 @@ namespace SkinManagerMod
                 var diffuse = GetMaterialTexture(cmp, "_MainTex");
                 var normal = GetMaterialTexture(cmp, "_BumpMap");
                 var specular = GetMaterialTexture(cmp, "_MetallicGlossMap");
+                var emission = GetMaterialTexture(cmp, "_EmissionMap");
 
                 if (diffuse != null && skin.ContainsTexture(diffuse.name))
                 {
@@ -427,9 +535,14 @@ namespace SkinManagerMod
 
                     cmp.material.SetTexture("_MetallicGlossMap", skinTexture.textureData);
                 }
+
+                if (emission != null && skin.ContainsTexture(emission.name))
+                {
+                    var skinTexture = skin.GetTexture(emission.name);
+
+                    cmp.material.SetTexture("_EmissionMap", skinTexture.textureData);
+                }
             }
-
-
         }
 
         public static void ReplaceInteriorTexture(TrainCar trainCar)
@@ -453,6 +566,7 @@ namespace SkinManagerMod
                 var diffuse = GetMaterialTexture(cmp, "_MainTex");
                 var normal = GetMaterialTexture(cmp, "_BumpMap");
                 var specular = GetMaterialTexture(cmp, "_MetallicGlossMap");
+                var emission = GetMaterialTexture(cmp, "_EmissionMap");
 
                 if (diffuse != null && skin.ContainsTexture(diffuse.name))
                 {
@@ -473,6 +587,13 @@ namespace SkinManagerMod
                     var skinTexture = skin.GetTexture(specular.name);
 
                     cmp.material.SetTexture("_MetallicGlossMap", skinTexture.textureData);
+                }
+
+                if (emission != null && skin.ContainsTexture(emission.name))
+                {
+                    var skinTexture = skin.GetTexture(emission.name);
+
+                    cmp.material.SetTexture("_EmissionMap", skinTexture.textureData);
                 }
             }
         }
