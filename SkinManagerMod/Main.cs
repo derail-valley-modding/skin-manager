@@ -459,9 +459,9 @@ namespace SkinManagerMod
             {
                 string selectedSkin = Main.selectedSkin[trainCar.carType];
 
-                if (selectedSkin == "Random")
+                if (selectedSkin == "Random" && skinGroup.skins.Count > 0)
                 {
-                    var range = UnityEngine.Random.Range(0, skinGroup.skins.Count + 1);
+                    var range = UnityEngine.Random.Range(0, skinGroup.skins.Count);
 
                     // default skin if it hits out of index
                     if (range == skinGroup.skins.Count)
