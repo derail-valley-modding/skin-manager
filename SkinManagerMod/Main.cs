@@ -298,6 +298,7 @@ namespace SkinManagerMod
 
                                         var texture = new Texture2D(diffuse.width, diffuse.height);
                                         texture.LoadImage(fileData);
+                                        texture.Apply(true, true);
 
                                         skin.skinTextures.Add(new SkinTexture(diffuse.name, texture));
                                     }
@@ -308,6 +309,7 @@ namespace SkinManagerMod
                                     if ((normal.name == fileName || aliasNames.ContainsKey(normal.name) && aliasNames[normal.name] == fileName) && !skin.ContainsTexture(normal.name)) {
                                         var texture = new Texture2D(normal.width, normal.height, TextureFormat.ARGB32, true, true);
                                         texture.LoadImage(fileData);
+                                        texture.Apply(true, true);
 
                                         skin.skinTextures.Add(new SkinTexture(normal.name, texture));
                                     }
@@ -320,6 +322,7 @@ namespace SkinManagerMod
                                     {
                                         var texture = new Texture2D(specular.width, specular.height);
                                         texture.LoadImage(fileData);
+                                        texture.Apply(true, true);
 
                                         skin.skinTextures.Add(new SkinTexture(specular.name, texture));
                                     }
@@ -331,6 +334,7 @@ namespace SkinManagerMod
                                     {
                                         var texture = new Texture2D(emission.width, emission.height);
                                         texture.LoadImage(fileData);
+                                        texture.Apply(true, true);
 
                                         skin.skinTextures.Add(new SkinTexture(emission.name, texture));
                                     }
@@ -356,6 +360,7 @@ namespace SkinManagerMod
 
                                             var texture = new Texture2D(diffuse.width, diffuse.height);
                                             texture.LoadImage(fileData);
+                                            texture.Apply(true, true);
 
                                             skin.skinTextures.Add(new SkinTexture(diffuse.name, texture));
                                         }
@@ -367,6 +372,7 @@ namespace SkinManagerMod
                                         {
                                             var texture = new Texture2D(normal.width, normal.height, TextureFormat.ARGB32, true, true);
                                             texture.LoadImage(fileData);
+                                            texture.Apply(true, true);
 
                                             skin.skinTextures.Add(new SkinTexture(normal.name, texture));
                                         }
@@ -379,6 +385,7 @@ namespace SkinManagerMod
                                         {
                                             var texture = new Texture2D(specular.width, specular.height);
                                             texture.LoadImage(fileData);
+                                            texture.Apply(true, true);
 
                                             skin.skinTextures.Add(new SkinTexture(specular.name, texture));
                                         }
@@ -390,6 +397,7 @@ namespace SkinManagerMod
                                         {
                                             var texture = new Texture2D(emission.width, emission.height);
                                             texture.LoadImage(fileData);
+                                            texture.Apply(true, true);
 
                                             skin.skinTextures.Add(new SkinTexture(emission.name, texture));
                                         }
