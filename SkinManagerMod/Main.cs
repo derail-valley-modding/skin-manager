@@ -431,7 +431,7 @@ namespace SkinManagerMod
             return tex;
         }
 
-        public static Skin FindTrainCarSkin(TrainCar trainCar)
+        public static Skin FindTrainCarSkin(TrainCar trainCar, string findSkinName = "")
         {
             if (!skinGroups.ContainsKey(trainCar.carType))
             {
@@ -467,6 +467,11 @@ namespace SkinManagerMod
             {
                 string selectedSkin = Main.selectedSkin[trainCar.carType];
 
+                if (findSkinName != "")
+                {
+                    selectedSkin = findSkinName;
+                }
+
                 if (selectedSkin == "Random" && skinGroup.skins.Count > 0)
                 {
                     var range = UnityEngine.Random.Range(0, skinGroup.skins.Count);
@@ -493,16 +498,36 @@ namespace SkinManagerMod
                 {
                     skin = skinGroup.GetSkin(selectedSkin);
 
-                    SetCarState(trainCar.logicCar.carGuid, skin.name);
+                    if (skin != null)
+                    {
+                        SetCarState(trainCar.logicCar.carGuid, skin.name);
+                    }
                 }
             }
 
             return skin;
         }
 
+        public static Skin lastSteamerSkin;
+
         public static void ReplaceTexture(TrainCar trainCar)
         {
-            var skin = FindTrainCarSkin(trainCar);
+            string findSkin = "";
+
+            if (trainCar.carType == TrainCarType.Tender && lastSteamerSkin != null)
+            {
+                findSkin = lastSteamerSkin.name;
+            }
+
+            Skin skin = FindTrainCarSkin(trainCar, findSkin);
+
+            if(trainCar.carType == TrainCarType.LocoSteamHeavy)
+            {
+                lastSteamerSkin = skin;
+            } else
+            {
+                lastSteamerSkin = null;
+            }
 
             if (skin == null)
             {
