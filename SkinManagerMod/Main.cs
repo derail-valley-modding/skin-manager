@@ -14,7 +14,7 @@ namespace SkinManagerMod
 {
     public class Main
     {
-        public static Dictionary<string, string> trainCarState = new Dictionary<string, string>();
+		public static Dictionary<string, string> trainCarState = new Dictionary<string, string>();
 
         public static string modPath;
 
@@ -30,7 +30,9 @@ namespace SkinManagerMod
 
         public static Dictionary<TrainCarType, string> selectedSkin = new Dictionary<TrainCarType, string>();
 
-        static List<string> excludedExports = new List<string>
+		public static Settings settings;
+
+		static List<string> excludedExports = new List<string>
         {
         };
 
@@ -44,6 +46,9 @@ namespace SkinManagerMod
 
         static bool Load(UnityModManager.ModEntry modEntry)
         {
+			// Load the settings
+			settings = Settings.Load<Settings>(modEntry);
+
             var harmony = HarmonyInstance.Create(modEntry.Info.Id);
             harmony.PatchAll(Assembly.GetExecutingAssembly());
 
@@ -54,7 +59,7 @@ namespace SkinManagerMod
 
             modPath = modEntry.Path;
 
-            LoadSkins();
+			LoadSkins();
 
             foreach (TrainCarType carType in prefabMap.Keys)
             {
@@ -62,17 +67,30 @@ namespace SkinManagerMod
             }
 
             modEntry.OnGUI = OnGUI;
+			// OnSaveGUI
+			modEntry.OnSaveGUI = OnSaveGUI;
+
+			QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
 
             return true;
         }
 
         static void OnGUI(UnityModManager.ModEntry modEntry)
-        {
-            GUILayout.Label("Export Textures");
+		{
+			GUILayout.BeginVertical();
+
+			bool newAniso = GUILayout.Toggle(settings.aniso5, "Increase Anisotropic Filtering (Requires Manual Game Restart)");
+			if (newAniso != settings.aniso5)
+			{
+				settings.aniso5 = newAniso;
+			}
+			GUILayout.Space(2);
+
+			GUILayout.Label("Export Textures");
 
             GUILayout.BeginHorizontal(GUILayout.Width(250));
 
-            GUILayout.BeginVertical();
+			GUILayout.BeginVertical();
 
             if (GUILayout.Button(trainCarSelected == TrainCarType.NotSet ? "Select Train Car" : prefabMap[trainCarSelected], GUILayout.Width(220)))
             {
@@ -97,7 +115,9 @@ namespace SkinManagerMod
 
             GUILayout.EndVertical();
 
-            if (trainCarSelected != TrainCarType.NotSet)
+            GUILayout.EndVertical();
+
+			if (trainCarSelected != TrainCarType.NotSet)
             {
                 if (GUILayout.Button("Export Textures", GUILayout.Width(180)))
                 {
@@ -107,6 +127,11 @@ namespace SkinManagerMod
 
             GUILayout.EndHorizontal();
         }
+
+		static void OnSaveGUI(UnityModManager.ModEntry modEntry)
+		{
+			settings.Save(modEntry);
+		}
 
         public static void DumpTextures(TrainCarType trainCarType)
         {
@@ -296,11 +321,13 @@ namespace SkinManagerMod
                                 {                                   
                                     if ((diffuse.name == fileName || aliasNames.ContainsKey(diffuse.name) && aliasNames[diffuse.name] == fileName) && !skin.ContainsTexture(diffuse.name)) {
 
-                                        var texture = new Texture2D(diffuse.width, diffuse.height);
-                                        texture.LoadImage(fileData);
+										var texture = new Texture2D(diffuse.width, diffuse.height);
+										texture.LoadImage(fileData);
                                         texture.Apply(true, true);
 
-                                        skin.skinTextures.Add(new SkinTexture(diffuse.name, texture));
+										SetTextureOptions(texture);
+
+										skin.skinTextures.Add(new SkinTexture(diffuse.name, texture));
                                     }
                                 }
 
@@ -308,10 +335,12 @@ namespace SkinManagerMod
                                 {
                                     if ((normal.name == fileName || aliasNames.ContainsKey(normal.name) && aliasNames[normal.name] == fileName) && !skin.ContainsTexture(normal.name)) {
                                         var texture = new Texture2D(normal.width, normal.height, TextureFormat.ARGB32, true, true);
-                                        texture.LoadImage(fileData);
+										texture.LoadImage(fileData);
                                         texture.Apply(true, true);
 
-                                        skin.skinTextures.Add(new SkinTexture(normal.name, texture));
+										SetTextureOptions(texture);
+
+										skin.skinTextures.Add(new SkinTexture(normal.name, texture));
                                     }
                                 }
 
@@ -321,10 +350,12 @@ namespace SkinManagerMod
                                     if ((specular.name == fileName || aliasNames.ContainsKey(specular.name) && aliasNames[specular.name] == fileName) && !skin.ContainsTexture(specular.name))
                                     {
                                         var texture = new Texture2D(specular.width, specular.height);
-                                        texture.LoadImage(fileData);
+										texture.LoadImage(fileData);
                                         texture.Apply(true, true);
 
-                                        skin.skinTextures.Add(new SkinTexture(specular.name, texture));
+										SetTextureOptions(texture);
+
+										skin.skinTextures.Add(new SkinTexture(specular.name, texture));
                                     }
                                 }
 
@@ -333,10 +364,12 @@ namespace SkinManagerMod
                                     if ((emission.name == fileName || aliasNames.ContainsKey(emission.name) && aliasNames[emission.name] == fileName) && !skin.ContainsTexture(emission.name))
                                     {
                                         var texture = new Texture2D(emission.width, emission.height);
-                                        texture.LoadImage(fileData);
+										texture.LoadImage(fileData);
                                         texture.Apply(true, true);
 
-                                        skin.skinTextures.Add(new SkinTexture(emission.name, texture));
+										SetTextureOptions(texture);
+
+										skin.skinTextures.Add(new SkinTexture(emission.name, texture));
                                     }
                                 }
                             }
@@ -359,10 +392,12 @@ namespace SkinManagerMod
                                         {
 
                                             var texture = new Texture2D(diffuse.width, diffuse.height);
-                                            texture.LoadImage(fileData);
+											texture.LoadImage(fileData);
                                             texture.Apply(true, true);
 
-                                            skin.skinTextures.Add(new SkinTexture(diffuse.name, texture));
+											SetTextureOptions(texture);
+
+											skin.skinTextures.Add(new SkinTexture(diffuse.name, texture));
                                         }
                                     }
 
@@ -371,10 +406,12 @@ namespace SkinManagerMod
                                         if ((normal.name == fileName || aliasNames.ContainsKey(normal.name) && aliasNames[normal.name] == fileName) && !skin.ContainsTexture(normal.name))
                                         {
                                             var texture = new Texture2D(normal.width, normal.height, TextureFormat.ARGB32, true, true);
-                                            texture.LoadImage(fileData);
+											texture.LoadImage(fileData);
                                             texture.Apply(true, true);
 
-                                            skin.skinTextures.Add(new SkinTexture(normal.name, texture));
+											SetTextureOptions(texture);
+
+											skin.skinTextures.Add(new SkinTexture(normal.name, texture));
                                         }
                                     }
 
@@ -384,10 +421,12 @@ namespace SkinManagerMod
                                         if ((specular.name == fileName || aliasNames.ContainsKey(specular.name) && aliasNames[specular.name] == fileName) && !skin.ContainsTexture(specular.name))
                                         {
                                             var texture = new Texture2D(specular.width, specular.height);
-                                            texture.LoadImage(fileData);
+											texture.LoadImage(fileData);
                                             texture.Apply(true, true);
 
-                                            skin.skinTextures.Add(new SkinTexture(specular.name, texture));
+											SetTextureOptions(texture);
+
+											skin.skinTextures.Add(new SkinTexture(specular.name, texture));
                                         }
                                     }
 
@@ -396,10 +435,12 @@ namespace SkinManagerMod
                                         if ((emission.name == fileName || aliasNames.ContainsKey(emission.name) && aliasNames[emission.name] == fileName) && !skin.ContainsTexture(emission.name))
                                         {
                                             var texture = new Texture2D(emission.width, emission.height);
-                                            texture.LoadImage(fileData);
+											texture.LoadImage(fileData);
                                             texture.Apply(true, true);
 
-                                            skin.skinTextures.Add(new SkinTexture(emission.name, texture));
+											SetTextureOptions(texture);
+
+											skin.skinTextures.Add(new SkinTexture(emission.name, texture));
                                         }
                                     }
                                 }
@@ -413,6 +454,13 @@ namespace SkinManagerMod
                 }
             }
         }
+
+		// Set anisoLevel of imported textures to 5 for better visuals. (3 gives bareley an improvement, anything over 9 is pointless)
+		static void SetTextureOptions (Texture2D tex)
+		{
+			if (!settings.aniso5) return;
+			tex.anisoLevel = 5;
+		}
 
         static Texture2D DTXnm2RGBA(Texture2D tex)
         {
@@ -960,7 +1008,8 @@ namespace SkinManagerMod
                 {
                     GUILayout.EndScrollView();
                 }
-            } else
+            }
+			else
             {
                 if (GUILayout.Button("=== " + selectSkin + " ===", GUILayout.Width(240f)))
                 {
@@ -992,4 +1041,20 @@ namespace SkinManagerMod
             this.name = name;
         }
     }
+
+	// Mod settings
+	public class Settings : UnityModManager.ModSettings
+	{
+		public bool aniso5 = false;
+
+		public override void Save (UnityModManager.ModEntry modEntry)
+		{
+			Save(this, modEntry);
+		}
+
+		public void OnChange()
+		{
+
+		}
+	}
 }

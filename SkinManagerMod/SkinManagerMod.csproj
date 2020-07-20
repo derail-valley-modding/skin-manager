@@ -76,6 +76,6 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>xcopy /Y "$(TargetPath)" "D:\Games\SteamLibrary\steamapps\common\Derail Valley\Mods\SkinManagerMod\"</PostBuildEvent>
+    <PostBuildEvent>xcopy /Y "$(TargetPath)" "C:\Program Files (x86)\Steam\steamapps\common\Derail Valley\Mods\SkinManagerMod\"</PostBuildEvent>
   </PropertyGroup>
 </Project>
