@@ -479,6 +479,25 @@ namespace SkinManagerMod
             return tex;
         }
 
+        // Extract the green channel of the metal/gloss map as a grayscale Occlusion map
+        static Texture2D ExtractAO( Texture2D specular )
+        {
+            Color[] colorMap = specular.GetPixels();
+
+            // convert green values to grayscale
+            for( int i = 0; i < colorMap.Length; i++ )
+            {
+                float pxAO = colorMap[i].g;
+                colorMap[i] = new Color(pxAO, pxAO, pxAO);
+            }
+
+            // generate new texture
+            var newTex = new Texture2D(specular.width, specular.height);
+            newTex.SetPixels(colorMap);
+            newTex.Apply();
+            return newTex;
+        }
+
         public static Skin FindTrainCarSkin(TrainCar trainCar, string findSkinName = "")
         {
             if (!skinGroups.ContainsKey(trainCar.carType))
@@ -595,6 +614,7 @@ namespace SkinManagerMod
                 var normal = GetMaterialTexture(cmp, "_BumpMap");
                 var specular = GetMaterialTexture(cmp, "_MetallicGlossMap");
                 var emission = GetMaterialTexture(cmp, "_EmissionMap");
+                var occlusion = GetMaterialTexture(cmp, "_OcclusionMap");
 
                 if (diffuse != null && skin.ContainsTexture(diffuse.name))
                 {
@@ -615,6 +635,12 @@ namespace SkinManagerMod
                     var skinTexture = skin.GetTexture(specular.name);
 
                     cmp.material.SetTexture("_MetallicGlossMap", skinTexture.textureData);
+
+                    if( occlusion )
+                    {
+                        // occlusion is in green channel of specular map
+                        cmp.material.SetTexture("_OcclusionMap", skinTexture.textureData);
+                    }
                 }
 
                 if (emission != null && skin.ContainsTexture(emission.name))
