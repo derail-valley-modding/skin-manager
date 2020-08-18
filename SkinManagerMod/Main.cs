@@ -595,6 +595,7 @@ namespace SkinManagerMod
                 var normal = GetMaterialTexture(cmp, "_BumpMap");
                 var specular = GetMaterialTexture(cmp, "_MetallicGlossMap");
                 var emission = GetMaterialTexture(cmp, "_EmissionMap");
+                var occlusion = GetMaterialTexture(cmp, "_OcclusionMap");
 
                 if (diffuse != null && skin.ContainsTexture(diffuse.name))
                 {
@@ -615,6 +616,12 @@ namespace SkinManagerMod
                     var skinTexture = skin.GetTexture(specular.name);
 
                     cmp.material.SetTexture("_MetallicGlossMap", skinTexture.textureData);
+
+                    if( occlusion )
+                    {
+                        // occlusion is in green channel of specular map
+                        cmp.material.SetTexture("_OcclusionMap", skinTexture.textureData);
+                    }
                 }
 
                 if (emission != null && skin.ContainsTexture(emission.name))
@@ -648,6 +655,7 @@ namespace SkinManagerMod
                 var normal = GetMaterialTexture(cmp, "_BumpMap");
                 var specular = GetMaterialTexture(cmp, "_MetallicGlossMap");
                 var emission = GetMaterialTexture(cmp, "_EmissionMap");
+                var occlusion = GetMaterialTexture(cmp, "_OcclusionMap");
 
                 if (diffuse != null && skin.ContainsTexture(diffuse.name))
                 {
@@ -668,6 +676,12 @@ namespace SkinManagerMod
                     var skinTexture = skin.GetTexture(specular.name);
 
                     cmp.material.SetTexture("_MetallicGlossMap", skinTexture.textureData);
+
+                    if( occlusion )
+                    {
+                        // occlusion is in green channel of specular map
+                        cmp.material.SetTexture("_OcclusionMap", skinTexture.textureData);
+                    }
                 }
 
                 if (emission != null && skin.ContainsTexture(emission.name))
