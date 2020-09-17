@@ -339,7 +339,24 @@ namespace SkinManagerMod
 
             Main.trainCarState[SelectedCar.CarGUID] = SelectedSkin.name;
             Main.ReplaceTexture(SelectedCar);
-            Main.ReplaceInteriorTexture(SelectedCar);
+
+            if( CarTypes.IsSteamLocomotive(SelectedCar.carType) && SelectedCar.rearCoupler.IsCoupled() )
+            {
+                TrainCar attachedCar = SelectedCar.rearCoupler.coupledTo?.train;
+                if( (attachedCar != null) && CarTypes.IsTender(attachedCar.carType) )
+                {
+                    // car attached behind loco is tender
+                    if( Main.skinGroups.TryGetValue(attachedCar.carType, out SkinGroup tenderGroup) )
+                    {
+                        if( tenderGroup.skins.Find(s => string.Equals(s.name, SelectedSkin.name)) is Skin tenderSkin )
+                        {
+                            // found a matching skin for the tender :D
+                            Main.trainCarState[attachedCar.CarGUID] = tenderSkin.name;
+                            Main.ReplaceTexture(attachedCar);
+                        }
+                    }
+                }
+            }
         }
 
         private void SetSelectedSkin( Skin skin )
