@@ -56,6 +56,7 @@
     <Reference Include="UnityEngine">
       <HintPath>D:\Games\SteamLibrary\steamapps\common\Derail Valley\DerailValley_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.AudioModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL" />
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>D:\Games\SteamLibrary\steamapps\common\Derail Valley\DerailValley_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
     </Reference>

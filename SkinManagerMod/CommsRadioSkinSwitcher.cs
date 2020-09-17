@@ -21,6 +21,12 @@ namespace SkinManagerMod
         public Material skinningMaterial;
         public GameObject trainHighlighter;
 
+        // Sounds
+        public AudioClip HoverCarSound;
+        public AudioClip SelectedCarSound;
+        public AudioClip ConfirmSound;
+        public AudioClip CancelSound;
+
         private State CurrentState;
         private LayerMask TrainCarMask;
         private RaycastHit Hit;
@@ -55,6 +61,12 @@ namespace SkinManagerMod
                 selectionMaterial = new Material(deleter.selectionMaterial);
                 skinningMaterial = new Material(deleter.deleteMaterial);
                 trainHighlighter = deleter.trainHighlighter;
+
+                // sounds
+                HoverCarSound = deleter.hoverOverCar;
+                SelectedCarSound = deleter.warningSound;
+                ConfirmSound = deleter.confirmSound;
+                CancelSound = deleter.cancelSound;
             }
             else
             {
@@ -85,10 +97,10 @@ namespace SkinManagerMod
                 Debug.LogError("CommsRadioSkinSwitcher: trainHighlighter not set, can't function properly!!", this);
             }
 
-            //if( this.hoverOverCar == null || this.selectedCarSound == null || this.confirmSound == null || this.cancelSound == null || this.warningSound == null || this.removeCarSound == null || this.moneyRemovedSound == null )
-            //{
-            //    Debug.LogError("Not all audio clips set, some sounds won't be played!", this);
-            //}
+            if( (HoverCarSound == null) || (SelectedCarSound == null) || (ConfirmSound == null) || (CancelSound == null) )
+            {
+                Debug.LogError("Not all audio clips set, some sounds won't be played!", this);
+            }
 
             TrainCarMask = LayerMask.GetMask(new string[]
             {
@@ -151,7 +163,7 @@ namespace SkinManagerMod
                 {
                     PointedCar = car;
                     HighlightCar(PointedCar, selectionMaterial);
-                    //CommsRadioController.PlayAudioFromRadio(this.hoverOverCar, base.transform);
+                    CommsRadioController.PlayAudioFromRadio(HoverCarSound, transform);
                 }
                 else
                 {
@@ -256,6 +268,7 @@ namespace SkinManagerMod
                         PointedCar = null;
 
                         HighlightCar(SelectedCar, skinningMaterial);
+                        CommsRadioController.PlayAudioFromRadio(SelectedCarSound, transform);
                         SetState(State.SelectSkin);
                     }
                     break;
@@ -265,6 +278,12 @@ namespace SkinManagerMod
                     {
                         // clicked on the selected car again, this means confirm
                         ApplySelectedSkin();
+                        CommsRadioController.PlayAudioFromRadio(ConfirmSound, transform);
+                    }
+                    else
+                    {
+                        // clicked off the selected car, this means cancel
+                        CommsRadioController.PlayAudioFromRadio(CancelSound, transform);
                     }
 
                     ResetState();
