@@ -274,10 +274,66 @@ namespace SkinManagerMod
             return readableText;
         }
 
+
+        public static Dictionary<TrainCarType, Skin> defaultSkins = new Dictionary<TrainCarType, Skin>();
+
+        private static Skin CreateDefaultSkin( TrainCarType carType, string typeName )
+        {
+            GameObject carPrefab = CarTypes.GetCarPrefab(carType);
+            if( carPrefab == null ) return null;
+
+            Skin defSkin = new Skin($"Default_{typeName}");
+
+            var cmps = carPrefab.gameObject.GetComponentsInChildren<MeshRenderer>();
+            foreach( var cmp in cmps )
+            {
+                if( !cmp.material ) continue;
+
+                if( GetMaterialTexture(cmp, "_MainTex") is Texture2D diffuse )
+                    defSkin.skinTextures.Add(new SkinTexture(diffuse.name, diffuse));
+
+                if( GetMaterialTexture(cmp, "_BumpMap") is Texture2D normal )
+                    defSkin.skinTextures.Add(new SkinTexture(normal.name, normal));
+
+                if( GetMaterialTexture(cmp, "_MetallicGlossMap") is Texture2D specular )
+                    defSkin.skinTextures.Add(new SkinTexture(specular.name, specular));
+
+                if( GetMaterialTexture(cmp, "_EmissionMap") is Texture2D emission )
+                    defSkin.skinTextures.Add(new SkinTexture(emission.name, emission));
+            }
+
+            var trainCar = carPrefab.GetComponent<TrainCar>();
+
+            if( trainCar?.interiorPrefab != null )
+            {
+                foreach( var cmp in trainCar.interiorPrefab.GetComponentsInChildren<MeshRenderer>() )
+                {
+                    if( !cmp.material ) continue;
+
+                    if( GetMaterialTexture(cmp, "_MainTex") is Texture2D diffuse )
+                        defSkin.skinTextures.Add(new SkinTexture(diffuse.name, diffuse));
+
+                    if( GetMaterialTexture(cmp, "_BumpMap") is Texture2D normal )
+                        defSkin.skinTextures.Add(new SkinTexture(normal.name, normal));
+
+                    if( GetMaterialTexture(cmp, "_MetallicGlossMap") is Texture2D specular )
+                        defSkin.skinTextures.Add(new SkinTexture(specular.name, specular));
+
+                    if( GetMaterialTexture(cmp, "_EmissionMap") is Texture2D emission )
+                        defSkin.skinTextures.Add(new SkinTexture(emission.name, emission));
+                }
+            }
+
+            return defSkin;
+        }
+
         static void LoadSkins()
         {
             foreach (var prefab in prefabMap)
             {
+                Skin defSkin = CreateDefaultSkin(prefab.Key, prefab.Value);
+                defaultSkins.Add(prefab.Key, defSkin);
+
                 var dir = modPath + "Skins\\" + prefab.Value;
 
                 if (Directory.Exists(dir))
@@ -322,6 +378,8 @@ namespace SkinManagerMod
                                     if ((diffuse.name == fileName || aliasNames.ContainsKey(diffuse.name) && aliasNames[diffuse.name] == fileName) && !skin.ContainsTexture(diffuse.name)) {
 
 										var texture = new Texture2D(diffuse.width, diffuse.height);
+                                        texture.name = fileName;
+
 										texture.LoadImage(fileData);
                                         texture.Apply(true, true);
 
@@ -335,7 +393,9 @@ namespace SkinManagerMod
                                 {
                                     if ((normal.name == fileName || aliasNames.ContainsKey(normal.name) && aliasNames[normal.name] == fileName) && !skin.ContainsTexture(normal.name)) {
                                         var texture = new Texture2D(normal.width, normal.height, TextureFormat.ARGB32, true, true);
-										texture.LoadImage(fileData);
+                                        texture.name = fileName;
+
+                                        texture.LoadImage(fileData);
                                         texture.Apply(true, true);
 
 										SetTextureOptions(texture);
@@ -350,7 +410,9 @@ namespace SkinManagerMod
                                     if ((specular.name == fileName || aliasNames.ContainsKey(specular.name) && aliasNames[specular.name] == fileName) && !skin.ContainsTexture(specular.name))
                                     {
                                         var texture = new Texture2D(specular.width, specular.height);
-										texture.LoadImage(fileData);
+                                        texture.name = fileName;
+
+                                        texture.LoadImage(fileData);
                                         texture.Apply(true, true);
 
 										SetTextureOptions(texture);
@@ -364,7 +426,9 @@ namespace SkinManagerMod
                                     if ((emission.name == fileName || aliasNames.ContainsKey(emission.name) && aliasNames[emission.name] == fileName) && !skin.ContainsTexture(emission.name))
                                     {
                                         var texture = new Texture2D(emission.width, emission.height);
-										texture.LoadImage(fileData);
+                                        texture.name = fileName;
+
+                                        texture.LoadImage(fileData);
                                         texture.Apply(true, true);
 
 										SetTextureOptions(texture);
@@ -392,7 +456,9 @@ namespace SkinManagerMod
                                         {
 
                                             var texture = new Texture2D(diffuse.width, diffuse.height);
-											texture.LoadImage(fileData);
+                                            texture.name = fileName;
+
+                                            texture.LoadImage(fileData);
                                             texture.Apply(true, true);
 
 											SetTextureOptions(texture);
@@ -406,7 +472,9 @@ namespace SkinManagerMod
                                         if ((normal.name == fileName || aliasNames.ContainsKey(normal.name) && aliasNames[normal.name] == fileName) && !skin.ContainsTexture(normal.name))
                                         {
                                             var texture = new Texture2D(normal.width, normal.height, TextureFormat.ARGB32, true, true);
-											texture.LoadImage(fileData);
+                                            texture.name = fileName;
+
+                                            texture.LoadImage(fileData);
                                             texture.Apply(true, true);
 
 											SetTextureOptions(texture);
@@ -421,7 +489,9 @@ namespace SkinManagerMod
                                         if ((specular.name == fileName || aliasNames.ContainsKey(specular.name) && aliasNames[specular.name] == fileName) && !skin.ContainsTexture(specular.name))
                                         {
                                             var texture = new Texture2D(specular.width, specular.height);
-											texture.LoadImage(fileData);
+                                            texture.name = fileName;
+
+                                            texture.LoadImage(fileData);
                                             texture.Apply(true, true);
 
 											SetTextureOptions(texture);
@@ -435,7 +505,9 @@ namespace SkinManagerMod
                                         if ((emission.name == fileName || aliasNames.ContainsKey(emission.name) && aliasNames[emission.name] == fileName) && !skin.ContainsTexture(emission.name))
                                         {
                                             var texture = new Texture2D(emission.width, emission.height);
-											texture.LoadImage(fileData);
+                                            texture.name = fileName;
+
+                                            texture.LoadImage(fileData);
                                             texture.Apply(true, true);
 
 											SetTextureOptions(texture);
@@ -597,38 +669,81 @@ namespace SkinManagerMod
                 var emission = GetMaterialTexture(cmp, "_EmissionMap");
                 var occlusion = GetMaterialTexture(cmp, "_OcclusionMap");
 
-                if (diffuse != null && skin.ContainsTexture(diffuse.name))
+                if( !defaultSkins.TryGetValue(trainCar.carType, out Skin defSkin) )
                 {
-                    var skinTexture = skin.GetTexture(diffuse.name);
-
-                    cmp.material.SetTexture("_MainTex", skinTexture.textureData);
+                    defSkin = null;
                 }
 
-                if (normal != null && skin.ContainsTexture(normal.name))
+                if (diffuse != null )
                 {
-                    var skinTexture = skin.GetTexture(normal.name);
-
-                    cmp.material.SetTexture("_BumpMap", skinTexture.textureData);
-                }
-
-                if (specular != null && skin.ContainsTexture(specular.name))
-                {
-                    var skinTexture = skin.GetTexture(specular.name);
-
-                    cmp.material.SetTexture("_MetallicGlossMap", skinTexture.textureData);
-
-                    if( occlusion )
+                    if( skin.ContainsTexture(diffuse.name) )
                     {
-                        // occlusion is in green channel of specular map
-                        cmp.material.SetTexture("_OcclusionMap", skinTexture.textureData);
+                        var skinTexture = skin.GetTexture(diffuse.name);
+
+                        cmp.material.SetTexture("_MainTex", skinTexture.textureData);
+                    }
+                    else if( (defSkin != null) && defSkin.ContainsTexture(diffuse.name) )
+                    {
+                        var skinTexture = defSkin.GetTexture(diffuse.name);
+                        cmp.material.SetTexture("_MainTex", skinTexture.textureData);
                     }
                 }
 
-                if (emission != null && skin.ContainsTexture(emission.name))
+                if (normal != null)
                 {
-                    var skinTexture = skin.GetTexture(emission.name);
+                    if( skin.ContainsTexture(normal.name) )
+                    {
+                        var skinTexture = skin.GetTexture(normal.name);
 
-                    cmp.material.SetTexture("_EmissionMap", skinTexture.textureData);
+                        cmp.material.SetTexture("_BumpMap", skinTexture.textureData);
+                    }
+                    else if( (defSkin != null) && defSkin.ContainsTexture(normal.name) )
+                    {
+                        var skinTexture = defSkin.GetTexture(normal.name);
+                        cmp.material.SetTexture("_BumpMap", skinTexture.textureData);
+                    }
+                }
+
+                if (specular != null)
+                {
+                    if( skin.ContainsTexture(specular.name) )
+                    {
+                        var skinTexture = skin.GetTexture(specular.name);
+
+                        cmp.material.SetTexture("_MetallicGlossMap", skinTexture.textureData);
+
+                        if( occlusion != null )
+                        {
+                            // occlusion is in green channel of specular map
+                            cmp.material.SetTexture("_OcclusionMap", skinTexture.textureData);
+                        }
+                    }
+                    else if( (defSkin != null) && defSkin.ContainsTexture(specular.name) )
+                    {
+                        var skinTexture = defSkin.GetTexture(specular.name);
+                        cmp.material.SetTexture("_MetallicGlossMap", skinTexture.textureData);
+
+                        if( occlusion != null )
+                        {
+                            // occlusion is in green channel of specular map
+                            cmp.material.SetTexture("_OcclusionMap", skinTexture.textureData);
+                        }
+                    }
+                }
+
+                if (emission != null)
+                {
+                    if( skin.ContainsTexture(emission.name) )
+                    {
+                        var skinTexture = skin.GetTexture(emission.name);
+
+                        cmp.material.SetTexture("_EmissionMap", skinTexture.textureData);
+                    }
+                    else if( (defSkin != null) && defSkin.ContainsTexture(emission.name) )
+                    {
+                        var skinTexture = defSkin.GetTexture(emission.name);
+                        cmp.material.SetTexture("_EmissionMap", skinTexture.textureData);
+                    }
                 }
             }
         }
@@ -657,38 +772,81 @@ namespace SkinManagerMod
                 var emission = GetMaterialTexture(cmp, "_EmissionMap");
                 var occlusion = GetMaterialTexture(cmp, "_OcclusionMap");
 
-                if (diffuse != null && skin.ContainsTexture(diffuse.name))
+                if( !defaultSkins.TryGetValue(trainCar.carType, out Skin defSkin) )
                 {
-                    var skinTexture = skin.GetTexture(diffuse.name);
-
-                    cmp.material.SetTexture("_MainTex", skinTexture.textureData);
+                    defSkin = null;
                 }
 
-                if (normal != null && skin.ContainsTexture(normal.name))
+                if (diffuse != null)
                 {
-                    var skinTexture = skin.GetTexture(normal.name);
-
-                    cmp.material.SetTexture("_BumpMap", skinTexture.textureData);
-                }
-
-                if (specular != null && skin.ContainsTexture(specular.name))
-                {
-                    var skinTexture = skin.GetTexture(specular.name);
-
-                    cmp.material.SetTexture("_MetallicGlossMap", skinTexture.textureData);
-
-                    if( occlusion )
+                    if( skin.ContainsTexture(diffuse.name) )
                     {
-                        // occlusion is in green channel of specular map
-                        cmp.material.SetTexture("_OcclusionMap", skinTexture.textureData);
+                        var skinTexture = skin.GetTexture(diffuse.name);
+
+                        cmp.material.SetTexture("_MainTex", skinTexture.textureData);
+                    }
+                    else if( (defSkin != null) && defSkin.ContainsTexture(diffuse.name))
+                    {
+                        var skinTexture = defSkin.GetTexture(diffuse.name);
+                        cmp.material.SetTexture("_MainTex", skinTexture.textureData);
                     }
                 }
 
-                if (emission != null && skin.ContainsTexture(emission.name))
+                if (normal != null)
                 {
-                    var skinTexture = skin.GetTexture(emission.name);
+                    if( skin.ContainsTexture(normal.name) )
+                    {
+                        var skinTexture = skin.GetTexture(normal.name);
 
-                    cmp.material.SetTexture("_EmissionMap", skinTexture.textureData);
+                        cmp.material.SetTexture("_BumpMap", skinTexture.textureData);
+                    }
+                    else if( (defSkin != null) && defSkin.ContainsTexture(normal.name) )
+                    {
+                        var skinTexture = defSkin.GetTexture(normal.name);
+                        cmp.material.SetTexture("_BumpMap", skinTexture.textureData);
+                    }
+                }
+
+                if (specular != null)
+                {
+                    if( skin.ContainsTexture(specular.name) )
+                    {
+                        var skinTexture = skin.GetTexture(specular.name);
+
+                        cmp.material.SetTexture("_MetallicGlossMap", skinTexture.textureData);
+
+                        if( occlusion != null )
+                        {
+                            // occlusion is in green channel of specular map
+                            cmp.material.SetTexture("_OcclusionMap", skinTexture.textureData);
+                        }
+                    }
+                    else if( (defSkin != null) && defSkin.ContainsTexture(specular.name) )
+                    {
+                        var skinTexture = defSkin.GetTexture(specular.name);
+                        cmp.material.SetTexture("_MetallicGlossMap", skinTexture.textureData);
+
+                        if( occlusion != null )
+                        {
+                            // occlusion is in green channel of specular map
+                            cmp.material.SetTexture("_OcclusionMap", skinTexture.textureData);
+                        }
+                    }
+                }
+
+                if (emission != null)
+                {
+                    if( skin.ContainsTexture(emission.name) )
+                    {
+                        var skinTexture = skin.GetTexture(emission.name);
+
+                        cmp.material.SetTexture("_EmissionMap", skinTexture.textureData);
+                    }
+                    else if( (defSkin != null) && defSkin.ContainsTexture(emission.name) )
+                    {
+                        var skinTexture = defSkin.GetTexture(emission.name);
+                        cmp.material.SetTexture("_EmissionMap", skinTexture.textureData);
+                    }
                 }
             }
         }
