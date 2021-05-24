@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace SkinManagerMod
@@ -43,19 +44,34 @@ namespace SkinManagerMod
     public class SkinTexture
     {
         public string name;
-        public Texture2D textureData;
+        private Texture2D _textureData;
+        private Task<Texture2D> task;
+        public List<Skin> skins = new List<Skin>();
+        public Texture2D TextureData
+        {
+            get
+            {
+                if (_textureData == null)
+                {
+                    _textureData = task.Result;
+                    task = null;
+                    Main.SetTextureOptions(_textureData);
+                    _textureData.Apply(false, true);
+                }
+                return _textureData;
+            }
+        }
 
-        public SkinTexture( string name, Texture2D textureData )
+        public SkinTexture( string name, Task<Texture2D> task )
         {
             this.name = name;
-            this.textureData = textureData;
+            this.task = task;
         }
     }
 
     public class SkinGroup
     {
         TrainCarType trainCarType;
-        public List<Skin> skins = new List<Skin>();
 
         public SkinGroup( TrainCarType trainCarType )
         {
