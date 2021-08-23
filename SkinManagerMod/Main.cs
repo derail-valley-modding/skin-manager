@@ -775,7 +775,7 @@ namespace SkinManagerMod
 	public class Settings : UnityModManager.ModSettings
 	{
 		public bool aniso5 = false;
-        public bool parallelLoading = false;
+        public bool parallelLoading = true;
 
 		public override void Save (UnityModManager.ModEntry modEntry)
 		{
