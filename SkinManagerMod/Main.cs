@@ -363,7 +363,7 @@ namespace SkinManagerMod
                             }
                             else
                             {
-                                var tex = new Texture2D(0, 0);
+                                var tex = new Texture2D(0, 0, textureFormat: TextureFormat.RGBA32, mipChain: true, linear: linear);
                                 tex.LoadImage(File.ReadAllBytes(file.FullName));
                                 skin.skinTextures.Add(new SkinTexture(fileName, tex));
                             }
