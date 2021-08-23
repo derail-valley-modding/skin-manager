@@ -72,6 +72,7 @@ namespace SkinManagerMod
     public class SkinGroup
     {
         TrainCarType trainCarType;
+        public List<Skin> skins = new List<Skin>();
 
         public SkinGroup( TrainCarType trainCarType )
         {
