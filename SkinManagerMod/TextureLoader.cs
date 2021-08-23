@@ -55,14 +55,11 @@ namespace SkinManagerMod
             var sep = Path.DirectorySeparatorChar;
             var cacheDirName = Path.GetDirectoryName(path.Replace(sep + "Skins" + sep, sep + "Cache" + sep));
             var cacheFileName = Path.GetFileNameWithoutExtension(path) + ".dds.gz";
-            var cacheFilePath = Path.Combine(cacheDirName, cacheFileName);
-            Debug.Log($"Translated path {path} to {cacheFilePath}");
-            return cacheFilePath;
+            return Path.Combine(cacheDirName, cacheFileName);
         }
 
         private static void PopulateTexture(FileInfo path, bool hasAlpha, NativeArray<byte> dest)
         {
-            Debug.Log($"Starting loading of {path.FullName}");
             unsafe
             {
                 StbImage.ReadAndCompressImageWithMipmaps(
@@ -72,7 +69,6 @@ namespace SkinManagerMod
                     (IntPtr)dest.GetUnsafePtr(),
                     dest.Length);
             }
-            Debug.Log($"Finished loading of {path.FullName}");
         }
     }
 
@@ -124,7 +120,7 @@ namespace SkinManagerMod
             var outfile = new GZipStream(fileInfo.OpenWrite(), CompressionLevel.Optimal);
             outfile.Write(DDSHeader(texture.width, texture.height, texture.format == TextureFormat.DXT5, texture.mipmapCount), 0, 128);
             var data = texture.GetRawTextureData<byte>().ToArray();
-            Debug.Log($"Writing to {fileInfo.FullName} ({texture.width}x{texture.height} (texel={texture.texelSize}, format={texture.format}, size:{data.Length}");
+            Debug.Log($"Writing to {fileInfo.FullName}");
             outfile.Write(data, 0, data.Length);
             outfile.Close();
         }

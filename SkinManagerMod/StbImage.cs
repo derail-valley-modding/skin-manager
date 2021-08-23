@@ -23,12 +23,7 @@ namespace SkinManagerMod
 
         public static ImageInfo GetImageInfo(string filename)
         {
-            uint x, y, comp;
-            bool success;
-            unsafe
-            {
-                success = GetImageInfo(filename, out x, out y, out comp) != 0;
-            }
+            bool success = GetImageInfo(filename, out uint x, out uint y, out uint comp) != 0;
             if (!success)
                 throw new Exception($"Unable to read {filename}");
             return new ImageInfo
