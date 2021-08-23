@@ -144,12 +144,13 @@ namespace SkinManagerMod
             if ((pixelFormatFlags & 0x4) == 0)
                 throw new Exception("DDS header does not have a FourCC");
             string fourCC = Encoding.ASCII.GetString(buf, 84, 4);
-            var pixelFormat = fourCC switch
+            TextureFormat pixelFormat;
+            switch (fourCC)
             {
-                "DXT1" => TextureFormat.DXT1,
-                "DXT5" => TextureFormat.DXT5,
-                _ => throw new Exception($"Unknown FourCC: {fourCC}"),
-            };
+                case "DXT1": pixelFormat = TextureFormat.DXT1; break;
+                case "DXT5": pixelFormat = TextureFormat.DXT5; break;
+                default    :  throw new Exception($"Unknown FourCC: {fourCC}");
+            }
 
             var texture = new Texture2D(width, height, pixelFormat, true, linear);
             var nativeArray = texture.GetRawTextureData<byte>();
