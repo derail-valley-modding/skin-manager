@@ -44,9 +44,9 @@ namespace SkinManagerMod
     public class SkinTexture
     {
         public string name;
-        private Texture2D _textureData;
         private Task<Texture2D> task;
-        public List<Skin> skins = new List<Skin>();
+        private Texture2D _textureData;
+
         public Texture2D TextureData
         {
             get
@@ -60,6 +60,12 @@ namespace SkinManagerMod
                 }
                 return _textureData;
             }
+        }
+
+        public SkinTexture( string name, Texture2D textureData )
+        {
+            this.name = name;
+            this._textureData = textureData;
         }
 
         public SkinTexture( string name, Task<Texture2D> task )
