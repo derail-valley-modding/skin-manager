@@ -14,11 +14,6 @@
     <Deterministic>true</Deterministic>
     <TargetFrameworkProfile />
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AssemblySearchPaths>
-      $(AssemblySearchPaths);
-      /mnt/f/Steam/steamapps/common/Derail Valley/DerailValley_Data/Managed;
-      /mnt/f/Steam/steamapps/common/Derail Valley/DerailValley_Data/Managed/UnityModManager;
-    </AssemblySearchPaths>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>

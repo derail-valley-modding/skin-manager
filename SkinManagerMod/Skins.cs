@@ -55,7 +55,11 @@ namespace SkinManagerMod
                 {
                     _textureData = task.Result;
                     task = null;
+
+                    // need to set name for reskinning to work
+                    _textureData.name = name;
                     Main.SetTextureOptions(_textureData);
+
                     _textureData.Apply(false, true);
                 }
                 return _textureData;
@@ -65,6 +69,11 @@ namespace SkinManagerMod
         public SkinTexture( string name, Texture2D textureData )
         {
             this.name = name;
+
+            // make sure that texture properties are assigned properly
+            textureData.name = name;
+            Main.SetTextureOptions(textureData);
+
             this._textureData = textureData;
         }
 
