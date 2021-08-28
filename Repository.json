@@ -2,6 +2,11 @@
   "Releases": [
     {
       "Id": "SkinManagerMod",
+      "Version": "2.4.0",
+      "DownloadUrl": "https://github.com/SvetlozarValchev/dv-skin-manager-mod/releases/download/v2.4/SkinManagerMod.zip"
+    },
+    {
+      "Id": "SkinManagerMod",
       "Version": "2.3.0"
     }
   ]
