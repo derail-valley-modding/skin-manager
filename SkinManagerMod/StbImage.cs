@@ -21,6 +21,12 @@ namespace SkinManagerMod
             public int componentCount;
         }
 
+        public static bool IsSupportedExtension(string extension)
+        {
+            var ext = extension.ToLowerInvariant();
+            return ext == ".jpeg" || ext == ".png" || ext == ".jpg";
+        }
+
         public static ImageInfo GetImageInfo(string filename)
         {
             bool success = GetImageInfo(filename, out uint x, out uint y, out uint comp) != 0;
