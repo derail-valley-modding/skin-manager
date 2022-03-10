@@ -346,6 +346,8 @@ namespace SkinManagerMod
 
             foreach (var file in files)
             {
+                if (!StbImage.IsSupportedExtension(file.Extension))
+                    continue;
                 string fileName = Path.GetFileNameWithoutExtension(file.Name);
 
                 foreach (var cmp in cmps)
