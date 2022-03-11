@@ -73,6 +73,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CCLPatch.cs" />
     <Compile Include="CommsRadioSkinSwitcher.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="ModUI.cs" />
