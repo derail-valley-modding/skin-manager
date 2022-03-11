@@ -522,14 +522,14 @@ namespace SkinManagerMod
         {
             string findSkin = "";
 
-            if (trainCar.carType == TrainCarType.Tender && lastSteamerSkin != null)
+            if (CarTypes.IsTender(trainCar.carType) && lastSteamerSkin != null)
             {
                 findSkin = lastSteamerSkin.name;
             }
 
             Skin skin = FindTrainCarSkin(trainCar, findSkin);
 
-            if(trainCar.carType == TrainCarType.LocoSteamHeavy)
+            if(CarTypes.IsSteamLocomotive(trainCar.carType))
             {
                 lastSteamerSkin = skin;
             } else
