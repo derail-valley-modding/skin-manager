@@ -15,6 +15,7 @@ namespace SkinManagerMod
     {
 		public static Dictionary<string, string> trainCarState = new Dictionary<string, string>();
 
+        public static UnityModManager.ModEntry ModEntry { get; private set; }
         public static string modPath;
 
         static Vector2 scrollViewVector = Vector2.zero;
@@ -45,8 +46,12 @@ namespace SkinManagerMod
         
         static bool Load(UnityModManager.ModEntry modEntry)
         {
+            ModEntry = modEntry;
+
 			// Load the settings
 			settings = Settings.Load<Settings>(modEntry);
+
+            CCLPatch.Initialize();
 
             var harmony = new Harmony(modEntry.Info.Id);
             harmony.PatchAll(Assembly.GetExecutingAssembly());
@@ -54,8 +59,9 @@ namespace SkinManagerMod
             Type type = typeof(CarTypes);
             FieldInfo fieldInfo = type.GetField("prefabMap", BindingFlags.Static | BindingFlags.NonPublic);
 
-            prefabMap = fieldInfo.GetValue(null) as Dictionary<TrainCarType, string>;
-
+            var defaultMap = fieldInfo.GetValue(null) as Dictionary<TrainCarType, string>;
+            prefabMap = new Dictionary<TrainCarType, string>(defaultMap.Concat(CCLPatch.CarList));
+            
             modPath = modEntry.Path;
 
 			LoadSkins();
@@ -379,18 +385,18 @@ namespace SkinManagerMod
 
         static void LoadSkins()
         {
-            foreach (var prefab in prefabMap)
+            foreach ((TrainCarType carType, string carName) in prefabMap)
             {
-                Skin defSkin = CreateDefaultSkin(prefab.Key, prefab.Value);
-                defaultSkins.Add(prefab.Key, defSkin);
+                Skin defaultSkin = CreateDefaultSkin(carType, carName);
+                defaultSkins.Add(carType, defaultSkin);
 
-                var dir = modPath + "Skins\\" + prefab.Value;
+                var dir = Path.Combine(modPath, "Skins", carName);
 
                 if (Directory.Exists(dir))
                 {
                     var subDirectories = Directory.GetDirectories(dir);
-                    var skinGroup = new SkinGroup(prefab.Key);
-                    var carPrefab = CarTypes.GetCarPrefab(prefab.Key);
+                    var skinGroup = new SkinGroup(carType);
+                    var carPrefab = CarTypes.GetCarPrefab(carType);
                     IEnumerable<MeshRenderer> cmps = carPrefab.gameObject.GetComponentsInChildren<MeshRenderer>();
 
                     var trainCar = carPrefab.GetComponent<TrainCar>();
@@ -404,7 +410,7 @@ namespace SkinManagerMod
                     foreach (var subDir in subDirectories)
                         BeginLoadSkin(skinGroup, cmps, subDir);
 
-                    skinGroups.Add(prefab.Key, skinGroup);
+                    skinGroups.Add(carType, skinGroup);
                 }
             }
         }
@@ -516,14 +522,14 @@ namespace SkinManagerMod
         {
             string findSkin = "";
 
-            if (trainCar.carType == TrainCarType.Tender && lastSteamerSkin != null)
+            if (CarTypes.IsTender(trainCar.carType) && lastSteamerSkin != null)
             {
                 findSkin = lastSteamerSkin.name;
             }
 
             Skin skin = FindTrainCarSkin(trainCar, findSkin);
 
-            if(trainCar.carType == TrainCarType.LocoSteamHeavy)
+            if(CarTypes.IsSteamLocomotive(trainCar.carType))
             {
                 lastSteamerSkin = skin;
             } else
