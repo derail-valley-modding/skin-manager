@@ -73,15 +73,17 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CarPatches.cs" />
     <Compile Include="CCLPatch.cs" />
     <Compile Include="CommsRadioSkinSwitcher.cs" />
     <Compile Include="Main.cs" />
-    <Compile Include="ModUI.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SaveLoadPatches.cs" />
+    <Compile Include="SkinManager.cs" />
     <Compile Include="Skins.cs" />
     <Compile Include="StbImage.cs" />
     <Compile Include="TextureLoader.cs" />
+    <Compile Include="TextureUtility.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

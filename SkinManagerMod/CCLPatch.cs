@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using HarmonyLib;
+using UnityModManagerNet;
 
 namespace SkinManagerMod
 {
@@ -12,12 +13,19 @@ namespace SkinManagerMod
     internal static class CCLPatch
     {
         public static bool Enabled { get; set; } = false;
+        public static UnityModManager.ModEntry ModEntry;
 
         private static GetCarListDelegate GetCustomCarList = null;
 
         public static void Initialize()
         {
             Enabled = false;
+
+            ModEntry = UnityModManager.FindMod("DVCustomCarLoader");
+            if (ModEntry == null)
+            {
+                return;
+            }
 
             try
             {

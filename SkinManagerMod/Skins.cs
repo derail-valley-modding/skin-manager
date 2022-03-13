@@ -6,44 +6,30 @@ namespace SkinManagerMod
 {
     public class Skin
     {
-        public string name;
-        public List<SkinTexture> skinTextures = new List<SkinTexture>();
+        public readonly string Name;
+        public readonly string Path;
+        public readonly List<SkinTexture> SkinTextures = new List<SkinTexture>();
 
-        public Skin(string name)
+        public Skin(string name, string directory = null)
         {
-            this.name = name;
+            Name = name;
+            Path = directory;
         }
 
         public bool ContainsTexture(string name)
         {
-            foreach(var tex in skinTextures)
-            {
-                if (tex.name == name)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return GetTexture(name) != null;
         }
 
         public SkinTexture GetTexture(string name)
         {
-            foreach (var tex in skinTextures)
-            {
-                if (tex.name == name)
-                {
-                    return tex;
-                }
-            }
-
-            return null;
+            return SkinTextures.Find(tex => tex.Name == name);
         }
     }
 
     public class SkinTexture
     {
-        public string name;
+        public readonly string Name;
         private Task<Texture2D> task;
         private Texture2D _textureData;
 
@@ -57,8 +43,8 @@ namespace SkinManagerMod
                     task = null;
 
                     // need to set name for reskinning to work
-                    _textureData.name = name;
-                    Main.SetTextureOptions(_textureData);
+                    _textureData.name = Name;
+                    TextureUtility.SetTextureOptions(_textureData);
 
                     _textureData.Apply(false, true);
                 }
@@ -66,45 +52,37 @@ namespace SkinManagerMod
             }
         }
 
-        public SkinTexture( string name, Texture2D textureData )
+        public SkinTexture(string name, Texture2D textureData)
         {
-            this.name = name;
+            Name = name;
 
             // make sure that texture properties are assigned properly
             textureData.name = name;
-            Main.SetTextureOptions(textureData);
+            TextureUtility.SetTextureOptions(textureData);
 
-            this._textureData = textureData;
+            _textureData = textureData;
         }
 
-        public SkinTexture( string name, Task<Texture2D> task )
+        public SkinTexture(string name, Task<Texture2D> task)
         {
-            this.name = name;
+            Name = name;
             this.task = task;
         }
     }
 
     public class SkinGroup
     {
-        TrainCarType trainCarType;
-        public List<Skin> skins = new List<Skin>();
+        public readonly TrainCarType TrainCarType;
+        public readonly List<Skin> Skins = new List<Skin>();
 
-        public SkinGroup( TrainCarType trainCarType )
+        public SkinGroup(TrainCarType trainCarType)
         {
-            this.trainCarType = trainCarType;
+            TrainCarType = trainCarType;
         }
 
-        public Skin GetSkin( string name )
+        public Skin GetSkin(string name)
         {
-            foreach( var skin in skins )
-            {
-                if( skin.name == name )
-                {
-                    return skin;
-                }
-            }
-
-            return null;
+            return Skins.Find(s => s.Name == name);
         }
     }
 }
