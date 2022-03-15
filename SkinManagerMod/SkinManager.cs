@@ -71,7 +71,7 @@ namespace SkinManagerMod
             }
 
             // random skin
-            if (skinGroups.TryGetValue(carType, out var group))
+            if (skinGroups.TryGetValue(carType, out var group) && (group.Skins.Count > 0))
             {
                 bool allowRandomDefault =
                     (Main.Settings.defaultSkinsMode == SkinManagerSettings.DefaultSkinsMode.AllowForAllCars) ||
@@ -93,7 +93,10 @@ namespace SkinManagerMod
         {
             if (carGuidToAppliedSkinMap.TryGetValue(car.CarGUID, out var skinName))
             {
-                return FindSkinByName(car.carType, skinName);
+                if (FindSkinByName(car.carType, skinName) is Skin result)
+                {
+                    return result;
+                }
             }
             return GetNewSkin(car.carType);
         }
@@ -224,7 +227,7 @@ namespace SkinManagerMod
             GameObject carPrefab = CarTypes.GetCarPrefab(carType);
             if (carPrefab == null) return null;
 
-            Skin defSkin = new Skin($"Default_{typeName}");
+            Skin defSkin = new Skin($"Default_{typeName}", isDefault: true);
 
             var renderers = carPrefab.gameObject.GetComponentsInChildren<MeshRenderer>();
             foreach (var renderer in renderers)
@@ -322,7 +325,7 @@ namespace SkinManagerMod
         {
             if (skin == null) return;
 
-            Main.ModEntry.Logger.Log($"Applying skin {skin.Name} to car {trainCar.ID}");
+            //Main.ModEntry.Logger.Log($"Applying skin {skin.Name} to car {trainCar.ID}");
 
             ApplySkin(trainCar.gameObject.transform, skin, defaultSkins[trainCar.carType]);
             if (trainCar.IsInteriorLoaded)

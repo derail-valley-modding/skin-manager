@@ -13,7 +13,11 @@ namespace SkinManagerMod
         static void Postfix(TrainCar __result)
         {
             var skin = SkinManager.GetCurrentCarSkin(__result);
-            SkinManager.ApplySkin(__result, skin);
+            if (!skin.IsDefault)
+            {
+                // only need to replace textures if not staying with default skin
+                SkinManager.ApplySkin(__result, skin);
+            }
         }
     }
 
@@ -23,7 +27,10 @@ namespace SkinManagerMod
         static void Postfix(TrainCar __result)
         {
             var skin = SkinManager.GetCurrentCarSkin(__result);
-            SkinManager.ApplySkin(__result, skin);
+            if (!skin.IsDefault)
+            {
+                SkinManager.ApplySkin(__result, skin);
+            }
         }
     }
 
@@ -33,7 +40,10 @@ namespace SkinManagerMod
         static void Postfix(TrainCar __instance)
         {
             var skin = SkinManager.GetCurrentCarSkin(__instance);
-            SkinManager.ApplySkinToInterior(__instance, skin);
+            if (!skin.IsDefault)
+            {
+                SkinManager.ApplySkinToInterior(__instance, skin);
+            }
         }
     }
 }

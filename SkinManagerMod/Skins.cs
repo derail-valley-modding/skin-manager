@@ -8,12 +8,14 @@ namespace SkinManagerMod
     {
         public readonly string Name;
         public readonly string Path;
+        public readonly bool IsDefault;
         public readonly List<SkinTexture> SkinTextures = new List<SkinTexture>();
 
-        public Skin(string name, string directory = null)
+        public Skin(string name, string directory = null, bool isDefault = false)
         {
             Name = name;
             Path = directory;
+            IsDefault = isDefault;
         }
 
         public bool ContainsTexture(string name)
