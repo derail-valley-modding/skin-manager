@@ -188,7 +188,7 @@ namespace SkinManagerMod
 
                 case State.SelectSkin:
                     UpdateAvailableSkinsList(SelectedCar.carType);
-                    SetSelectedSkin(SkinsForCarType.FirstOrDefault());
+                    SetSelectedSkin(SkinsForCarType?.FirstOrDefault());
 
                     ButtonBehaviour = ButtonBehaviourType.Override;
                     break;
@@ -334,15 +334,7 @@ namespace SkinManagerMod
 
         private void UpdateAvailableSkinsList( TrainCarType carType )
         {
-            if( Main.skinGroups.TryGetValue(carType, out SkinGroup skinGroup) )
-            {
-                SkinsForCarType = skinGroup.skins;
-            }
-            else
-            {
-                SkinsForCarType = null;
-            }
-
+            SkinsForCarType = SkinManager.GetSkinsForType(carType);
             SelectedSkinIdx = 0;
         }
 
@@ -353,8 +345,7 @@ namespace SkinManagerMod
                 Debug.LogWarning("Tried to reskin to null selection");
             }
 
-            Main.trainCarState[SelectedCar.CarGUID] = SelectedSkin.name;
-            Main.ReplaceTexture(SelectedCar);
+            SkinManager.ApplySkin(SelectedCar, SelectedSkin);
 
             if( CarTypes.IsSteamLocomotive(SelectedCar.carType) && SelectedCar.rearCoupler.IsCoupled() )
             {
@@ -362,14 +353,11 @@ namespace SkinManagerMod
                 if( (attachedCar != null) && CarTypes.IsTender(attachedCar.carType) )
                 {
                     // car attached behind loco is tender
-                    if( Main.skinGroups.TryGetValue(attachedCar.carType, out SkinGroup tenderGroup) )
+                    Skin tenderSkin = SkinManager.FindSkinByName(attachedCar.carType, SelectedSkin.Name);
+                    if (tenderSkin != null)
                     {
-                        if( tenderGroup.skins.Find(s => string.Equals(s.name, SelectedSkin.name)) is Skin tenderSkin )
-                        {
-                            // found a matching skin for the tender :D
-                            Main.trainCarState[attachedCar.CarGUID] = tenderSkin.name;
-                            Main.ReplaceTexture(attachedCar);
-                        }
+                        // found a matching skin for the tender :D
+                        SkinManager.ApplySkin(attachedCar, tenderSkin);
                     }
                 }
             }
@@ -385,7 +373,7 @@ namespace SkinManagerMod
             else
             {
                 SelectedSkin = skin;
-                string displayName = "Select Skin:\n" + skin.name.Replace('_', ' ');
+                string displayName = "Select Skin:\n" + skin.Name.Replace('_', ' ');
                 display.SetContent(displayName);
             }
         }
