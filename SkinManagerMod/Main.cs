@@ -61,7 +61,7 @@ namespace SkinManagerMod
             Settings.defaultSkinsMode = (SkinManagerSettings.DefaultSkinsMode)GUILayout.SelectionGrid((int)Settings.defaultSkinsMode, defaultSkinModeTexts, 1, "toggle");
             GUILayout.Space(2);
 
-            GUILayout.Label("Export Textures");
+            GUILayout.Label("Texture Utility");
 
             GUILayout.BeginHorizontal(GUILayout.Width(250));
 
@@ -90,7 +90,7 @@ namespace SkinManagerMod
 
             GUILayout.EndVertical();
 
-            GUILayout.EndVertical();
+            GUILayout.EndHorizontal();
 
             if (trainCarSelected != TrainCarType.NotSet)
             {
@@ -98,9 +98,14 @@ namespace SkinManagerMod
                 {
                     TextureUtility.DumpTextures(trainCarSelected);
                 }
+
+                if (GUILayout.Button("Reload Skins", GUILayout.Width(180)))
+                {
+                    SkinManager.ReloadSkins(trainCarSelected);
+                }
             }
 
-            GUILayout.EndHorizontal();
+            GUILayout.EndVertical();
         }
 
         static void OnSaveGUI(UnityModManager.ModEntry modEntry)
