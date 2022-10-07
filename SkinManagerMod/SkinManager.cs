@@ -35,11 +35,15 @@ namespace SkinManagerMod
         private static Dictionary<TrainCarType, string> CustomCarTypes;
 
         private static readonly Dictionary<TrainCarType, SkinGroup> skinGroups = new Dictionary<TrainCarType, SkinGroup>();
+        public static IEnumerable<SkinGroup> AllSkinGroups => skinGroups.Values;
+
         private static readonly Dictionary<TrainCarType, Skin> defaultSkins = new Dictionary<TrainCarType, Skin>();
 
         private static readonly Dictionary<string, string> carGuidToAppliedSkinMap = new Dictionary<string, string>();
 
         private static Skin lastSteamerSkin;
+
+        public static event Action<TrainCarType?> SkinsLoaded;
 
         public static Skin FindSkinByName(TrainCarType carType, string name)
         {
@@ -140,23 +144,19 @@ namespace SkinManagerMod
                 Skin defaultSkin = CreateDefaultSkin(carType, carType.DisplayName());
                 defaultSkins.Add(carType, defaultSkin);
 
-                var skinGroup = new SkinGroup(carType);
+                skinGroups[carType] = new SkinGroup(carType);
 
                 var dir = Path.Combine(Main.ModEntry.Path, "Skins", carName);
 
                 if (Directory.Exists(dir))
                 {
-                    var subDirectories = Directory.GetDirectories(dir);
-                    var renderers = GetAllCarRenderers(carType);
-
-                    foreach (var subDir in subDirectories)
-                        BeginLoadSkin(skinGroup, renderers, subDir);
+                    LoadSkinsForType(dir, carType);
                 }
-
-                skinGroups.Add(carType, skinGroup);
             }
 
             LoadCCLEmbeddedSkins();
+
+            SkinsLoaded?.Invoke(null);
         }
 
         /// <summary>
@@ -166,7 +166,7 @@ namespace SkinManagerMod
         {
             if (!CCLPatch.Enabled) return;
 
-            var idToCarType = CCLPatch.CarList.ToDictionary(kvp => kvp.Value, kvp => kvp.Key);
+            var idToCarType = CustomCarTypes.ToDictionary(kvp => kvp.Value, kvp => kvp.Key);
 
             string carsDir = Path.Combine(CCLPatch.ModEntry.Path, "Cars");
             if (Directory.Exists(carsDir))
@@ -185,13 +185,50 @@ namespace SkinManagerMod
                             string identifier = carInfo.Value<string>("identifier");
 
                             var carType = idToCarType[identifier];
-                            var skinGroup = skinGroups[carType];
 
-                            var renderers = GetAllCarRenderers(carType);
+                            LoadSkinsForType(skinsFolder, carType);
+                        }
+                        catch (Exception ex)
+                        {
+                            Main.ModEntry.Logger.LogException(ex);
+                        }
+                    }
+                }
+            }
+        }
 
-                            foreach (string subDir in Directory.GetDirectories(skinsFolder))
+        public static void ReloadSkins(TrainCarType carType)
+        {
+            string carName = EnabledCarTypes[carType];
+            skinGroups[carType] = new SkinGroup(carType);
+
+            var dir = Path.Combine(Main.ModEntry.Path, "Skins", carName);
+
+            if (Directory.Exists(dir))
+            {
+                LoadSkinsForType(dir, carType, true);
+            }
+
+            if (CustomCarTypes.ContainsKey(carType))
+            {
+                // also reload CCL embedded skins
+                string carsDir = Path.Combine(CCLPatch.ModEntry.Path, "Cars");
+                foreach (string carDir in Directory.GetDirectories(carsDir))
+                {
+                    string jsonFile = Path.Combine(carDir, "car.json");
+                    string skinsFolder = Path.Combine(carDir, "Skins");
+
+                    if (File.Exists(jsonFile) && Directory.Exists(skinsFolder))
+                    {
+                        try
+                        {
+                            string json = File.ReadAllText(jsonFile);
+                            var carInfo = JObject.Parse(json);
+                            string identifier = carInfo.Value<string>("identifier");
+
+                            if (identifier == carName)
                             {
-                                BeginLoadSkin(skinGroup, renderers, subDir);
+                                LoadSkinsForType(skinsFolder, carType);
                             }
                         }
                         catch (Exception ex)
@@ -200,6 +237,32 @@ namespace SkinManagerMod
                         }
                     }
                 }
+            }
+
+            SkinsLoaded?.Invoke(carType);
+
+            // reapply skins to any cars of this type
+            var carsInScene = UnityEngine.Object.FindObjectsOfType<TrainCar>().Where(tc => tc.carType == carType);
+            foreach (var car in carsInScene)
+            {
+                var toApply = GetCurrentCarSkin(car);
+                ApplySkin(car, toApply);
+
+                if (car.IsInteriorLoaded)
+                {
+                    ApplySkinToInterior(car, toApply);
+                }
+            }
+        }
+
+        private static void LoadSkinsForType(string skinsFolder, TrainCarType carType, bool forceSync = false)
+        {
+            var skinGroup = skinGroups[carType];
+            var renderers = GetAllCarRenderers(carType);
+
+            foreach (string subDir in Directory.GetDirectories(skinsFolder))
+            {
+                BeginLoadSkin(skinGroup, renderers, subDir, forceSync);
             }
         }
 
@@ -267,7 +330,7 @@ namespace SkinManagerMod
         /// <summary>
         /// Create a skin from the given directory, load textures, and add it to the given group
         /// </summary>
-        private static void BeginLoadSkin(SkinGroup skinGroup, IEnumerable<MeshRenderer> renderers, string subDir)
+        private static void BeginLoadSkin(SkinGroup skinGroup, IEnumerable<MeshRenderer> renderers, string subDir, bool forceSync = false)
         {
             var dirInfo = new DirectoryInfo(subDir);
             var files = dirInfo.GetFiles();
@@ -298,7 +361,7 @@ namespace SkinManagerMod
                         {
                             var linear = textureName == "_BumpMap";
                             loading.Add(texture.name);
-                            if (Main.Settings.parallelLoading)
+                            if (!forceSync && Main.Settings.parallelLoading)
                             {
                                 skin.SkinTextures.Add(new SkinTexture(fileName, TextureLoader.Add(file, linear)));
                             }
