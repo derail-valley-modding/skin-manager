@@ -290,7 +290,13 @@ namespace SkinManagerMod
             GameObject carPrefab = CarTypes.GetCarPrefab(carType);
             if (carPrefab == null) return null;
 
-            Skin defSkin = new Skin($"Default_{typeName}", isDefault: true);
+            string skinDir = null;
+            if (CCLPatch.IsCustomCarType(carType))
+            {
+                skinDir = CCLPatch.GetCarFolder(carType);
+            }
+
+            Skin defSkin = new Skin($"Default_{typeName}", skinDir, isDefault: true);
 
             var renderers = carPrefab.gameObject.GetComponentsInChildren<MeshRenderer>();
             foreach (var renderer in renderers)
@@ -361,12 +367,14 @@ namespace SkinManagerMod
                         {
                             var linear = textureName == "_BumpMap";
                             loading.Add(texture.name);
+
                             if (!forceSync && Main.Settings.parallelLoading)
                             {
                                 skin.SkinTextures.Add(new SkinTexture(fileName, TextureLoader.Add(file, linear)));
                             }
                             else
                             {
+                                TextureLoader.BustCache(file);
                                 var tex = new Texture2D(0, 0, textureFormat: TextureFormat.RGBA32, mipChain: true, linear: linear);
                                 tex.LoadImage(File.ReadAllBytes(file.FullName));
                                 skin.SkinTextures.Add(new SkinTexture(fileName, tex));

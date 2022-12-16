@@ -19,6 +19,15 @@ namespace SkinManagerMod
             return Load(fileInfo, linear);
         }
 
+        public static void BustCache(FileInfo fileInfo)
+        {
+            var cached = new FileInfo(GetCachePath(fileInfo.FullName));
+            if (cached.Exists)
+            {
+                cached.Delete();
+            }
+        }
+
         private static Task<Texture2D> TryLoadFromCache(FileInfo fileInfo, bool linear)
         {
             var cached = new FileInfo(GetCachePath(fileInfo.FullName));
