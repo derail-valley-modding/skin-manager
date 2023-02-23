@@ -97,6 +97,11 @@ namespace SkinManagerMod
         {
             if (carGuidToAppliedSkinMap.TryGetValue(car.CarGUID, out var skinName))
             {
+                if (defaultSkins.TryGetValue(car.carType, out Skin defaultSkin) && (skinName == defaultSkin.Name))
+                {
+                    return defaultSkin;
+                }
+
                 if (FindSkinByName(car.carType, skinName) is Skin result)
                 {
                     return result;
