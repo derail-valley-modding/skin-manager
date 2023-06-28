@@ -294,7 +294,24 @@ namespace SkinManagerMod
             return defaultSkin;
         }
 
-        
+        private static bool TryGetTextureForFilename(TrainCarType carType, ref string filename, Dictionary<string, string> textureNames, out string textureProp)
+        {
+            if (textureNames.TryGetValue(filename, out textureProp))
+            {
+                return true;
+            }
+            
+            if ((carType != TrainCarType.NotSet) && Remaps.TryGetUpdatedTextureName(carType, filename, out string newName))
+            {
+                if (textureNames.TryGetValue(newName, out textureProp))
+                {
+                    filename = newName;
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         /// <summary>
         /// Create a skin from the given directory, load textures, and add it to the given group
@@ -313,7 +330,7 @@ namespace SkinManagerMod
                     continue;
                 string fileName = Path.GetFileNameWithoutExtension(file.Name);
 
-                if (!loading.Contains(fileName) && textureNames.TryGetValue(fileName, out string textureProp))
+                if (!loading.Contains(fileName) && TryGetTextureForFilename(skinGroup.TrainCarType.v1, ref fileName, textureNames, out string textureProp))
                 {
                     var linear = textureProp == "_BumpMap";
                     loading.Add(fileName);
