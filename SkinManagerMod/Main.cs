@@ -4,6 +4,7 @@ using DV;
 using DV.Localization;
 using DV.ThingTypes;
 using HarmonyLib;
+using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using UnityEngine;
@@ -69,8 +70,13 @@ namespace SkinManagerMod
 
     public enum DefaultSkinsMode
     {
+        [Description("Prefer Reskins")]
         PreferReplacements,
+
+        [Description("Random For Custom Cars")]
         AllowForCustomCars,
+
+        [Description("Random For All Cars")]
         AllowForAllCars
     }
 
@@ -94,14 +100,13 @@ namespace SkinManagerMod
                 "Multi-threaded texture loading");
 
             DefaultSkinsUsage = plugin.Config.Bind(
-                DEFAULT_SECTION, "DefaultSkinsUsage", DefaultSkinsMode.AllowForCustomCars,
-                "PreferReplacements, AllowForCustomCars, AllowForAllCars");
+                DEFAULT_SECTION, "DefaultSkinsUsage", DefaultSkinsMode.AllowForCustomCars);
 
             string defaultExportPath = Path.Combine(Paths.BepInExRootPath, PluginInfo.ContentFolderName, PluginInfo.DefaultExportFolderName);
             var exportDescription = new ConfigDescription(
                 "Directory for exported default textures", 
                 null,
-                new ConfigurationManagerAttributes { CustomDrawer = DrawExporter });
+                new ConfigurationManagerAttributes { CustomDrawer = DrawExporter, Order = 9999 });
 
             ExportPath = plugin.Config.Bind(DEFAULT_SECTION, "ExportPath", defaultExportPath, exportDescription);
         }
@@ -112,9 +117,11 @@ namespace SkinManagerMod
 
         private static void DrawExporter(ConfigEntryBase entry)
         {
-            GUILayout.Label("Texture Utility");
+            GUILayout.BeginVertical();
 
-            GUILayout.BeginHorizontal(GUILayout.Width(250));
+            GUILayout.Label(entry.BoxedValue.ToString(), GUILayout.ExpandWidth(true));
+
+            GUILayout.BeginHorizontal(GUILayout.ExpandWidth(true));
 
             GUILayout.BeginVertical();
 

@@ -238,6 +238,11 @@ namespace SkinManagerMod
             {
                 LoadSkinsFromFolder(folderPath, livery, forceSync);
             }
+            else
+            {
+                // create default directories if not exist
+                Directory.CreateDirectory(folderPath);
+            }
             
             if (Remaps.OldCarTypeIDs.TryGetValue(livery.v1, out string overhauledId))
             {
