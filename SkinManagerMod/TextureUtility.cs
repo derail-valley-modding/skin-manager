@@ -1,77 +1,49 @@
-﻿using System;
+﻿using DV.ThingTypes;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace SkinManagerMod
 {
     public static class TextureUtility
     {
+        private static readonly string[] standardShaderUniqueTextures = new[] { "_MainTex", "_BumpMap", "_MetallicGlossMap", "_EmissionMap" };
+        private static readonly string[] standardShaderAllTextures = new[] { "_MainTex", "_BumpMap", "_MetallicGlossMap", "_EmissionMap", "_OcclusionMap" };
+        private const string METAL_GLOSS_TEXTURE = "_MetallicGlossMap";
+        private const string OCCLUSION_TEXTURE = "_OcclusionMap";
+
         /// <summary>
         /// Export all textures associated with the given car type
         /// </summary>
-        public static void DumpTextures(TrainCarType trainCarType)
+        public static void DumpTextures(TrainCarLivery trainCarType)
         {
-            MeshRenderer[] cmps;
-            Dictionary<string, Texture> textureList;
-
-            var obj = CarTypes.GetCarPrefab(trainCarType);
-
-            var path = Path.Combine(Main.ModEntry.Path, "Exported", obj.name);
+            var path = Main.GetExportFolder(trainCarType.id);
 
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
             }
 
-            cmps = obj.GetComponentsInChildren<MeshRenderer>();
-            textureList = new Dictionary<string, Texture>();
+            var renderers = GetAllCarRenderers(trainCarType);
+            var textureList = new Dictionary<string, Texture>();
 
-            foreach (var cmp in cmps)
+            foreach (var renderer in renderers)
             {
-                if (!cmp.material)
+                if (!renderer.material)
                 {
                     continue;
                 }
 
-                var diffuse = GetMaterialTexture(cmp, "_MainTex");
-                var normal = GetMaterialTexture(cmp, "_BumpMap");
-                var specular = GetMaterialTexture(cmp, "_MetallicGlossMap");
-                var emission = GetMaterialTexture(cmp, "_EmissionMap");
+                var diffuse = GetMaterialTexture(renderer, "_MainTex");
+                var normal = GetMaterialTexture(renderer, "_BumpMap");
+                var specular = GetMaterialTexture(renderer, "_MetallicGlossMap");
+                var emission = GetMaterialTexture(renderer, "_EmissionMap");
 
                 ExportTexture(path, diffuse, textureList);
                 ExportTexture(path, normal, textureList, true);
                 ExportTexture(path, specular, textureList);
                 ExportTexture(path, emission, textureList);
-            }
-
-            var trainCar = obj.GetComponent<TrainCar>();
-
-            if (trainCar.interiorPrefab != null)
-            {
-                cmps = trainCar.interiorPrefab.GetComponentsInChildren<MeshRenderer>();
-                textureList = new Dictionary<string, Texture>();
-
-                foreach (var cmp in cmps)
-                {
-                    if (!cmp.material)
-                    {
-                        continue;
-                    }
-
-                    var diffuse = GetMaterialTexture(cmp, "_MainTex");
-                    var normal = GetMaterialTexture(cmp, "_BumpMap");
-                    var specular = GetMaterialTexture(cmp, "_MetallicGlossMap");
-                    var emission = GetMaterialTexture(cmp, "_EmissionMap");
-
-                    ExportTexture(path, diffuse, textureList);
-                    ExportTexture(path, normal, textureList, true);
-                    ExportTexture(path, specular, textureList);
-                    ExportTexture(path, emission, textureList);
-                }
             }
         }
 
@@ -171,13 +143,106 @@ namespace SkinManagerMod
             return cmp.material.GetTexture(materialName) as Texture2D;
         }
 
+        public static IEnumerable<Texture2D> EnumerateTextures(IEnumerable<MeshRenderer> renderers)
+        {
+            foreach (var renderer in renderers)
+            {
+                if (!renderer.material) continue;
+
+                foreach (string textureName in standardShaderUniqueTextures)
+                {
+                    if (GetMaterialTexture(renderer, textureName) is Texture2D texture)
+                    {
+                        yield return texture;
+                    }
+                }
+            }
+        }
+
+        public static IEnumerable<Texture2D> EnumerateTextures(TrainCarLivery livery)
+        {
+            var renderers = GetAllCarRenderers(livery);
+            return EnumerateTextures(renderers);
+        }
+
+        public static IEnumerable<MeshRenderer> GetAllCarRenderers(TrainCarLivery carType)
+        {
+            IEnumerable<MeshRenderer> cmps = carType.prefab.gameObject.GetComponentsInChildren<MeshRenderer>();
+
+            if (carType.interiorPrefab != null)
+            {
+                var interiorCmps = carType.interiorPrefab.GetComponentsInChildren<MeshRenderer>();
+                cmps = cmps.Concat(interiorCmps);
+            }
+
+            return cmps;
+        }
+
+        public static Dictionary<string, string> GetRendererTextureNames(IEnumerable<MeshRenderer> renderers)
+        {
+            var dict = new Dictionary<string, string>();
+
+            foreach (var renderer in renderers)
+            {
+                if (!renderer.material) continue;
+
+                foreach (string textureProperty in standardShaderUniqueTextures)
+                {
+                    if (GetMaterialTexture(renderer, textureProperty) is Texture2D texture)
+                    {
+                        dict[texture.name] = textureProperty;
+                    }
+                }
+            }
+
+            return dict;
+        }
+
         /// <summary>
         /// Set anisoLevel of imported textures to 5 for better visuals. (3 gives barely an improvement, anything over 9 is pointless)
         /// </summary>
         public static void SetTextureOptions(Texture2D tex)
         {
-            if (!Main.Settings.aniso5) return;
+            if (!Main.Settings.ExtraAnisotropic.Value) return;
             tex.anisoLevel = 5;
+        }
+
+        public static void ApplyTextures(MeshRenderer renderer, Skin skin, Skin defaultSkin)
+        {
+            foreach (string textureID in standardShaderAllTextures)
+            {
+                var currentTexture = GetMaterialTexture(renderer, textureID);
+
+                if (currentTexture != null)
+                {
+                    if (skin.ContainsTexture(currentTexture.name))
+                    {
+                        var skinTexture = skin.GetTexture(currentTexture.name);
+                        renderer.material.SetTexture(textureID, skinTexture.TextureData);
+
+                        if (textureID == METAL_GLOSS_TEXTURE)
+                        {
+                            if (!GetMaterialTexture(renderer, OCCLUSION_TEXTURE))
+                            {
+                                renderer.material.SetTexture(OCCLUSION_TEXTURE, skinTexture.TextureData);
+                            }
+                        }
+                    }
+                    else if ((defaultSkin != null) && defaultSkin.ContainsTexture(currentTexture.name))
+                    {
+                        var skinTexture = defaultSkin.GetTexture(currentTexture.name);
+                        renderer.material.SetTexture(textureID, skinTexture.TextureData);
+
+                        if (textureID == METAL_GLOSS_TEXTURE)
+                        {
+                            if (!GetMaterialTexture(renderer, OCCLUSION_TEXTURE))
+                            {
+                                renderer.material.SetTexture(OCCLUSION_TEXTURE, skinTexture.TextureData);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

@@ -14,7 +14,7 @@ namespace SkinManagerMod
         {
             JObject carsSaveData = SkinManager.GetCarsSaveData();
 
-            SaveGameManager.data.SetJObject("Mod_Skins", carsSaveData);
+            SaveGameManager.Instance.data.SetJObject("Mod_Skins", carsSaveData);
         }
     }
 
@@ -25,11 +25,11 @@ namespace SkinManagerMod
         {
             if( savedData == null )
             {
-                Main.ModEntry.Logger.Error("Given save data is null, loading will not be performed");
+                Main.Error("Given save data is null, loading will not be performed");
                 return;
             }
 
-            JObject carsSaveData = SaveGameManager.data.GetJObject("Mod_Skins");
+            JObject carsSaveData = SaveGameManager.Instance.data.GetJObject("Mod_Skins");
 
             if( carsSaveData != null )
             {

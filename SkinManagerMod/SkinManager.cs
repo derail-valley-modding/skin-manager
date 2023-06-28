@@ -1,5 +1,7 @@
-﻿using DV.JObjectExtstensions;
-using HarmonyLib;
+﻿using DV;
+using DV.CabControls.Spec;
+using DV.JObjectExtstensions;
+using DV.ThingTypes;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -11,60 +13,41 @@ namespace SkinManagerMod
 {
     public static class SkinManager
     {
-        private static readonly string[] standardShaderUniqueTextures = new[] { "_MainTex", "_BumpMap", "_MetallicGlossMap", "_EmissionMap" };
-        private static readonly string[] standardShaderAllTextures = new[] { "_MainTex", "_BumpMap", "_MetallicGlossMap", "_EmissionMap", "_OcclusionMap" };
-        private const string METAL_GLOSS_TEXTURE = "_MetallicGlossMap";
-        private const string OCCLUSION_TEXTURE = "_OcclusionMap";
+        //private static Dictionary<TrainCarType, string> CustomCarTypes;
 
-        private static readonly Dictionary<string, string> textureAliases = new Dictionary<string, string>
-        {
-            { "exterior_d", "body" },
-            { "LocoDiesel_exterior_d", "body" },
-            { "SH_exterior_d", "body" },
-            { "SH_tender_01d", "body" }
-        };
-
-        public static readonly TrainCarType[] DisabledCarTypes = new[]
-        {
-            TrainCarType.LocoSteamHeavyBlue,
-            TrainCarType.TenderBlue,
-            TrainCarType.LocoRailbus
-        };
-
-        public static Dictionary<TrainCarType, string> EnabledCarTypes { get; private set; }
-        private static Dictionary<TrainCarType, string> CustomCarTypes;
-
-        private static readonly Dictionary<TrainCarType, SkinGroup> skinGroups = new Dictionary<TrainCarType, SkinGroup>();
+        /// <summary>Livery ID to SkinGroup mapping</summary>
+        private static readonly Dictionary<string, SkinGroup> skinGroups = new Dictionary<string, SkinGroup>();
         public static IEnumerable<SkinGroup> AllSkinGroups => skinGroups.Values;
 
-        private static readonly Dictionary<TrainCarType, Skin> defaultSkins = new Dictionary<TrainCarType, Skin>();
+        /// <summary>Livery ID to default skin mapping</summary>
+        private static readonly Dictionary<string, Skin> defaultSkins = new Dictionary<string, Skin>();
 
         private static readonly Dictionary<string, string> carGuidToAppliedSkinMap = new Dictionary<string, string>();
 
         private static Skin lastSteamerSkin;
 
-        public static event Action<TrainCarType?> SkinsLoaded;
+        public static event Action<TrainCarLivery> SkinsLoaded;
 
-        public static Skin FindSkinByName(TrainCarType carType, string name)
+        public static Skin FindSkinByName(TrainCarLivery carType, string name)
         {
-            if (skinGroups.TryGetValue(carType, out var group))
+            if (skinGroups.TryGetValue(carType.id, out var group))
             {
                 return group.GetSkin(name);
             }
             return null;
         }
 
-        public static List<Skin> GetSkinsForType(TrainCarType carType, bool includeDefault = true)
+        public static List<Skin> GetSkinsForType(TrainCarLivery carType, bool includeDefault = true)
         {
-            if (skinGroups.TryGetValue(carType, out var group))
+            if (skinGroups.TryGetValue(carType.id, out var group))
             {
                 var result = group.Skins;
-                return includeDefault ? result.Append(defaultSkins[carType]).ToList() : result;
+                return includeDefault ? result.Append(defaultSkins[carType.id]).ToList() : result;
             }
-            return includeDefault ? new List<Skin>() { defaultSkins[carType] } : new List<Skin>();
+            return includeDefault ? new List<Skin>() { defaultSkins[carType.id] } : new List<Skin>();
         }
 
-        public static Skin GetNewSkin(TrainCarType carType)
+        public static Skin GetNewSkin(TrainCarLivery carType)
         {
             if (CarTypes.IsTender(carType) && (lastSteamerSkin != null))
             {
@@ -75,11 +58,11 @@ namespace SkinManagerMod
             }
 
             // random skin
-            if (skinGroups.TryGetValue(carType, out var group) && (group.Skins.Count > 0))
+            if (skinGroups.TryGetValue(carType.id, out var group) && (group.Skins.Count > 0))
             {
                 bool allowRandomDefault =
-                    (Main.Settings.defaultSkinsMode == SkinManagerSettings.DefaultSkinsMode.AllowForAllCars) ||
-                    (CustomCarTypes.ContainsKey(carType) && (Main.Settings.defaultSkinsMode == SkinManagerSettings.DefaultSkinsMode.AllowForCustomCars));
+                    (Main.Settings.DefaultSkinsUsage.Value == DefaultSkinsMode.AllowForAllCars);
+                    // || (CustomCarTypes.ContainsKey(carType) && (Main.Settings.defaultSkinsMode == SkinManagerSettings.DefaultSkinsMode.AllowForCustomCars));
 
                 int nChoices = allowRandomDefault ? group.Skins.Count + 1 : group.Skins.Count;
                 int choice = UnityEngine.Random.Range(0, nChoices);
@@ -90,30 +73,34 @@ namespace SkinManagerMod
             }
 
             // fall back to default skin
-            return defaultSkins[carType];
+            return defaultSkins[carType.id];
         }
 
+        /// <summary>Get the currently assigned skin for given car, or a new one if none is assigned</summary>
         public static Skin GetCurrentCarSkin(TrainCar car)
         {
             if (carGuidToAppliedSkinMap.TryGetValue(car.CarGUID, out var skinName))
             {
-                if (defaultSkins.TryGetValue(car.carType, out Skin defaultSkin) && (skinName == defaultSkin.Name))
+                if (defaultSkins.TryGetValue(car.carLivery.id, out Skin defaultSkin) && (skinName == defaultSkin.Name))
                 {
                     return defaultSkin;
                 }
 
-                if (FindSkinByName(car.carType, skinName) is Skin result)
+                if (FindSkinByName(car.carLivery, skinName) is Skin result)
                 {
                     return result;
                 }
             }
-            return GetNewSkin(car.carType);
+
+            return GetNewSkin(car.carLivery);
         }
 
+        /// <summary>Save the </summary>
         private static void SetAppliedCarSkin(TrainCar car, Skin skin)
         {
             carGuidToAppliedSkinMap[car.CarGUID] = skin.Name;
 
+            // TODO: support for CCL steam locos (this method only checks if == locosteamheavy)
             if (CarTypes.IsSteamLocomotive(car.carType))
             {
                 lastSteamerSkin = skin;
@@ -124,46 +111,32 @@ namespace SkinManagerMod
             }
         }
 
-        public static bool Initialize()
-        {
-            var fieldInfo = AccessTools.Field(typeof(CarTypes), "prefabMap");
-            if (fieldInfo?.GetValue(null) is Dictionary<TrainCarType, string> defaultMap)
-            {
-                EnabledCarTypes = new Dictionary<TrainCarType, string>(
-                    defaultMap.Where(t => !DisabledCarTypes.Contains(t.Key)).Concat(CCLPatch.CarList)
-                );
-                CustomCarTypes = new Dictionary<TrainCarType, string>(CCLPatch.CarList);
-                LoadSkins();
-                return true;
-            }
-            return false;
-        }
-
         //====================================================================================================
         #region Skin Loading
 
+        public static bool Initialize()
+        {
+            //CustomCarTypes = new Dictionary<TrainCarType, string>(CCLPatch.CarList);
+            LoadSkins();
+            return true;
+        }
+
         private static void LoadSkins()
         {
-            foreach ((TrainCarType carType, string carName) in EnabledCarTypes)
+            foreach (var livery in Globals.G.Types.Liveries)
             {
-                Skin defaultSkin = CreateDefaultSkin(carType, carType.DisplayName());
-                defaultSkins.Add(carType, defaultSkin);
+                Skin defaultSkin = CreateDefaultSkin(livery);
+                defaultSkins.Add(livery.id, defaultSkin);
 
-                skinGroups[carType] = new SkinGroup(carType);
+                skinGroups[livery.id] = new SkinGroup(livery);
 
-                var dir = Path.Combine(Main.ModEntry.Path, "Skins", carName);
-
-                if (Directory.Exists(dir))
-                {
-                    LoadSkinsForType(dir, carType);
-                }
+                LoadAllSkinsForType(livery);
             }
-
-            LoadCCLEmbeddedSkins();
 
             SkinsLoaded?.Invoke(null);
         }
 
+        /*
         /// <summary>
         /// Load any skins included in CCL car folders
         /// </summary>
@@ -201,19 +174,15 @@ namespace SkinManagerMod
                 }
             }
         }
+        */
 
-        public static void ReloadSkins(TrainCarType carType)
+        public static void ReloadSkins(TrainCarLivery livery)
         {
-            string carName = EnabledCarTypes[carType];
-            skinGroups[carType] = new SkinGroup(carType);
+            skinGroups[livery.id] = new SkinGroup(livery);
 
-            var dir = Path.Combine(Main.ModEntry.Path, "Skins", carName);
+            LoadAllSkinsForType(livery, true);
 
-            if (Directory.Exists(dir))
-            {
-                LoadSkinsForType(dir, carType, true);
-            }
-
+            /*
             if (CustomCarTypes.ContainsKey(carType))
             {
                 // also reload CCL embedded skins
@@ -243,11 +212,12 @@ namespace SkinManagerMod
                     }
                 }
             }
+            */
 
-            SkinsLoaded?.Invoke(carType);
+            SkinsLoaded?.Invoke(livery);
 
             // reapply skins to any cars of this type
-            var carsInScene = UnityEngine.Object.FindObjectsOfType<TrainCar>().Where(tc => tc.carType == carType);
+            var carsInScene = UnityEngine.Object.FindObjectsOfType<TrainCar>().Where(tc => tc.carLivery == livery);
             foreach (var car in carsInScene)
             {
                 var toApply = GetCurrentCarSkin(car);
@@ -260,88 +230,71 @@ namespace SkinManagerMod
             }
         }
 
-        private static void LoadSkinsForType(string skinsFolder, TrainCarType carType, bool forceSync = false)
+        private static void LoadAllSkinsForType(TrainCarLivery livery, bool forceSync = false)
         {
-            var skinGroup = skinGroups[carType];
-            var renderers = GetAllCarRenderers(carType);
+            string folderPath = Main.GetSkinFolder(livery.id);
 
-            foreach (string subDir in Directory.GetDirectories(skinsFolder))
+            if (Directory.Exists(folderPath))
             {
-                BeginLoadSkin(skinGroup, renderers, subDir, forceSync);
+                LoadSkinsFromFolder(folderPath, livery, forceSync);
+            }
+            
+            if (Remaps.OldCarTypeIDs.TryGetValue(livery.v1, out string overhauledId))
+            {
+                folderPath = Main.GetSkinFolder(overhauledId);
+
+                if (Directory.Exists(folderPath))
+                {
+                    LoadSkinsFromFolder(folderPath, livery, forceSync);
+                }
             }
         }
 
-        private static IEnumerable<MeshRenderer> GetAllCarRenderers(TrainCarType carType)
+        private static void LoadSkinsFromFolder(string skinsFolder, TrainCarLivery carType, bool forceSync = false)
         {
-            var carPrefab = CarTypes.GetCarPrefab(carType);
-            IEnumerable<MeshRenderer> cmps = carPrefab.gameObject.GetComponentsInChildren<MeshRenderer>();
+            var skinGroup = skinGroups[carType.id];
+            var renderers = TextureUtility.GetAllCarRenderers(carType);
+            var textures = TextureUtility.GetRendererTextureNames(renderers);
 
-            var trainCar = carPrefab.GetComponent<TrainCar>();
-
-            if (trainCar.interiorPrefab != null)
+            foreach (string subDir in Directory.GetDirectories(skinsFolder))
             {
-                var interiorCmps = trainCar.interiorPrefab.GetComponentsInChildren<MeshRenderer>();
-                cmps = cmps.Concat(interiorCmps);
+                BeginLoadSkin(skinGroup, textures, subDir, forceSync);
             }
-
-            return cmps;
         }
 
         /// <summary>
         /// Create a skin containing the default/starting textures of a car
         /// </summary>
-        private static Skin CreateDefaultSkin(TrainCarType carType, string typeName)
+        private static Skin CreateDefaultSkin(TrainCarLivery carType)
         {
-            GameObject carPrefab = CarTypes.GetCarPrefab(carType);
+            GameObject carPrefab = carType.prefab;
             if (carPrefab == null) return null;
 
             string skinDir = null;
-            if (CCLPatch.IsCustomCarType(carType))
+            //if (CCLPatch.IsCustomCarType(carType))
+            //{
+            //    skinDir = CCLPatch.GetCarFolder(carType);
+            //}
+
+            var defaultSkin = new Skin($"Default_{carType.id}", skinDir, isDefault: true);
+
+            foreach (var texture in TextureUtility.EnumerateTextures(carType))
             {
-                skinDir = CCLPatch.GetCarFolder(carType);
-            }
-
-            Skin defSkin = new Skin($"Default_{typeName}", skinDir, isDefault: true);
-
-            var renderers = carPrefab.gameObject.GetComponentsInChildren<MeshRenderer>();
-            foreach (var renderer in renderers)
-            {
-                if (!renderer.material) continue;
-
-                foreach (string textureName in standardShaderUniqueTextures)
+                if (!defaultSkin.ContainsTexture(texture.name))
                 {
-                    if (TextureUtility.GetMaterialTexture(renderer, textureName) is Texture2D texture)
-                    {
-                        defSkin.SkinTextures.Add(new SkinTexture(texture.name, texture));
-                    }
+                    defaultSkin.SkinTextures.Add(new SkinTexture(texture.name, texture));
                 }
             }
 
-            var trainCar = carPrefab.GetComponent<TrainCar>();
-
-            if (trainCar?.interiorPrefab)
-            {
-                foreach (var renderer in trainCar.interiorPrefab.GetComponentsInChildren<MeshRenderer>())
-                {
-                    if (!renderer.material) continue;
-
-                    foreach (string textureName in standardShaderUniqueTextures)
-                    {
-                        if (TextureUtility.GetMaterialTexture(renderer, textureName) is Texture2D texture)
-                        {
-                            defSkin.SkinTextures.Add(new SkinTexture(texture.name, texture));
-                        }
-                    }
-                }
-            }
-
-            return defSkin;
+            return defaultSkin;
         }
+
+        
 
         /// <summary>
         /// Create a skin from the given directory, load textures, and add it to the given group
         /// </summary>
-        private static void BeginLoadSkin(SkinGroup skinGroup, IEnumerable<MeshRenderer> renderers, string subDir, bool forceSync = false)
+        private static void BeginLoadSkin(SkinGroup skinGroup, Dictionary<string, string> textureNames, string subDir, bool forceSync = false)
         {
             var dirInfo = new DirectoryInfo(subDir);
             var files = dirInfo.GetFiles();
@@ -349,42 +302,27 @@ namespace SkinManagerMod
 
             var loading = new HashSet<string>();
 
-            bool Matches(Texture2D texture, string fileName)
-            {
-                return texture != null &&
-                    !loading.Contains(texture.name) &&
-                    (texture.name == fileName ||
-                        (textureAliases.TryGetValue(texture.name, out var alias) && alias == fileName));
-            }
-
             foreach (var file in files)
             {
                 if (!StbImage.IsSupportedExtension(file.Extension))
                     continue;
                 string fileName = Path.GetFileNameWithoutExtension(file.Name);
 
-                foreach (var renderer in renderers)
+                if (!loading.Contains(fileName) && textureNames.TryGetValue(fileName, out string textureProp))
                 {
-                    foreach (var textureName in standardShaderUniqueTextures)
-                    {
-                        var texture = TextureUtility.GetMaterialTexture(renderer, textureName);
-                        if (Matches(texture, fileName))
-                        {
-                            var linear = textureName == "_BumpMap";
-                            loading.Add(texture.name);
+                    var linear = textureProp == "_BumpMap";
+                    loading.Add(fileName);
 
-                            if (!forceSync && Main.Settings.parallelLoading)
-                            {
-                                skin.SkinTextures.Add(new SkinTexture(fileName, TextureLoader.Add(file, linear)));
-                            }
-                            else
-                            {
-                                TextureLoader.BustCache(file);
-                                var tex = new Texture2D(0, 0, textureFormat: TextureFormat.RGBA32, mipChain: true, linear: linear);
-                                tex.LoadImage(File.ReadAllBytes(file.FullName));
-                                skin.SkinTextures.Add(new SkinTexture(fileName, tex));
-                            }
-                        }
+                    if (!forceSync && Main.Settings.ParallelLoading.Value)
+                    {
+                        skin.SkinTextures.Add(new SkinTexture(fileName, TextureLoader.Add(file, linear)));
+                    }
+                    else
+                    {
+                        TextureLoader.BustCache(file);
+                        var tex = new Texture2D(0, 0, textureFormat: TextureFormat.RGBA32, mipChain: true, linear: linear);
+                        tex.LoadImage(File.ReadAllBytes(file.FullName));
+                        skin.SkinTextures.Add(new SkinTexture(fileName, tex));
                     }
                 }
             }
@@ -403,7 +341,7 @@ namespace SkinManagerMod
 
             //Main.ModEntry.Logger.Log($"Applying skin {skin.Name} to car {trainCar.ID}");
 
-            ApplySkin(trainCar.gameObject.transform, skin, defaultSkins[trainCar.carType]);
+            ApplySkin(trainCar.gameObject.transform, skin, defaultSkins[trainCar.carLivery.id]);
             if (trainCar.IsInteriorLoaded)
             {
                 ApplySkinToInterior(trainCar, skin);
@@ -416,7 +354,7 @@ namespace SkinManagerMod
         {
             if (skin == null) return;
 
-            ApplySkin(trainCar.interior, skin, defaultSkins[trainCar.carType]);
+            ApplySkin(trainCar.interior, skin, defaultSkins[trainCar.carLivery.id]);
         }
 
         private static void ApplySkin(Transform objectRoot, Skin skin, Skin defaultSkin)
@@ -428,40 +366,7 @@ namespace SkinManagerMod
                     continue;
                 }
 
-                foreach (string textureID in standardShaderAllTextures)
-                {
-                    var currentTexture = TextureUtility.GetMaterialTexture(renderer, textureID);
-
-                    if (currentTexture != null)
-                    {
-                        if (skin.ContainsTexture(currentTexture.name))
-                        {
-                            var skinTexture = skin.GetTexture(currentTexture.name);
-                            renderer.material.SetTexture(textureID, skinTexture.TextureData);
-
-                            if (textureID == METAL_GLOSS_TEXTURE)
-                            {
-                                if (!TextureUtility.GetMaterialTexture(renderer, OCCLUSION_TEXTURE))
-                                {
-                                    renderer.material.SetTexture(OCCLUSION_TEXTURE, skinTexture.TextureData);
-                                }
-                            }
-                        }
-                        else if ((defaultSkin != null) && defaultSkin.ContainsTexture(currentTexture.name))
-                        {
-                            var skinTexture = defaultSkin.GetTexture(currentTexture.name);
-                            renderer.material.SetTexture(textureID, skinTexture.TextureData);
-
-                            if (textureID == METAL_GLOSS_TEXTURE)
-                            {
-                                if (!TextureUtility.GetMaterialTexture(renderer, OCCLUSION_TEXTURE))
-                                {
-                                    renderer.material.SetTexture(OCCLUSION_TEXTURE, skinTexture.TextureData);
-                                }
-                            }
-                        }
-                    }
-                }
+                TextureUtility.ApplyTextures(renderer, skin, defaultSkin);
             }
         }
 
