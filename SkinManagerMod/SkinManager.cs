@@ -73,7 +73,11 @@ namespace SkinManagerMod
             }
 
             // fall back to default skin
-            return defaultSkins[carType.id];
+            if (defaultSkins.TryGetValue(carType.id, out Skin skin))
+            {
+                return skin;
+            }
+            return null;
         }
 
         /// <summary>Get the currently assigned skin for given car, or a new one if none is assigned</summary>
@@ -221,11 +225,15 @@ namespace SkinManagerMod
             foreach (var car in carsInScene)
             {
                 var toApply = GetCurrentCarSkin(car);
-                ApplySkin(car, toApply);
 
-                if (car.IsInteriorLoaded)
+                if (toApply != null)
                 {
-                    ApplySkinToInterior(car, toApply);
+                    ApplySkin(car, toApply);
+
+                    if (car.IsInteriorLoaded)
+                    {
+                        ApplySkinToInterior(car, toApply);
+                    }
                 }
             }
         }
