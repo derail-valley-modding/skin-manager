@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using DV.ThingTypes;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -74,10 +75,10 @@ namespace SkinManagerMod
 
     public class SkinGroup
     {
-        public readonly TrainCarType TrainCarType;
+        public readonly TrainCarLivery TrainCarType;
         public readonly List<Skin> Skins = new List<Skin>();
 
-        public SkinGroup(TrainCarType trainCarType)
+        public SkinGroup(TrainCarLivery trainCarType)
         {
             TrainCarType = trainCarType;
         }

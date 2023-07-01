@@ -1,73 +1,132 @@
-﻿using HarmonyLib;
+﻿using BepInEx;
+using BepInEx.Configuration;
+using DV;
+using DV.Localization;
+using DV.ThingTypes;
+using HarmonyLib;
+using System.ComponentModel;
+using System.IO;
 using System.Reflection;
 using UnityEngine;
-using UnityModManagerNet;
 
 namespace SkinManagerMod
 {
-    public static class Main
+    internal static class PluginInfo
     {
-        public static UnityModManager.ModEntry ModEntry { get; private set; }
+        public const string Guid = "SkinManagerMod";
+        public const string Name = "Skin Manager";
+        public const string Version = "3.0.0";
+
+        public const string ContentFolderName = "content";
+        public const string SkinFolderName = "skins";
+        public const string DefaultExportFolderName = "skin_export";
+    }
+
+    [BepInPlugin(PluginInfo.Guid, PluginInfo.Name, PluginInfo.Version)]
+    public class Main : BaseUnityPlugin
+    {
+        public static Main Instance { get; private set; }
         public static SkinManagerSettings Settings { get; private set; }
 
-        static bool Load(UnityModManager.ModEntry modEntry)
+        public static string SkinFolderPath { get; private set; }
+        public static string GetSkinFolder(string carId)
         {
-            ModEntry = modEntry;
-
-            // Load the settings
-            Settings = SkinManagerSettings.Load<SkinManagerSettings>(modEntry);
-
-            CCLPatch.Initialize();
-            if (!SkinManager.Initialize())
-            {
-                modEntry.Logger.Error("Failed to initialize skin manager");
-                return false;
-            }
-
-            var harmony = new Harmony(modEntry.Info.Id);
-            harmony.PatchAll(Assembly.GetExecutingAssembly());
-
-            modEntry.OnGUI = OnGUI;
-            modEntry.OnSaveGUI = OnSaveGUI;
-
-            QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
-
-            return true;
+            return Path.Combine(SkinFolderPath, carId);
         }
 
-        static Vector2 scrollViewVector = Vector2.zero;
-        static TrainCarType trainCarSelected = TrainCarType.NotSet;
-        static bool showDropdown = false;
-
-        private static readonly string[] defaultSkinModeTexts = new[]
+        public static string ExportFolderPath => Settings.ExportPath.Value;
+        public static string GetExportFolder(string carId)
         {
-            "Prefer Reskins",
-            "Random For Custom Cars",
-            "Random For All Cars"
-        };
+            return Path.Combine(ExportFolderPath, carId);
+        }
 
-        static void OnGUI(UnityModManager.ModEntry modEntry)
+        public void Awake()
         {
-            GUILayout.BeginVertical();
+            Instance = this;
+            SkinFolderPath = Path.Combine(Paths.BepInExRootPath, PluginInfo.ContentFolderName, PluginInfo.SkinFolderName);
 
-            bool newAniso = GUILayout.Toggle(Settings.aniso5, "Increase Anisotropic Filtering (Requires Manual Game Restart)");
-            if (newAniso != Settings.aniso5)
+            // Load the settings
+            Settings = new SkinManagerSettings(this);
+
+            //CCLPatch.Initialize();
+            if (!SkinManager.Initialize())
             {
-                Settings.aniso5 = newAniso;
+                Logger.LogError("Failed to initialize skin manager");
+                enabled = false;
+                return;
             }
-            Settings.parallelLoading = GUILayout.Toggle(Settings.parallelLoading, "Multi-threaded texture loading");
 
-            GUILayout.Label("Default skin usage:");
-            Settings.defaultSkinsMode = (SkinManagerSettings.DefaultSkinsMode)GUILayout.SelectionGrid((int)Settings.defaultSkinsMode, defaultSkinModeTexts, 1, "toggle");
-            GUILayout.Space(2);
+            var harmony = new Harmony(PluginInfo.Guid);
+            harmony.PatchAll(Assembly.GetExecutingAssembly());
 
-            GUILayout.Label("Texture Utility");
+            QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
+        }
 
-            GUILayout.BeginHorizontal(GUILayout.Width(250));
+        public static void Error(string message)
+        {
+            Instance.Logger.LogError(message);
+        }
+    }
+
+    public enum DefaultSkinsMode
+    {
+        [Description("Prefer Reskins")]
+        PreferReplacements,
+
+        [Description("Random For Custom Cars")]
+        AllowForCustomCars,
+
+        [Description("Random For All Cars")]
+        AllowForAllCars
+    }
+
+    public class SkinManagerSettings
+    {
+        private const string DEFAULT_SECTION = "General";
+
+        public readonly ConfigEntry<bool> ExtraAnisotropic;
+        public readonly ConfigEntry<bool> ParallelLoading;
+        public readonly ConfigEntry<DefaultSkinsMode> DefaultSkinsUsage;
+        public readonly ConfigEntry<string> ExportPath;
+
+        public SkinManagerSettings(Main plugin)
+        {
+            ExtraAnisotropic = plugin.Config.Bind(
+                DEFAULT_SECTION, "IncreasedAniso", true, 
+                "Increase Anisotropic Filtering (sharper textures from a distance)");
+
+            ParallelLoading = plugin.Config.Bind(
+                DEFAULT_SECTION, "ParallelLoading", true,
+                "Multi-threaded texture loading");
+
+            DefaultSkinsUsage = plugin.Config.Bind(
+                DEFAULT_SECTION, "DefaultSkinsUsage", DefaultSkinsMode.AllowForCustomCars);
+
+            string defaultExportPath = Path.Combine(Paths.BepInExRootPath, PluginInfo.ContentFolderName, PluginInfo.DefaultExportFolderName);
+            var exportDescription = new ConfigDescription(
+                "Directory for exported default textures", 
+                null,
+                new ConfigurationManagerAttributes { CustomDrawer = DrawExporter, Order = 9999 });
+
+            ExportPath = plugin.Config.Bind(DEFAULT_SECTION, "ExportPath", defaultExportPath, exportDescription);
+        }
+
+        private static Vector2 scrollViewVector = Vector2.zero;
+        private static TrainCarLivery trainCarSelected = null;
+        private static bool showDropdown = false;
+
+        private static void DrawExporter(ConfigEntryBase entry)
+        {
+            GUILayout.BeginVertical();
+
+            GUILayout.Label(entry.BoxedValue.ToString(), GUILayout.ExpandWidth(true));
+
+            GUILayout.BeginHorizontal(GUILayout.ExpandWidth(true));
 
             GUILayout.BeginVertical();
 
-            if (GUILayout.Button(trainCarSelected == TrainCarType.NotSet ? "Select Train Car" : SkinManager.EnabledCarTypes[trainCarSelected], GUILayout.Width(220)))
+            string typeLabel = (trainCarSelected != null) ? LocalizationAPI.L(trainCarSelected.localizationKey) : "Select Train Car";
+            if (GUILayout.Button(typeLabel, GUILayout.Width(220)))
             {
                 showDropdown = !showDropdown;
             }
@@ -76,12 +135,12 @@ namespace SkinManagerMod
             {
                 scrollViewVector = GUILayout.BeginScrollView(scrollViewVector, GUILayout.Height(350));
 
-                foreach (var entry in SkinManager.EnabledCarTypes)
+                foreach (var livery in Globals.G.Types.Liveries)
                 {
-                    if (GUILayout.Button(entry.Value, GUILayout.Width(220)))
+                    if (GUILayout.Button(LocalizationAPI.L(livery.localizationKey), GUILayout.Width(220)))
                     {
                         showDropdown = false;
-                        trainCarSelected = entry.Key;
+                        trainCarSelected = livery;
                     }
                 }
 
@@ -92,7 +151,7 @@ namespace SkinManagerMod
 
             GUILayout.EndHorizontal();
 
-            if (trainCarSelected != TrainCarType.NotSet)
+            if (trainCarSelected != null)
             {
                 if (GUILayout.Button("Export Textures", GUILayout.Width(180)))
                 {
@@ -106,32 +165,6 @@ namespace SkinManagerMod
             }
 
             GUILayout.EndVertical();
-        }
-
-        static void OnSaveGUI(UnityModManager.ModEntry modEntry)
-        {
-            Settings.Save(modEntry);
-        }
-    }
-
-
-    // Mod settings
-    public class SkinManagerSettings : UnityModManager.ModSettings
-    {
-        public enum DefaultSkinsMode
-        {
-            PreferReplacements,
-            AllowForCustomCars,
-            AllowForAllCars
-        }
-
-        public bool aniso5 = false;
-        public bool parallelLoading = true;
-        public DefaultSkinsMode defaultSkinsMode = DefaultSkinsMode.AllowForCustomCars;
-
-        public override void Save(UnityModManager.ModEntry modEntry)
-        {
-            Save(this, modEntry);
         }
     }
 }

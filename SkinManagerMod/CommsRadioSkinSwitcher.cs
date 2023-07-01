@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using DV;
+using DV.ThingTypes;
 using HarmonyLib;
 using UnityEngine;
 
@@ -187,7 +188,7 @@ namespace SkinManagerMod
                     break;
 
                 case State.SelectSkin:
-                    UpdateAvailableSkinsList(SelectedCar.carType);
+                    UpdateAvailableSkinsList(SelectedCar.carLivery);
                     SetSelectedSkin(SkinsForCarType?.FirstOrDefault());
 
                     ButtonBehaviour = ButtonBehaviourType.Override;
@@ -332,7 +333,7 @@ namespace SkinManagerMod
 
         #region Skin Shenanigans
 
-        private void UpdateAvailableSkinsList( TrainCarType carType )
+        private void UpdateAvailableSkinsList(TrainCarLivery carType)
         {
             SkinsForCarType = SkinManager.GetSkinsForType(carType);
             SelectedSkinIdx = 0;
@@ -350,10 +351,10 @@ namespace SkinManagerMod
             if( CarTypes.IsSteamLocomotive(SelectedCar.carType) && SelectedCar.rearCoupler.IsCoupled() )
             {
                 TrainCar attachedCar = SelectedCar.rearCoupler.coupledTo?.train;
-                if( (attachedCar != null) && CarTypes.IsTender(attachedCar.carType) )
+                if( (attachedCar != null) && CarTypes.IsTender(attachedCar.carLivery) )
                 {
                     // car attached behind loco is tender
-                    Skin tenderSkin = SkinManager.FindSkinByName(attachedCar.carType, SelectedSkin.Name);
+                    Skin tenderSkin = SkinManager.FindSkinByName(attachedCar.carLivery, SelectedSkin.Name);
                     if (tenderSkin != null)
                     {
                         // found a matching skin for the tender :D
