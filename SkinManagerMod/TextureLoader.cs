@@ -11,29 +11,26 @@ namespace SkinManagerMod
 {
     public static class TextureLoader
     {
-        public static Task<Texture2D> Add(FileInfo fileInfo, bool linear)
+        public static void BustCache(SkinConfig skin, string texturePath)
         {
-            var result = TryLoadFromCache(fileInfo, linear);
-            if (!result.IsCompleted || result.Result != null)
-                return result;
-            return Load(fileInfo, linear);
-        }
-
-        public static void BustCache(FileInfo fileInfo)
-        {
-            var cached = new FileInfo(GetCachePath(fileInfo.FullName));
+            var cached = new FileInfo(GetCachePath(skin, texturePath));
             if (cached.Exists)
             {
                 cached.Delete();
             }
         }
 
-        private static Task<Texture2D> TryLoadFromCache(FileInfo fileInfo, bool linear)
+        private static Task<Texture2D> TryLoadFromCache(SkinConfig skin, string texturePath, bool linear)
         {
-            var cached = new FileInfo(GetCachePath(fileInfo.FullName));
+            var texFile = new FileInfo(texturePath);
+            var cached = new FileInfo(GetCachePath(skin, texturePath));
+
             if (!cached.Exists)
+            {
                 return Task.FromResult<Texture2D>(null);
-            if (cached.LastWriteTimeUtc < fileInfo.LastWriteTimeUtc)
+            }
+
+            if (cached.LastWriteTimeUtc < texFile.LastWriteTimeUtc)
             {
                 cached.Delete();
                 return Task.FromResult<Texture2D>(null);
@@ -42,37 +39,50 @@ namespace SkinManagerMod
             return DDSUtils.ReadDDSGz(cached, linear);
         }
 
-        private static Task<Texture2D> Load(FileInfo fileInfo, bool linear)
+        public static Task<Texture2D> LoadAsync(SkinConfig skin, string texturePath, bool linear)
         {
-            var info = StbImage.GetImageInfo(fileInfo.FullName);
+            var cached = TryLoadFromCache(skin, texturePath, linear);
+            if (!cached.IsCompleted || cached.Result != null)
+            {
+                return cached;
+            }
+
+            var info = StbImage.GetImageInfo(texturePath);
             var texture = new Texture2D(info.width, info.height,
                 info.componentCount > 3 ? TextureFormat.DXT5 : TextureFormat.DXT1,
                 mipChain: true, linear);
             var nativeArray = texture.GetRawTextureData<byte>();
             return Task.Run(() =>
             {
-                PopulateTexture(fileInfo, info.componentCount > 3, nativeArray);
-                var cachePath = GetCachePath(fileInfo.FullName);
+                PopulateTexture(texturePath, info.componentCount > 3, nativeArray);
+                string cachePath = GetCachePath(skin, texturePath);
                 Directory.CreateDirectory(Path.GetDirectoryName(cachePath));
                 DDSUtils.WriteDDSGz(new FileInfo(cachePath), texture);
                 return texture;
             });
         }
 
-        private static string GetCachePath(string path)
+        public static Texture2D LoadSync(SkinConfig skin, string texturePath, bool linear)
         {
-            var sep = Path.DirectorySeparatorChar;
-            var cacheDirName = Path.GetDirectoryName(path.Replace(sep + "Skins" + sep, sep + "Cache" + sep));
-            var cacheFileName = Path.GetFileNameWithoutExtension(path) + ".dds.gz";
-            return Path.Combine(cacheDirName, cacheFileName);
+            var texture = new Texture2D(0, 0, textureFormat: TextureFormat.RGBA32, mipChain: true, linear: linear);
+            texture.LoadImage(File.ReadAllBytes(texturePath));
+
+            return texture;
         }
 
-        private static void PopulateTexture(FileInfo path, bool hasAlpha, NativeArray<byte> dest)
+        private static string GetCachePath(SkinConfig skin, string texturePath)
+        {
+            // SkinManagerMod/Cache/<carId>/<skinName>/<textureName>.dds.gz
+            string cacheFileName = Path.GetFileNameWithoutExtension(texturePath) + ".dds.gz";
+            return Path.Combine(Main.CacheFolderPath, skin.CarId, skin.Name, cacheFileName);
+        }
+
+        private static void PopulateTexture(string path, bool hasAlpha, NativeArray<byte> dest)
         {
             unsafe
             {
                 StbImage.ReadAndCompressImageWithMipmaps(
-                    path.FullName,
+                    path,
                     flipVertically: true,
                     useAlpha: hasAlpha,
                     (IntPtr)dest.GetUnsafePtr(),
@@ -129,7 +139,7 @@ namespace SkinManagerMod
             var outfile = new GZipStream(fileInfo.OpenWrite(), CompressionLevel.Optimal);
             outfile.Write(DDSHeader(texture.width, texture.height, texture.format == TextureFormat.DXT5, texture.mipmapCount), 0, 128);
             var data = texture.GetRawTextureData<byte>().ToArray();
-            Debug.Log($"Writing to {fileInfo.FullName}");
+            Main.Log($"Writing to {fileInfo.FullName}");
             outfile.Write(data, 0, data.Length);
             outfile.Close();
         }
@@ -166,6 +176,7 @@ namespace SkinManagerMod
                 if (bytesRead < nativeArray.Length)
                     throw new Exception($"{fileInfo.FullName}: Expected {nativeArray.Length} bytes, but file contained {bytesRead}");
                 nativeArray.CopyFrom(buf);
+                infile.Close();
                 return texture;
             });
         }

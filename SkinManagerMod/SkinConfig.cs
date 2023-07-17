@@ -17,13 +17,13 @@ namespace SkinManagerMod
         public string CarId;
 
         [JsonIgnore]
-        public TrainCarLivery livery;
+        public TrainCarLivery Livery;
 
         [JsonIgnore]
-        public string folderPath;
+        public string FolderPath;
 
         [JsonIgnore]
-        public Skin skin;
+        public Skin Skin;
 
         public static SkinConfig LoadFromFile(string filePath)
         {
@@ -32,11 +32,11 @@ namespace SkinManagerMod
                 string contents = File.ReadAllText(filePath);
                 var result = JsonConvert.DeserializeObject<SkinConfig>(contents);
 
-                result.folderPath = Path.GetDirectoryName(filePath);
-                result.livery = Globals.G.Types.Liveries
+                result.FolderPath = Path.GetDirectoryName(filePath);
+                result.Livery = Globals.G.Types.Liveries
                     .FirstOrDefault(l => string.Equals(l.id, result.CarId, StringComparison.OrdinalIgnoreCase));
 
-                if (result.livery != null)
+                if (result.Livery != null)
                 {
                     return result;
                 }

@@ -17,8 +17,9 @@ namespace SkinManagerMod
         public const string Version = "3.0.0";
 
         public const string ContentFolderName = "content";
-        public const string SkinFolderName = "skins";
-        public const string DefaultExportFolderName = "skin_export";
+        public const string SkinFolderName = "Skins";
+        public const string ExportFolderName = "Exported";
+        public const string CacheFolderName = "Cache";
     }
 
     public static class Main
@@ -26,11 +27,19 @@ namespace SkinManagerMod
         public static UnityModManager.ModEntry Instance { get; private set; }
         public static SkinManagerSettings Settings { get; private set; }
 
-        public static string SkinFolderPath { get; private set; }
-        public static string GetSkinFolder(string carId)
+        public static string SkinFolderPath => Path.Combine(Instance.Path, PluginInfo.SkinFolderName);
+        public static string GetSkinFolderForCar(string carId)
         {
             return Path.Combine(SkinFolderPath, carId);
         }
+
+        public static string ExportFolderPath => Path.Combine(Instance.Path, PluginInfo.ExportFolderName);
+        public static string GetExportFolderForCar(string carId)
+        {
+            return Path.Combine(ExportFolderPath, carId);
+        }
+
+        public static string CacheFolderPath => Path.Combine(Instance.Path, PluginInfo.CacheFolderName);
 
         public static bool Load(UnityModManager.ModEntry modEntry)
         {
@@ -121,9 +130,9 @@ namespace SkinManagerMod
                 }
             }
 
-            if (GUILayout.Button("Reload Skins (Warning: Slow!)", GUILayout.Width(180)))
+            if (GUILayout.Button("Reload Skins (Warning: Slow!)", GUILayout.Width(220)))
             {
-                SkinProvider.ReloadAllSkins();
+                SkinProvider.ReloadAllSkins(true);
             }
 
             GUILayout.EndVertical();
@@ -159,15 +168,9 @@ namespace SkinManagerMod
 
     public class SkinManagerSettings : UnityModManager.ModSettings
     {
-        private const string DEFAULT_SECTION = "General";
-
         public bool aniso5 = true;
         public bool parallelLoading = true;
         public DefaultSkinsMode defaultSkinsMode = DefaultSkinsMode.AllowForCustomCars;
-
-        private static Vector2 scrollViewVector = Vector2.zero;
-        private static TrainCarLivery trainCarSelected = null;
-        private static bool showDropdown = false;
 
         public override void Save(UnityModManager.ModEntry modEntry)
         {

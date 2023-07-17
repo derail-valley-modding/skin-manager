@@ -115,11 +115,11 @@ namespace SkinManagerMod
             return true;
         }
 
-        public static void ReloadAllSkins()
+        public static void ReloadAllSkins(bool forceSync = false)
         {
             foreach (var mod in UnityModManager.modEntries)
             {
-                ReloadSkinMod(mod);
+                ReloadSkinMod(mod, forceSync);
             }
         }
 
@@ -132,7 +132,6 @@ namespace SkinManagerMod
 
             foreach (string file in Directory.EnumerateFiles(mod.Path, "skin.json", SearchOption.AllDirectories))
             {
-                Main.Log($"Found config: {file}");
                 if (SkinConfig.LoadFromFile(file) is SkinConfig config)
                 {
                     result.Configs.Add(config);
@@ -146,7 +145,7 @@ namespace SkinManagerMod
         {
             if (nowActive)
             {
-                ReloadSkinMod(mod, true);
+                ReloadSkinMod(mod, WorldStreamingInit.IsStreamingDone); // force synchronous if in-game
                 SkinsLoaded?.Invoke();
             }
             else
@@ -159,7 +158,7 @@ namespace SkinManagerMod
 
                     foreach (var config in currentConfig)
                     {
-                        skinGroups[config.CarId].Skins.Remove(config.skin);
+                        skinGroups[config.CarId].Skins.Remove(config.Skin);
                         SkinDisabled?.Invoke(config);
                     }
                 }
@@ -181,7 +180,7 @@ namespace SkinManagerMod
 
                 foreach (var config in currentConfig)
                 {
-                    skinGroups[config.CarId].Skins.Remove(config.skin);
+                    skinGroups[config.CarId].Skins.Remove(config.Skin);
                     removedSkins.AddLast(config);
                 }
             }
@@ -203,6 +202,8 @@ namespace SkinManagerMod
                         updatedSkins.Add(config);
                     }
                 }
+
+                skinConfigs.AddLast(newConfig);
             }
 
             // emit events
@@ -288,26 +289,37 @@ namespace SkinManagerMod
         /// <param name="forceSync">Force loading of texture files to finish before returning</param>
         private static void BeginLoadSkin(SkinConfig config, bool forceSync = false)
         {
-            var files = new DirectoryInfo(config.folderPath).GetFiles();
-            var skin = new Skin(config.Name, config.folderPath);
+            if (forceSync)
+            {
+                Main.Log($"Synchronous loading {config.Name} @ {config.FolderPath}");
+            }
+            else
+            {
+                Main.Log($"Async loading {config.Name} @ {config.FolderPath}");
+            }
+
+            var skin = new Skin(config.Name, config.FolderPath);
+            config.Skin = skin;
 
             // find correct group, remove existing skin
-            var skinGroup = skinGroups[config.livery.id];
+            var skinGroup = skinGroups[config.Livery.id];
             if (skinGroup.Skins.Find(s => s.Name == config.Name) is Skin existingSkin)
             {
                 skinGroup.Skins.Remove(existingSkin);
             }
 
-            var textureNames = GetCarTextureDictionary(config.livery);
+            var textureNames = GetCarTextureDictionary(config.Livery);
 
             var loading = new HashSet<string>();
 
             // load skin files from directory
-            foreach (var file in files)
+            var files = Directory.EnumerateFiles(config.FolderPath);
+            foreach (var texturePath in files)
             {
-                if (!StbImage.IsSupportedExtension(file.Extension))
+                if (!StbImage.IsSupportedExtension(Path.GetExtension(texturePath)))
                     continue;
-                string fileName = Path.GetFileNameWithoutExtension(file.Name);
+
+                string fileName = Path.GetFileNameWithoutExtension(texturePath);
 
                 if (!loading.Contains(fileName) && TryGetTextureForFilename(skinGroup.TrainCarType.v1, ref fileName, textureNames, out string textureProp))
                 {
@@ -316,14 +328,12 @@ namespace SkinManagerMod
 
                     if (!forceSync && Main.Settings.parallelLoading)
                     {
-                        skin.SkinTextures.Add(new SkinTexture(fileName, TextureLoader.Add(file, linear)));
+                        skin.SkinTextures.Add(new SkinTexture(fileName, TextureLoader.LoadAsync(config, texturePath, linear)));
                     }
                     else
                     {
-                        TextureLoader.BustCache(file);
-                        var tex = new Texture2D(0, 0, textureFormat: TextureFormat.RGBA32, mipChain: true, linear: linear);
-                        tex.LoadImage(File.ReadAllBytes(file.FullName));
-                        skin.SkinTextures.Add(new SkinTexture(fileName, tex));
+                        TextureLoader.BustCache(config, texturePath);
+                        skin.SkinTextures.Add(new SkinTexture(fileName, TextureLoader.LoadSync(config, texturePath, linear)));
                     }
                 }
             }

@@ -20,7 +20,7 @@ namespace SkinManagerMod
 
         private static void ReapplySkinToUsers(SkinConfig skinConfig)
         {
-            var carsInScene = Object.FindObjectsOfType<TrainCar>().Where(tc => tc.carLivery == skinConfig.livery);
+            var carsInScene = Object.FindObjectsOfType<TrainCar>().Where(tc => tc.carLivery == skinConfig.Livery);
             foreach (var car in carsInScene)
             {
                 var toApply = GetCurrentCarSkin(car);
