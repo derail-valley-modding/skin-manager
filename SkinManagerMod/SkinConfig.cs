@@ -25,6 +25,16 @@ namespace SkinManagerMod
         [JsonIgnore]
         public Skin Skin;
 
+        public SkinConfig() { }
+
+        public SkinConfig(string name, string folderPath, TrainCarLivery livery)
+        {
+            Name = name;
+            FolderPath = folderPath;
+            Livery = livery;
+            CarId = livery.id;
+        }
+
         public static SkinConfig LoadFromFile(string filePath)
         {
             try

@@ -16,7 +16,6 @@ namespace SkinManagerMod
         public const string Name = "Skin Manager";
         public const string Version = "3.0.0";
 
-        public const string ContentFolderName = "content";
         public const string SkinFolderName = "Skins";
         public const string ExportFolderName = "Exported";
         public const string CacheFolderName = "Cache";
@@ -26,12 +25,7 @@ namespace SkinManagerMod
     {
         public static UnityModManager.ModEntry Instance { get; private set; }
         public static SkinManagerSettings Settings { get; private set; }
-
-        public static string SkinFolderPath => Path.Combine(Instance.Path, PluginInfo.SkinFolderName);
-        public static string GetSkinFolderForCar(string carId)
-        {
-            return Path.Combine(SkinFolderPath, carId);
-        }
+        
 
         public static string ExportFolderPath => Path.Combine(Instance.Path, PluginInfo.ExportFolderName);
         public static string GetExportFolderForCar(string carId)
@@ -146,6 +140,11 @@ namespace SkinManagerMod
         public static void Log(string message)
         {
             Instance.Logger.Log(message);
+        }
+
+        public static void Warning(string message)
+        {
+            Instance.Logger.Warning(message);
         }
 
         public static void Error(string message)

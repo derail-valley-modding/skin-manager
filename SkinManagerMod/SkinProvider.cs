@@ -107,6 +107,7 @@ namespace SkinManagerMod
             }
 
             ReloadAllSkins();
+            LoadLegacySkins();
 
             UnityModManager.toggleModsListen += HandleSkinModToggle;
 
@@ -287,7 +288,7 @@ namespace SkinManagerMod
         /// Create a skin from the given directory, load textures, and add it to the given group
         /// </summary>
         /// <param name="forceSync">Force loading of texture files to finish before returning</param>
-        private static void BeginLoadSkin(SkinConfig config, bool forceSync = false)
+        internal static void BeginLoadSkin(SkinConfig config, bool forceSync = false)
         {
             if (forceSync)
             {
@@ -344,5 +345,63 @@ namespace SkinManagerMod
         #endregion
 
 
+        //====================================================================================================
+        #region Legacy Skins
+
+        private static string OverhauledSkinFolder => Path.Combine(Main.Instance.Path, PluginInfo.SkinFolderName);
+        private static string BepInExSkinFolder => Path.Combine(Environment.CurrentDirectory, "BepInEx", "content", "skins");
+
+        private static void LoadLegacySkins()
+        {
+            var result = new ModSkinCollection(Main.Instance);
+
+            foreach (var livery in Globals.G.Types.Liveries)
+            {
+                result.Configs.AddRange(LoadAllSkinsForType(OverhauledSkinFolder, livery));
+                result.Configs.AddRange(LoadAllSkinsForType(BepInExSkinFolder, livery));
+            }
+
+            skinConfigs.AddLast(result);
+        }
+
+        private static IEnumerable<SkinConfig> LoadAllSkinsForType(string parentFolder, TrainCarLivery livery)
+        {
+            string folderPath = Path.Combine(parentFolder, livery.id);
+
+            if (Directory.Exists(folderPath))
+            {
+                foreach (var skin in LoadSkinsFromFolder(folderPath, livery))
+                {
+                    yield return skin;
+                }
+            }
+
+            if (Remaps.OldCarTypeIDs.TryGetValue(livery.v1, out string overhauledId))
+            {
+                folderPath = Path.Combine(parentFolder, overhauledId);
+
+                if (Directory.Exists(folderPath))
+                {
+                    foreach (var skin in LoadSkinsFromFolder(folderPath, livery))
+                    {
+                        yield return skin;
+                    }
+                }
+            }
+        }
+
+        private static IEnumerable<SkinConfig> LoadSkinsFromFolder(string skinsFolder, TrainCarLivery carType)
+        {
+            foreach (string subDir in Directory.EnumerateDirectories(skinsFolder))
+            {
+                string name = Path.GetFileName(subDir);
+                var config = new SkinConfig(name, subDir, carType);
+                BeginLoadSkin(config, false);
+
+                yield return config;
+            }
+        }
+
+        #endregion
     }
 }
