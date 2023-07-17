@@ -18,7 +18,7 @@ namespace SkinManagerMod
         /// </summary>
         public static void DumpTextures(TrainCarLivery trainCarType)
         {
-            var path = Main.GetExportFolder(trainCarType.id);
+            var path = Path.Combine(Main.Instance.Path, "Exported", trainCarType.id);
 
             if (!Directory.Exists(path))
             {
@@ -203,7 +203,7 @@ namespace SkinManagerMod
         /// </summary>
         public static void SetTextureOptions(Texture2D tex)
         {
-            if (!Main.Settings.ExtraAnisotropic.Value) return;
+            if (!Main.Settings.aniso5) return;
             tex.anisoLevel = 5;
         }
 
