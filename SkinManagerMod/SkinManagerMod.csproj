@@ -79,7 +79,6 @@
     <Compile Include="SkinConfig.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Remaps.cs" />
     <Compile Include="SaveLoadPatches.cs" />
     <Compile Include="SkinManager.cs" />
     <Compile Include="SkinProvider.cs" />
@@ -88,6 +87,7 @@
     <Compile Include="TextureLoader.cs" />
     <Compile Include="TextureUtility.cs" />
   </ItemGroup>
+  <Import Project="..\SMShared\SMShared.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>

@@ -1,5 +1,6 @@
 ﻿using DV;
 using DV.ThingTypes;
+using SMShared;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -131,7 +132,7 @@ namespace SkinManagerMod
         {
             var result = new ModSkinCollection(mod);
 
-            foreach (string file in Directory.EnumerateFiles(mod.Path, "skin.json", SearchOption.AllDirectories))
+            foreach (string file in Directory.EnumerateFiles(mod.Path, Constants.SKIN_CONFIG_FILE, SearchOption.AllDirectories))
             {
                 if (SkinConfig.LoadFromFile(file) is SkinConfig config)
                 {
@@ -317,7 +318,7 @@ namespace SkinManagerMod
             var files = Directory.EnumerateFiles(config.FolderPath);
             foreach (var texturePath in files)
             {
-                if (!StbImage.IsSupportedExtension(Path.GetExtension(texturePath)))
+                if (!Constants.IsSupportedExtension(Path.GetExtension(texturePath)))
                     continue;
 
                 string fileName = Path.GetFileNameWithoutExtension(texturePath);
@@ -348,7 +349,7 @@ namespace SkinManagerMod
         //====================================================================================================
         #region Legacy Skins
 
-        private static string OverhauledSkinFolder => Path.Combine(Main.Instance.Path, PluginInfo.SkinFolderName);
+        private static string OverhauledSkinFolder => Path.Combine(Main.Instance.Path, Constants.SKIN_FOLDER_NAME);
         private static string BepInExSkinFolder => Path.Combine(Environment.CurrentDirectory, "BepInEx", "content", "skins");
 
         private static void LoadLegacySkins()
@@ -376,7 +377,7 @@ namespace SkinManagerMod
                 }
             }
 
-            if (Remaps.OldCarTypeIDs.TryGetValue(livery.v1, out string overhauledId))
+            if (Remaps.TryGetOldTrainCarId(livery.v1, out string overhauledId))
             {
                 folderPath = Path.Combine(parentFolder, overhauledId);
 

@@ -7,33 +7,23 @@ using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using UnityEngine;
+using SMShared;
 
 namespace SkinManagerMod
 {
-    internal static class PluginInfo
-    {
-        public const string Guid = "SkinManagerMod";
-        public const string Name = "Skin Manager";
-        public const string Version = "3.0.0";
-
-        public const string SkinFolderName = "Skins";
-        public const string ExportFolderName = "Exported";
-        public const string CacheFolderName = "Cache";
-    }
-
     public static class Main
     {
         public static UnityModManager.ModEntry Instance { get; private set; }
         public static SkinManagerSettings Settings { get; private set; }
         
 
-        public static string ExportFolderPath => Path.Combine(Instance.Path, PluginInfo.ExportFolderName);
+        public static string ExportFolderPath => Path.Combine(Instance.Path, Constants.EXPORT_FOLDER_NAME);
         public static string GetExportFolderForCar(string carId)
         {
             return Path.Combine(ExportFolderPath, carId);
         }
 
-        public static string CacheFolderPath => Path.Combine(Instance.Path, PluginInfo.CacheFolderName);
+        public static string CacheFolderPath => Path.Combine(Instance.Path, Constants.CACHE_FOLDER_NAME);
 
         public static bool Load(UnityModManager.ModEntry modEntry)
         {
@@ -48,7 +38,7 @@ namespace SkinManagerMod
             }
             SkinManager.Initialize();
 
-            var harmony = new Harmony(PluginInfo.Guid);
+            var harmony = new Harmony(Constants.MOD_ID);
             harmony.PatchAll(Assembly.GetExecutingAssembly());
 
             Instance.OnGUI = OnGUI;
