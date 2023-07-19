@@ -160,31 +160,33 @@ namespace SkinManagerMod
 
         public static Task<Texture2D> ReadDDSGz(FileInfo fileInfo, bool linear)
         {
-            using (GZipStream infile = new GZipStream(fileInfo.OpenRead(), CompressionMode.Decompress))
+            GZipStream infile = new GZipStream(fileInfo.OpenRead(), CompressionMode.Decompress);
+
+            var buf = new byte[4096];
+            var bytesRead = infile.Read(buf, 0, 128);
+            if (bytesRead != 128 || Encoding.ASCII.GetString(buf, 0, 4) != "DDS ")
+                throw new DDSReadException("File is not a DDS file");
+
+            int height = BitConverter.ToInt32(buf, 12);
+            int width = BitConverter.ToInt32(buf, 16);
+
+            int pixelFormatFlags = BitConverter.ToInt32(buf, 80);
+            if ((pixelFormatFlags & 0x4) == 0)
+                throw new DDSReadException("DDS header does not have a FourCC");
+            string fourCC = Encoding.ASCII.GetString(buf, 84, 4);
+            TextureFormat pixelFormat;
+            switch (fourCC)
             {
-                var buf = new byte[4096];
-                var bytesRead = infile.Read(buf, 0, 128);
-                if (bytesRead != 128 || Encoding.ASCII.GetString(buf, 0, 4) != "DDS ")
-                    throw new DDSReadException("File is not a DDS file");
+                case "DXT1": pixelFormat = TextureFormat.DXT1; break;
+                case "DXT5": pixelFormat = TextureFormat.DXT5; break;
+                default: throw new DDSReadException($"Unknown FourCC: {fourCC}");
+            }
 
-                int height = BitConverter.ToInt32(buf, 12);
-                int width = BitConverter.ToInt32(buf, 16);
-
-                int pixelFormatFlags = BitConverter.ToInt32(buf, 80);
-                if ((pixelFormatFlags & 0x4) == 0)
-                    throw new DDSReadException("DDS header does not have a FourCC");
-                string fourCC = Encoding.ASCII.GetString(buf, 84, 4);
-                TextureFormat pixelFormat;
-                switch (fourCC)
-                {
-                    case "DXT1": pixelFormat = TextureFormat.DXT1; break;
-                    case "DXT5": pixelFormat = TextureFormat.DXT5; break;
-                    default: throw new DDSReadException($"Unknown FourCC: {fourCC}");
-                }
-
-                var texture = new Texture2D(width, height, pixelFormat, true, linear);
-                var nativeArray = texture.GetRawTextureData<byte>();
-                return Task.Run(() =>
+            var texture = new Texture2D(width, height, pixelFormat, true, linear);
+            var nativeArray = texture.GetRawTextureData<byte>();
+            return Task.Run(() =>
+            {
+                using (infile)
                 {
                     buf = new byte[nativeArray.Length];
                     bytesRead = infile.Read(buf, 0, nativeArray.Length);
@@ -192,8 +194,8 @@ namespace SkinManagerMod
                         throw new DDSReadException($"{fileInfo.FullName}: Expected {nativeArray.Length} bytes, but file contained {bytesRead}");
                     nativeArray.CopyFrom(buf);
                     return texture;
-                });
-            }
+                }
+            });
         }
     }
 }
