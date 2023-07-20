@@ -78,7 +78,7 @@ namespace SkinManagerMod
             //Main.ModEntry.Logger.Log($"Applying skin {skin.Name} to car {trainCar.ID}");
 
             ApplySkin(trainCar.gameObject.transform, skin, SkinProvider.GetDefaultSkin(trainCar.carLivery.id));
-            if (trainCar.IsInteriorLoaded || trainCar.AreExternalInteractablesLoaded)
+            if (trainCar.interior)
             {
                 ApplySkinToInterior(trainCar, skin);
             }
