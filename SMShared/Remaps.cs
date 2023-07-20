@@ -79,6 +79,7 @@ namespace SMShared
 
             public static readonly char[] DE = { 'd', 'e' };
             public static readonly char[] DS = { 'd', 's' };
+            public static readonly char[] SN = { 's', 'n' };
             public static readonly char[] DNS = { 'd', 'n', 's' };
 
             public void Add(string oldName, string newName)
@@ -144,18 +145,84 @@ namespace SMShared
                         { "CabooseInterior_", "CarCabooseRed_Interior_01", TextureMapping.DNS },
                     }
                 },
+
+                // Boxcars
+                {
+                    "BoxcarMilitary",
+                    new TextureMapping
+                    {
+                        { "CarMilitaryBoxcar_", "CarBoxcarMilitary_01", TextureMapping.DS },
+                        { "CarMilitaryBoxcar_n", "CarBoxcar_Paint_01n" },
+                    }
+                },
+                {
+                    "RefrigeratorWhite",
+                    new TextureMapping
+                    {
+                        { "Refrigerated_boxcar_", "CarRefrigerator_", TextureMapping.DNS },
+                    }
+                },
+
+                {
+                    "NuclearFlask",
+                    new TextureMapping
+                    {
+                        { "CarFlaskCarrier_", "CarNuclearFlask_", TextureMapping.DNS },
+                    }
+                },
+
+                // Passenger Cars
+                {
+                    "PassengerBlue",
+                    new TextureMapping
+                    {
+                        { "CarPassengerBlue_d", "CarPassengerBlue_01d" },
+                        { "CarPassengerClassII_s", "CarPassengerClassII_01s" },
+                        { "CarPassenger_n", "CarPassenger_01n" }
+                    }
+                },
+                {
+                    "PassengerGreen",
+                    new TextureMapping
+                    {
+                        { "CarPassengerGreen_d", "CarPassengerGreen_01d" },
+                        { "CarPassengerClassI_s", "CarPassengerClassI_01s" },
+                        { "CarPassenger_n", "CarPassenger_01n" }
+                    }
+                },
+                {
+                    "PassengerRed",
+                    new TextureMapping
+                    {
+                        { "CarPassengerRed_d", "CarPassengerRed_01d" },
+                        { "CarPassengerClassII_s", "CarPassengerClassII_01s" },
+                        { "CarPassenger_n", "CarPassenger_01n" }
+                    }
+                },
             };
 
         static Remaps()
         {
             _newToOldCarIdMap = _oldToNewCarIdMap.ToDictionary(kvp => kvp.Value, kvp => kvp.Key);
 
+            // Autorack Colors
+            var autoTypes = new[] { "Blue", "Green", "Red", "Yellow" };
+
+            foreach (string color in autoTypes)
+            {
+                _legacyTextureNameMap.Add($"Autorack{color}", new TextureMapping
+                {
+                    { $"CarAutorack{color}_d", $"CarAutorack{color}_01d" },
+                    { $"CarAutorack{color}_", "CarAutorack_01", TextureMapping.SN },
+                });
+            }
+
+            // Tanker Colors
             var tankerTypes = new[]
             {
                 ("Black", "CarTankNoPaint_01n"),
                 ("Blue", "CarTankNoPaint_01n"),
                 ("Chrome", "CarTankNoPaint_01n"),
-                ("Orange", "CarTankPaint_01n"),
                 ("White", "CarTankNoPaint_01n"),
                 ("Yellow", "CarTankPaint_01n"),
             };
@@ -170,6 +237,14 @@ namespace SMShared
                     }
                 );
             }
+
+            // orange just *has* to be special...
+            _legacyTextureNameMap.Add("TankOrange", new TextureMapping
+            {
+                { "CarTank_Orange_01", "CarTankOrange_01" },
+                { "CarTank_Orange_01s", "CarTankOrange_01s" },
+                { "CarTank_Paint_01n", "CarTankPaint_01n" },
+            });
         }
 
         public static bool TryGetUpdatedTextureName(string liveryId, string oldName, out string newName)

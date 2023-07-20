@@ -114,6 +114,14 @@ namespace SkinManagerMod
                 }
             }
 
+            if (GUILayout.Button("Export All Textures (Warning: Slow!)", GUILayout.Width(220)))
+            {
+                foreach (var livery in Globals.G.Types.Liveries)
+                {
+                    TextureUtility.DumpTextures(livery);
+                }
+            }
+
             if (GUILayout.Button("Reload Skins (Warning: Slow!)", GUILayout.Width(220)))
             {
                 SkinProvider.ReloadAllSkins(true);
