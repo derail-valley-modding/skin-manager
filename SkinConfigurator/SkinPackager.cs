@@ -1,6 +1,7 @@
 ﻿using SMShared;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -87,9 +88,25 @@ namespace SkinConfigurator
             // textures & whatever else
             foreach (var sourceFile in Directory.EnumerateFiles(skin.FolderPath))
             {
-                string relativePath = Path.Combine(skin.Name, Path.GetFileName(sourceFile));
+                string relativePath = GetTargetFileName(skin.Name, sourceFile, skin.CarId);
                 _archive.CreateEntryFromFile(sourceFile, relativePath);
             }
+        }
+
+        private static string GetTargetFileName(string skinName, string sourcePath, string liveryId)
+        {
+            if (Constants.IsSupportedExtension(Path.GetExtension(sourcePath)))
+            {
+                string filename = Path.GetFileNameWithoutExtension(sourcePath);
+                string extension = Path.GetExtension(sourcePath);
+
+                if (Remaps.TryGetUpdatedTextureName(liveryId, filename, out string newName))
+                {
+                    return Path.Combine(skinName, string.Concat(newName, extension));
+                }
+            }
+
+            return Path.Combine(skinName, Path.GetFileName(sourcePath));
         }
     }
 

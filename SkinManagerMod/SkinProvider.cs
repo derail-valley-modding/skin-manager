@@ -261,19 +261,19 @@ namespace SkinManagerMod
         /// <summary>
         /// Try to find the car texture/material property that matches the given file
         /// </summary>
-        /// <param name="carType">Used to find remaps for legacy texture names</param>
+        /// <param name="liveryId">Used to find remaps for legacy texture names</param>
         /// <param name="filename">Original image file name, will be replaced with updated name if remap is found</param>
         /// <param name="textureNames">Dict of car texture names and material properties</param>
         /// <param name="textureProp">Resultant material property for this file</param>
         /// <returns>True if a matching texture was found</returns>
-        private static bool TryGetTextureForFilename(TrainCarType carType, ref string filename, Dictionary<string, string> textureNames, out string textureProp)
+        private static bool TryGetTextureForFilename(string liveryId, ref string filename, Dictionary<string, string> textureNames, out string textureProp)
         {
             if (textureNames.TryGetValue(filename, out textureProp))
             {
                 return true;
             }
 
-            if ((carType != TrainCarType.NotSet) && Remaps.TryGetUpdatedTextureName(carType, filename, out string newName))
+            if (Remaps.TryGetUpdatedTextureName(liveryId, filename, out string newName))
             {
                 if (textureNames.TryGetValue(newName, out textureProp))
                 {
@@ -323,7 +323,7 @@ namespace SkinManagerMod
 
                 string fileName = Path.GetFileNameWithoutExtension(texturePath);
 
-                if (!loading.Contains(fileName) && TryGetTextureForFilename(skinGroup.TrainCarType.v1, ref fileName, textureNames, out string textureProp))
+                if (!loading.Contains(fileName) && TryGetTextureForFilename(skinGroup.TrainCarType.id, ref fileName, textureNames, out string textureProp))
                 {
                     var linear = textureProp == "_BumpMap";
                     loading.Add(fileName);
@@ -377,7 +377,7 @@ namespace SkinManagerMod
                 }
             }
 
-            if (Remaps.TryGetOldTrainCarId(livery.v1, out string overhauledId))
+            if (Remaps.TryGetOldTrainCarId(livery.id, out string overhauledId))
             {
                 folderPath = Path.Combine(parentFolder, overhauledId);
 

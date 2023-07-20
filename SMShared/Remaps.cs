@@ -7,64 +7,17 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SMShared
 {
     internal static class Remaps
     {
-        private static readonly Dictionary<TrainCarType, string> _oldCarTypeIDs = new Dictionary<TrainCarType, string>()
+        private static readonly Dictionary<string, string> _newToOldCarIdMap;
+
+        public static bool TryGetOldTrainCarId(string newId, out string oldId)
         {
-            { TrainCarType.LocoShunter,     "loco_621" },
-            { TrainCarType.LocoSteamHeavy,  "loco_steam_H" },
-            { TrainCarType.Tender,          "loco_steam_tender" },
-            //{ TrainCarType.LocoRailbus,     "" },
-            { TrainCarType.LocoDiesel,      "LocoDiesel" },
-            //{ TrainCarType.LocoDH2,         "" },
-            //{ TrainCarType.LocoDM1,         "" },
-
-            { TrainCarType.FlatbedEmpty,    "car_flatbed_empty" },
-            { TrainCarType.FlatbedStakes,   "car_flatbed_stakes" },
-            { TrainCarType.FlatbedMilitary, "car_flatbed_military_empty" },
-
-            { TrainCarType.AutorackRed,     "CarAutorack_Red" },
-            { TrainCarType.AutorackBlue,    "CarAutorack_Blue" },
-            { TrainCarType.AutorackGreen,   "CarAutorack_Green" },
-            { TrainCarType.AutorackYellow,  "CarAutorack_Yellow" },
-
-            { TrainCarType.TankOrange,      "CarTank_Orange" },
-            { TrainCarType.TankWhite,       "CarTank_White" },
-            { TrainCarType.TankYellow,      "CarTank_Yellow" },
-            { TrainCarType.TankBlue,        "CarTank_Blue" },
-            { TrainCarType.TankChrome,      "CarTank_Chrome" },
-            { TrainCarType.TankBlack,       "CarTank_Black" },
-
-            { TrainCarType.BoxcarBrown,     "CarBoxcar_Brown" },
-            { TrainCarType.BoxcarGreen,     "CarBoxcar_Green" },
-            { TrainCarType.BoxcarPink,      "CarBoxcar_Pink" },
-            { TrainCarType.BoxcarRed,       "CarBoxcar_Red" },
-            { TrainCarType.BoxcarMilitary,  "CarBoxcarMilitary" },
-            { TrainCarType.RefrigeratorWhite, "CarRefrigerator_White" },
-
-            { TrainCarType.HopperBrown,     "CarHopper_Brown" },
-            { TrainCarType.HopperTeal,      "CarHopper_Teal" },
-            { TrainCarType.HopperYellow,    "CarHopper_Yellow" },
-
-            { TrainCarType.GondolaRed,      "CarGondola_Red" },
-            { TrainCarType.GondolaGreen,    "CarGondola_Green" },
-            { TrainCarType.GondolaGray,     "CarGondola_Grey" },
-
-            { TrainCarType.PassengerRed,    "CarPassenger_Red" },
-            { TrainCarType.PassengerGreen,  "CarPassenger_Green" },
-            { TrainCarType.PassengerBlue,   "CarPassenger_Blue" },
-
-            { TrainCarType.HandCar,         "handcar" },
-            { TrainCarType.CabooseRed,      "CarCaboose_Red" },
-            { TrainCarType.NuclearFlask,    "CarNuclearFlask" },
-        };
-
-        public static bool TryGetOldTrainCarId(TrainCarType carType, out string id)
-        {
-            return _oldCarTypeIDs.TryGetValue(carType, out id);
+            return _newToOldCarIdMap.TryGetValue(newId, out oldId);
         }
 
         private static readonly Dictionary<string, string> _oldToNewCarIdMap = new Dictionary<string, string>()
@@ -125,6 +78,7 @@ namespace SMShared
                 new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             public static readonly char[] DE = { 'd', 'e' };
+            public static readonly char[] DS = { 'd', 's' };
             public static readonly char[] DNS = { 'd', 'n', 's' };
 
             public void Add(string oldName, string newName)
@@ -157,11 +111,11 @@ namespace SMShared
         }
 
         /// <summary>Old texture name -> new texture name</summary>
-        private static readonly Dictionary<TrainCarType, TextureMapping> _legacyTextureNameMap = 
-            new Dictionary<TrainCarType, TextureMapping>()
+        private static readonly Dictionary<string, TextureMapping> _legacyTextureNameMap = 
+            new Dictionary<string, TextureMapping>()
             {
                 {
-                    TrainCarType.LocoShunter,
+                    "LocoDE2",
                     new TextureMapping
                     {
                         { "exterior_", "LocoDE2_Body_01", TextureMapping.DNS },
@@ -171,7 +125,7 @@ namespace SMShared
                 // 282 & tender new UVs -> no mappings :(
 
                 {
-                    TrainCarType.LocoDiesel,
+                    "LocoDE6",
                     new TextureMapping
                     {
                         { "LocoDiesel_bogies_", "LocoDE6_Body_01", TextureMapping.DNS },
@@ -183,7 +137,7 @@ namespace SMShared
                 },
 
                 {
-                    TrainCarType.CabooseRed,
+                    "CabooseRed",
                     new TextureMapping
                     {
                         { "CabooseExterior_", "CarCabooseRed_Body_01", TextureMapping.DNS },
@@ -192,9 +146,35 @@ namespace SMShared
                 },
             };
 
-        public static bool TryGetUpdatedTextureName(TrainCarType carType, string oldName, out string newName)
+        static Remaps()
         {
-            if (_legacyTextureNameMap.TryGetValue(carType, out TextureMapping textureMapping))
+            _newToOldCarIdMap = _oldToNewCarIdMap.ToDictionary(kvp => kvp.Value, kvp => kvp.Key);
+
+            var tankerTypes = new[]
+            {
+                ("Black", "CarTankNoPaint_01n"),
+                ("Blue", "CarTankNoPaint_01n"),
+                ("Chrome", "CarTankNoPaint_01n"),
+                ("Orange", "CarTankPaint_01n"),
+                ("White", "CarTankNoPaint_01n"),
+                ("Yellow", "CarTankPaint_01n"),
+            };
+
+            foreach (var color in tankerTypes)
+            {
+                _legacyTextureNameMap.Add($"Tank{color.Item1}",
+                    new TextureMapping
+                    {
+                        { $"CarTank_{color.Item1}_01", $"CarTank{color.Item1}_01", TextureMapping.DS },
+                        { $"CarTank_{color.Item1}_01n", color.Item2 }
+                    }
+                );
+            }
+        }
+
+        public static bool TryGetUpdatedTextureName(string liveryId, string oldName, out string newName)
+        {
+            if (_legacyTextureNameMap.TryGetValue(liveryId, out TextureMapping textureMapping))
             {
                 return textureMapping.TryGetUpdatedName(oldName, out newName);
             }
