@@ -335,7 +335,7 @@ namespace SkinManagerMod
 
         private void UpdateAvailableSkinsList(TrainCarLivery carType)
         {
-            SkinsForCarType = SkinManager.GetSkinsForType(carType);
+            SkinsForCarType = SkinProvider.GetSkinsForType(carType);
             SelectedSkinIdx = 0;
         }
 
@@ -354,7 +354,7 @@ namespace SkinManagerMod
                 if( (attachedCar != null) && CarTypes.IsTender(attachedCar.carLivery) )
                 {
                     // car attached behind loco is tender
-                    Skin tenderSkin = SkinManager.FindSkinByName(attachedCar.carLivery, SelectedSkin.Name);
+                    Skin tenderSkin = SkinProvider.FindSkinByName(attachedCar.carLivery, SelectedSkin.Name);
                     if (tenderSkin != null)
                     {
                         // found a matching skin for the tender :D

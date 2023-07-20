@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>$(DefineConstants);PACKAGER</DefineConstants>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DefineConstants>$(DefineConstants);PACKAGER</DefineConstants>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <Import Project="..\SMShared\SMShared.projitems" Label="Shared" />
+	
+</Project>

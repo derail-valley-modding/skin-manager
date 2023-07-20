@@ -1,19 +1,24 @@
-﻿using DV.ThingTypes;
+﻿#if PACKAGER
+    #nullable disable
+#else
+    using DV.ThingTypes;
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace SkinManagerMod
+namespace SMShared
 {
     internal static class Remaps
     {
-        public static readonly Dictionary<TrainCarType, string> OldCarTypeIDs = new Dictionary<TrainCarType, string>()
+        private static readonly Dictionary<TrainCarType, string> _oldCarTypeIDs = new Dictionary<TrainCarType, string>()
         {
             { TrainCarType.LocoShunter,     "loco_621" },
             { TrainCarType.LocoSteamHeavy,  "loco_steam_H" },
             { TrainCarType.Tender,          "loco_steam_tender" },
             //{ TrainCarType.LocoRailbus,     "" },
-            //{ TrainCarType.LocoDiesel,      "" },
+            { TrainCarType.LocoDiesel,      "LocoDiesel" },
             //{ TrainCarType.LocoDH2,         "" },
             //{ TrainCarType.LocoDM1,         "" },
 
@@ -56,6 +61,63 @@ namespace SkinManagerMod
             { TrainCarType.CabooseRed,      "CarCaboose_Red" },
             { TrainCarType.NuclearFlask,    "CarNuclearFlask" },
         };
+
+        public static bool TryGetOldTrainCarId(TrainCarType carType, out string id)
+        {
+            return _oldCarTypeIDs.TryGetValue(carType, out id);
+        }
+
+        private static readonly Dictionary<string, string> _oldToNewCarIdMap = new Dictionary<string, string>()
+        {
+            { "loco_621",                   "LocoDE2" },
+            { "LocoDiesel",                 "LocoDE6" },
+            { "loco_steam_H",               "LocoS282A" },
+            { "loco_steam_tender",          "LocoS282B" },
+
+            { "car_flatbed_empty",          "FlatbedEmpty" },
+            { "car_flatbed_stakes",         "FlatbedStakes" },
+            { "car_flatbed_military_empty", "FlatbedMilitary" },
+
+            { "CarAutorack_Red",            "AutorackRed" },
+            { "CarAutorack_Blue",           "AutorackBlue" },
+            { "CarAutorack_Green",          "AutorackGreen" },
+            { "CarAutorack_Yellow",         "AutorackYellow" },
+
+            { "CarTank_Orange",             "TankOrange" },
+            { "CarTank_White",              "TankWhite" },
+            { "CarTank_Yellow",             "TankYellow" },
+            { "CarTank_Blue",               "TankBlue" },
+            { "CarTank_Chrome",             "TankChrome" },
+            { "CarTank_Black",              "TankBlack" },
+
+            { "CarBoxcar_Brown",            "BoxcarBrown" },
+            { "CarBoxcar_Green",            "BoxcarGreen" },
+            { "CarBoxcar_Pink",             "BoxcarPink" },
+            { "CarBoxcar_Red",              "BoxcarRed" },
+            { "CarBoxcarMilitary",          "BoxcarMilitary" },
+            { "CarRefrigerator_White",      "RefrigeratorWhite" },
+
+            { "CarHopper_Brown",            "HopperBrown" },
+            { "CarHopper_Teal",             "HopperTeal" },
+            { "CarHopper_Yellow",           "HopperYellow" },
+
+            { "CarGondola_Red",             "GondolaRed" },
+            { "CarGondola_Green",           "GondolaGreen" },
+            { "CarGondola_Grey",            "GondolaGray" },
+
+            { "CarPassenger_Red",           "PassengerRed" },
+            { "CarPassenger_Green",         "PassengerGreen" },
+            { "CarPassenger_Blue",          "PassengerBlue" },
+              
+            { "handcar",                    "HandCar" },
+            { "CarCaboose_Red",             "CabooseRed" },
+            { "CarNuclearFlask",            "NuclearFlask" },
+        };
+
+        public static bool TryGetUpdatedCarId(string oldId, out string newId)
+        {
+            return _oldToNewCarIdMap.TryGetValue(oldId, out newId);
+        }
 
         private class TextureMapping : IEnumerable<KeyValuePair<string, string>>
         {
@@ -142,3 +204,7 @@ namespace SkinManagerMod
         }
     }
 }
+
+#if PACKAGER
+    #nullable restore
+#endif

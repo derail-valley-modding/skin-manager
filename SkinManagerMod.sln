@@ -1,9 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.438
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33801.468
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SkinManagerMod", "SkinManagerMod\SkinManagerMod.csproj", "{BBDCEB20-83D5-4FC8-88F9-0E08DF1B1DDE}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "SMShared", "SMShared\SMShared.shproj", "{F951746D-CB16-45EE-80A7-01E07AC461BE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SkinConfigurator", "SkinConfigurator\SkinConfigurator.csproj", "{3C5DFEE2-5DA9-4674-96D8-C1503EFCA3C0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,11 +19,20 @@ Global
 		{BBDCEB20-83D5-4FC8-88F9-0E08DF1B1DDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BBDCEB20-83D5-4FC8-88F9-0E08DF1B1DDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BBDCEB20-83D5-4FC8-88F9-0E08DF1B1DDE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C5DFEE2-5DA9-4674-96D8-C1503EFCA3C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C5DFEE2-5DA9-4674-96D8-C1503EFCA3C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C5DFEE2-5DA9-4674-96D8-C1503EFCA3C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C5DFEE2-5DA9-4674-96D8-C1503EFCA3C0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {EB6D89B0-895A-489F-9E92-3F1107037291}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		SMShared\SMShared.projitems*{3c5dfee2-5da9-4674-96d8-c1503efca3c0}*SharedItemsImports = 5
+		SMShared\SMShared.projitems*{bbdceb20-83d5-4fc8-88f9-0e08df1b1dde}*SharedItemsImports = 4
+		SMShared\SMShared.projitems*{f951746d-cb16-45ee-80a7-01e07ac461be}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal

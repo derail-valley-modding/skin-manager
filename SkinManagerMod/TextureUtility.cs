@@ -18,7 +18,7 @@ namespace SkinManagerMod
         /// </summary>
         public static void DumpTextures(TrainCarLivery trainCarType)
         {
-            var path = Main.GetExportFolder(trainCarType.id);
+            var path = Path.Combine(Main.Instance.Path, "Exported", trainCarType.id);
 
             if (!Directory.Exists(path))
             {
@@ -165,6 +165,9 @@ namespace SkinManagerMod
             return EnumerateTextures(renderers);
         }
 
+        /// <summary>
+        /// Aggregate all renderers assigned to a car variant's prefab, interior, and interactables
+        /// </summary>
         public static IEnumerable<MeshRenderer> GetAllCarRenderers(TrainCarLivery carType)
         {
             IEnumerable<MeshRenderer> cmps = carType.prefab.gameObject.GetComponentsInChildren<MeshRenderer>();
@@ -174,10 +177,19 @@ namespace SkinManagerMod
                 var interiorCmps = carType.interiorPrefab.GetComponentsInChildren<MeshRenderer>();
                 cmps = cmps.Concat(interiorCmps);
             }
+            if (carType.externalInteractablesPrefab != null)
+            {
+                var interactCmps = carType.externalInteractablesPrefab.GetComponentsInChildren<MeshRenderer>();
+                cmps = cmps.Concat(interactCmps);
+            }
 
             return cmps;
         }
 
+        /// <summary>
+        /// Get all textures assigned to each renderers, and which material property they are assigned to
+        /// </summary>
+        /// <returns>Dictionary of texture name to material property id</returns>
         public static Dictionary<string, string> GetRendererTextureNames(IEnumerable<MeshRenderer> renderers)
         {
             var dict = new Dictionary<string, string>();
@@ -203,10 +215,13 @@ namespace SkinManagerMod
         /// </summary>
         public static void SetTextureOptions(Texture2D tex)
         {
-            if (!Main.Settings.ExtraAnisotropic.Value) return;
+            if (!Main.Settings.aniso5) return;
             tex.anisoLevel = 5;
         }
 
+        /// <summary>
+        /// Actually assign applicable skin textures to a renderer, using default skin to supply fallbacks
+        /// </summary>
         public static void ApplyTextures(MeshRenderer renderer, Skin skin, Skin defaultSkin)
         {
             foreach (string textureID in standardShaderAllTextures)

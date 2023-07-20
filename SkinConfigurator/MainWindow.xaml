@@ -1,0 +1,115 @@
+﻿<Window x:Class="SkinConfigurator.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SkinConfigurator"
+        mc:Ignorable="d"
+        Title="Skin Configurator" Height="450" Width="800"
+        d:DataContext="{d:DesignInstance {x:Type local:SkinPackModel}}">
+    <Window.Resources>
+        <local:NullToVisibilityConverter x:Key="nullVisibilityConverter"/>
+        <local:NullToBoolConverter x:Key="nullToBoolConverter"/>
+
+        <SolidColorBrush x:Key="menuLabelBrush" Color="{DynamicResource {x:Static SystemColors.MenuColorKey}}"/>
+    </Window.Resources>
+    
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="3*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <!--<RowDefinition Height="*"/>-->
+        </Grid.RowDefinitions>
+
+        <!-- Main mod info -->
+        <DockPanel LastChildFill="False">
+            <Menu DockPanel.Dock="Top">
+                <MenuItem x:Name="CreatePackButton" Header="New Pack" Click="CreatePackButton_Click"/>
+                <MenuItem x:Name="ImportPackButton" Header="Upgrade Pack..." Click="ImportPackButton_Click"/>
+            </Menu>
+
+            <Grid DataContext="{Binding ModInfoModel}" DockPanel.Dock="Top"
+                  Visibility="{Binding ., Converter={StaticResource nullVisibilityConverter}, FallbackValue=Hidden}" d:Visibility="Visible">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Label Content="Pack Name" Grid.Column="0"/>
+                <TextBox Text="{Binding BindingName, UpdateSourceTrigger=PropertyChanged}" Grid.Column="1"/>
+
+                <Label Content="Version" Grid.Row="1" Grid.Column="0"/>
+                <TextBox Text="{Binding BindingVersion, UpdateSourceTrigger=PropertyChanged}" Grid.Row="1" Grid.Column="1"/>
+
+                <Label Content="Author" Grid.Row="2" Grid.Column="0"/>
+                <TextBox Text="{Binding BindingAuthor}" Grid.Row="2" Grid.Column="1"/>
+            </Grid>
+
+            <Button x:Name="PackageButton" DockPanel.Dock="Bottom" Content="Package..." Click="PackageButton_Click" 
+                    IsEnabled="{Binding IsValid}"
+                    Background="#FF94E2A4" Padding="0,10"/>
+        </DockPanel>
+
+        <GridSplitter Grid.Column="1" Width="7" HorizontalAlignment="Left"/>
+
+        
+
+        <!-- Individual Skins -->
+        <DockPanel Grid.Column="1" LastChildFill="True" Margin="5,0,0,0">
+            <Menu DockPanel.Dock="Top">
+                <MenuItem x:Name="AddSkinButton" Header="Add Skin..." Click="AddSkinButton_Click"/>
+                <MenuItem x:Name="AddManySkinButton" Header="Add Multiple..." Click="AddManySkinButton_Click"/>
+                <MenuItem x:Name="RemoveSkinButton" Header="Remove Skin" HorizontalAlignment="Right"
+                          Visibility="{Binding SelectedSkinConfig, Converter={StaticResource nullVisibilityConverter}, FallbackValue=Hidden}"
+                          Click="RemoveSkinButton_Click"/>
+            </Menu>
+
+            <!-- Skin Properties -->
+            <Grid DataContext="{Binding SelectedSkinConfig, Mode=OneWay}"
+                  Visibility="{Binding ., Converter={StaticResource nullVisibilityConverter}, FallbackValue=Hidden}"
+                  DockPanel.Dock="Bottom">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Label Content="Skin Name" Grid.Column="0"/>
+                <TextBox Text="{Binding BindingName, UpdateSourceTrigger=PropertyChanged}" Grid.Column="1"/>
+
+                <Label Content="Car Livery ID" Grid.Row="1" Grid.Column="0"/>
+                <TextBox Text="{Binding BindingCarId, UpdateSourceTrigger=PropertyChanged}" Grid.Row="1" Grid.Column="1"/>
+                <Button x:Name="SelectCarTypeButton" Content=" Defaults... " Click="SelectCarTypeButton_Click" Grid.Row="1" Grid.Column="2"/>
+            </Grid>
+
+            <DataGrid ItemsSource="{Binding SkinConfigModels}" d:ItemsSource="{d:SampleData}"
+                      AutoGenerateColumns="False" RowHeaderWidth="0"
+                      SelectionMode="Single" SelectionUnit="FullRow"
+                      SelectedItem="{Binding SelectedSkinConfig}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Skin Name" Binding="{Binding BindingName}" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Car ID" Binding="{Binding BindingCarId}" IsReadOnly="True"/>
+                    <DataGridTextColumn Width="*" Header="Source" Binding="{Binding FolderPath, Mode=OneWay}" IsReadOnly="True">
+                        <DataGridTextColumn.CellStyle>
+                            <Style TargetType="{x:Type DataGridCell}">
+                                <Setter Property="ToolTip" Value="{Binding FolderPath}"/>
+                            </Style>
+                        </DataGridTextColumn.CellStyle>
+                    </DataGridTextColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </DockPanel>
+    </Grid>
+</Window>

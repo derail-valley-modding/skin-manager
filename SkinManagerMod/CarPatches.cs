@@ -2,18 +2,22 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace SkinManagerMod
 {
-    [HarmonyPatch(typeof(CarSpawner))]
+    [HarmonyPatch]
     class CarSpawner_SpawnCar_Patch
     {
-        [HarmonyPostfix]
-        [HarmonyPatch(nameof(CarSpawner.SpawnCar))]
-        [HarmonyPatch(nameof(CarSpawner.SpawnLoadedCar))]
-        static void SpawnCar(TrainCar __result)
+        static IEnumerable<MethodBase> TargetMethods()
+        {
+            yield return AccessTools.Method(typeof(CarSpawner), nameof(CarSpawner.SpawnCar));
+            yield return AccessTools.Method(typeof(CarSpawner), nameof(CarSpawner.SpawnLoadedCar));
+        }
+
+        static void Postfix(TrainCar __result)
         {
             var skin = SkinManager.GetCurrentCarSkin(__result);
             if ((skin != null) && !skin.IsDefault)
@@ -24,13 +28,17 @@ namespace SkinManagerMod
         }
     }
 
-    [HarmonyPatch(typeof(TrainCar))]
+    [HarmonyPatch]
     class TrainCar_LoadInterior_Patch
     {
-        [HarmonyPostfix]
-        [HarmonyPatch(nameof(TrainCar.LoadInterior))]
-        [HarmonyPatch(nameof(TrainCar.LoadExternalInteractables))]
-        static void LoadInterior(TrainCar __instance)
+        static IEnumerable<MethodBase> TargetMethods()
+        {
+            yield return AccessTools.Method(typeof(TrainCar), nameof(TrainCar.LoadInterior));
+            yield return AccessTools.Method(typeof(TrainCar), nameof(TrainCar.LoadExternalInteractables));
+            yield return AccessTools.Method(typeof(TrainCar), nameof(TrainCar.LoadDummyExternalInteractables));
+        }
+
+        static void Postfix(TrainCar __instance)
         {
             var skin = SkinManager.GetCurrentCarSkin(__instance);
             if ((skin != null) && !skin.IsDefault)
