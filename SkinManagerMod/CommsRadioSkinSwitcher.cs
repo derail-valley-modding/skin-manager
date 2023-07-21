@@ -348,7 +348,7 @@ namespace SkinManagerMod
 
             SkinManager.ApplySkin(SelectedCar, SelectedSkin);
 
-            if( CarTypes.IsSteamLocomotive(SelectedCar.carType) && SelectedCar.rearCoupler.IsCoupled() )
+            if( CarTypes.IsMUSteamLocomotive(SelectedCar.carType) && SelectedCar.rearCoupler.IsCoupled() )
             {
                 TrainCar attachedCar = SelectedCar.rearCoupler.coupledTo?.train;
                 if( (attachedCar != null) && CarTypes.IsTender(attachedCar.carLivery) )

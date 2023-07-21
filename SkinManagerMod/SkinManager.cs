@@ -57,7 +57,7 @@ namespace SkinManagerMod
             carGuidToAppliedSkinMap[car.CarGUID] = skin.Name;
 
             // TODO: support for CCL steam locos (this method only checks if == locosteamheavy)
-            if (CarTypes.IsSteamLocomotive(car.carType))
+            if (CarTypes.IsMUSteamLocomotive(car.carType))
             {
                 SkinProvider.LastSteamerSkin = skin;
             }
