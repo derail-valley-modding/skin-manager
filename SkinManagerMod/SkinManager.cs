@@ -119,12 +119,12 @@ namespace SkinManagerMod
 
             int i = 0;
 
-            foreach ((string guid, string skinName) in carGuidToAppliedSkinMap)
+            foreach (var kvp in carGuidToAppliedSkinMap)
             {
                 JObject dataObject = new JObject();
 
-                dataObject.SetString("guid", guid);
-                dataObject.SetString("name", skinName);
+                dataObject.SetString("guid", kvp.Key);
+                dataObject.SetString("name", kvp.Value);
 
                 array[i] = dataObject;
 
