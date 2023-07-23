@@ -291,7 +291,7 @@ namespace SkinManagerMod
         /// <param name="forceSync">Force loading of texture files to finish before returning</param>
         internal static void BeginLoadSkin(SkinConfig config, bool forceSync = false)
         {
-            if (forceSync)
+            if (forceSync || !Main.Settings.parallelLoading)
             {
                 Main.Log($"Synchronous loading {config.Name} @ {config.FolderPath}");
             }

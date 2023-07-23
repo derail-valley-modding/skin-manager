@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using SMShared;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -155,7 +156,14 @@ namespace SkinConfigurator
                 try
                 {
                     SkinPackager.SaveToArchive(dialog.FileName!, Model);
-                    MessageBox.Show("Success!");
+                    var openDest = MessageBox.Show("Skins packaged successfully. Did you want to open the destination folder?", 
+                        "Success!", MessageBoxButton.YesNo, MessageBoxImage.Information);
+
+                    if (openDest == MessageBoxResult.Yes)
+                    {
+                        string? destFolder = Path.GetDirectoryName(dialog.FileName!);
+                        Process.Start("explorer.exe", destFolder!);
+                    }
                 }
                 catch (SkinPackageException ex)
                 {

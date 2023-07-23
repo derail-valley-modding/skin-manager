@@ -80,7 +80,8 @@ namespace SkinConfigurator
         private void WriteSkin(SkinConfigModel skin)
         {
             // skin.json
-            var jsonEntry = _archive.CreateEntry(Path.Combine(skin.Name, Constants.SKIN_CONFIG_FILE));
+            string folderName = GetSkinFolderName(skin.Name, skin.CarId);
+            var jsonEntry = _archive.CreateEntry(Path.Combine(folderName, Constants.SKIN_CONFIG_FILE));
             using var jsonStream = jsonEntry.Open();
             JsonSerializer.Serialize(jsonStream, skin, _serializeOptions);
             jsonStream.Close();
@@ -88,12 +89,12 @@ namespace SkinConfigurator
             // textures & whatever else
             foreach (var sourceFile in Directory.EnumerateFiles(skin.FolderPath))
             {
-                string relativePath = GetTargetFileName(skin.Name, sourceFile, skin.CarId);
+                string relativePath = GetTargetFileName(folderName, sourceFile, skin.CarId);
                 _archive.CreateEntryFromFile(sourceFile, relativePath);
             }
         }
 
-        private static string GetTargetFileName(string skinName, string sourcePath, string liveryId)
+        private static string GetTargetFileName(string folderName, string sourcePath, string liveryId)
         {
             if (Constants.IsSupportedExtension(Path.GetExtension(sourcePath)))
             {
@@ -102,11 +103,21 @@ namespace SkinConfigurator
 
                 if (Remaps.TryGetUpdatedTextureName(liveryId, filename, out string newName))
                 {
-                    return Path.Combine(skinName, string.Concat(newName, extension));
+                    return Path.Combine(folderName, string.Concat(newName, extension));
                 }
             }
 
-            return Path.Combine(skinName, Path.GetFileName(sourcePath));
+            return Path.Combine(folderName, Path.GetFileName(sourcePath));
+        }
+
+        private string GetSkinFolderName(string skinName, string liveryId)
+        {
+            if (_model.SkinConfigModels.Any(s => (s.Name == skinName) && (s.CarId != liveryId)))
+            {
+                // exporting same skin for another car type, prefix name
+                return $"{skinName}_{liveryId}";
+            }
+            return skinName;
         }
     }
 
