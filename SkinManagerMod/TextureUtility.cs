@@ -18,7 +18,7 @@ namespace SkinManagerMod
         /// </summary>
         public static void DumpTextures(TrainCarLivery trainCarType)
         {
-            var path = Path.Combine(Main.Instance.Path, "Exported", trainCarType.id);
+            var path = Main.GetExportFolderForCar(trainCarType.id);
 
             if (!Directory.Exists(path))
             {

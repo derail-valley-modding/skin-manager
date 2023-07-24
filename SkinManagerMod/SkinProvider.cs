@@ -350,7 +350,7 @@ namespace SkinManagerMod
         #region Legacy Skins
 
         private static string OverhauledSkinFolder => Path.Combine(Main.Instance.Path, Constants.SKIN_FOLDER_NAME);
-        private static string BepInExSkinFolder => Path.Combine(Environment.CurrentDirectory, "BepInEx", "content", "skins");
+        private static string BepInExSkinFolder => Path.Combine(Main.Instance.Path, "..", "..", "BepInEx", "content", "skins");
 
         private static void LoadLegacySkins()
         {

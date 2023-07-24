@@ -27,8 +27,8 @@
         <!-- Main mod info -->
         <DockPanel LastChildFill="False">
             <Menu DockPanel.Dock="Top">
-                <MenuItem x:Name="CreatePackButton" Header="New Pack" Click="CreatePackButton_Click"/>
-                <MenuItem x:Name="ImportPackButton" Header="Upgrade Pack..." Click="ImportPackButton_Click"/>
+                <MenuItem x:Name="CreatePackButton" Header="New Pack" Click="CreatePackButton_Click" ToolTip="Clear all fields and start anew"/>
+                <MenuItem x:Name="ImportPackButton" Header="Import Pack..." Click="ImportPackButton_Click" ToolTip="Import multiple skins from a folder"/>
             </Menu>
 
             <Grid DataContext="{Binding ModInfoModel}" DockPanel.Dock="Top"
@@ -53,9 +53,15 @@
                 <TextBox Text="{Binding BindingAuthor}" Grid.Row="2" Grid.Column="1"/>
             </Grid>
 
-            <Button x:Name="PackageButton" DockPanel.Dock="Bottom" Content="Package..." Click="PackageButton_Click" 
+            <Button x:Name="PackageButton" DockPanel.Dock="Bottom" Content="Zip for Release..." Click="PackageButton_Click" 
+                    ToolTip="Create a Zip file that can be installed with UMM"
                     IsEnabled="{Binding IsValid}"
                     Background="#FF94E2A4" Padding="0,10"/>
+
+            <Button x:Name="TestPackButton" DockPanel.Dock="Bottom" Content="Save for Testing..." Click="TestPackButton_Click"
+                    ToolTip="Save the pack directly to a folder (bypass UMM)"
+                    IsEnabled="{Binding IsValid}"
+                    Background="#FFFFFF80" Padding="0,10"/>
         </DockPanel>
 
         <GridSplitter Grid.Column="1" Width="7" HorizontalAlignment="Left"/>
@@ -65,11 +71,18 @@
         <!-- Individual Skins -->
         <DockPanel Grid.Column="1" LastChildFill="True" Margin="5,0,0,0">
             <Menu DockPanel.Dock="Top">
+                <Menu.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <DockPanel HorizontalAlignment="Stretch"/>
+                    </ItemsPanelTemplate>
+                </Menu.ItemsPanel>
+                
                 <MenuItem x:Name="AddSkinButton" Header="Add Skin..." Click="AddSkinButton_Click"/>
                 <MenuItem x:Name="AddManySkinButton" Header="Add Multiple..." Click="AddManySkinButton_Click"/>
                 <MenuItem x:Name="RemoveSkinButton" Header="Remove Skin" HorizontalAlignment="Right"
                           Visibility="{Binding SelectedSkinConfig, Converter={StaticResource nullVisibilityConverter}, FallbackValue=Hidden}"
                           Click="RemoveSkinButton_Click"/>
+                <MenuItem x:Name="SettingsButton" Header="Settings..." Click="SettingsButton_Click" HorizontalAlignment="Right"/>
             </Menu>
 
             <!-- Skin Properties -->
