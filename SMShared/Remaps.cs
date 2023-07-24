@@ -129,7 +129,7 @@ namespace SMShared
                     "LocoDE6",
                     new TextureMapping
                     {
-                        { "LocoDiesel_bogies_", "LocoDE6_Body_01", TextureMapping.DNS },
+                        { "LocoDiesel_bogies_", "LocoDE6_Bogie_01", TextureMapping.DNS },
                         { "LocoDiesel_cab_", "LocoDE6_Interior_01", TextureMapping.DNS },
                         { "LocoDiesel_engine_", "LocoDE6_Engine_01", TextureMapping.DNS },
                         { "LocoDiesel_exterior_", "LocoDE6_Body_01", TextureMapping.DNS },
