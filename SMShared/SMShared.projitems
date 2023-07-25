@@ -10,7 +10,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Constants.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)MockTrainCarType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Remaps.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SkinConfigBase.cs" />
   </ItemGroup>

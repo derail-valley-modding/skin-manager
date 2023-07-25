@@ -291,7 +291,7 @@ namespace SkinManagerMod
         /// <param name="forceSync">Force loading of texture files to finish before returning</param>
         internal static void BeginLoadSkin(SkinConfig config, bool forceSync = false)
         {
-            if (forceSync)
+            if (forceSync || !Main.Settings.parallelLoading)
             {
                 Main.Log($"Synchronous loading {config.Name} @ {config.FolderPath}");
             }
@@ -350,7 +350,7 @@ namespace SkinManagerMod
         #region Legacy Skins
 
         private static string OverhauledSkinFolder => Path.Combine(Main.Instance.Path, Constants.SKIN_FOLDER_NAME);
-        private static string BepInExSkinFolder => Path.Combine(Environment.CurrentDirectory, "BepInEx", "content", "skins");
+        private static string BepInExSkinFolder => Path.Combine(Main.Instance.Path, "..", "..", "BepInEx", "content", "skins");
 
         private static void LoadLegacySkins()
         {

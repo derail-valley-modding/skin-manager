@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using SMShared;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -18,10 +19,13 @@ namespace SkinConfigurator
             set => DataContext = value;
         }
 
+        public ConfiguratorSettings Settings;
+
         public MainWindow()
         {
             InitializeComponent();
             Model = new SkinPackModel();
+            Settings = ConfiguratorSettings.LoadConfig();
         }
 
         private void CreatePackButton_Click(object sender, RoutedEventArgs e)
@@ -35,6 +39,7 @@ namespace SkinConfigurator
             {
                 Description = "Select root folder of skin",
                 UseDescriptionForTitle = true,
+                SelectedPath = Settings.DefaultSkinWorkFolder,
             };
 
             var result = folderDialog.ShowDialog();
@@ -51,12 +56,37 @@ namespace SkinConfigurator
             }
         }
 
+        private void ImportZipButton_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new OpenFileDialog()
+            {
+                Title = "Select Zipped Skin Pack",
+                DefaultExt = ".zip",
+                Filter = "Zip Archives (.zip)|*.zip",
+                InitialDirectory = Settings.DefaultSkinWorkFolder,
+            };
+
+            bool? result = dialog.ShowDialog(this);
+
+            if (result == true)
+            {
+                if (!File.Exists(dialog.FileName))
+                {
+                    MessageBox.Show(this, "Selected path is not a valid Zip Archive", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                Model = PackImporter.ImportFromArchive(dialog.FileName);
+            }
+        }
+
         private void AddSkinButton_Click(object sender, RoutedEventArgs e)
         {
             using var folderDialog = new System.Windows.Forms.FolderBrowserDialog()
             {
                 Description = "Select folder with texture files",
                 UseDescriptionForTitle = true,
+                SelectedPath = Settings.DefaultSkinWorkFolder,
             };
 
             var result = folderDialog.ShowDialog();
@@ -80,6 +110,7 @@ namespace SkinConfigurator
             {
                 Description = "Select folder containing skins",
                 UseDescriptionForTitle = true,
+                SelectedPath = Settings.DefaultSkinWorkFolder,
             };
 
             var result = folderDialog.ShowDialog();
@@ -150,18 +181,72 @@ namespace SkinConfigurator
 
             bool? result = dialog.ShowDialog(this);
 
-            if (result == true && !string.IsNullOrEmpty(dialog.FileName))
+            if (result == true && !string.IsNullOrWhiteSpace(dialog.FileName))
             {
-                try
+                RunPackaging<ZipPackager>(dialog.FileName, Path.GetDirectoryName(dialog.FileName!)!);
+            }
+        }
+
+        private void TestPackButton_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new System.Windows.Forms.FolderBrowserDialog()
+            {
+                Description = "Select destination folder for skins",
+                UseDescriptionForTitle = true,
+                InitialDirectory = Settings.DerailValleyDirectory,
+                ShowNewFolderButton = true,
+            };
+
+            var result = dialog.ShowDialog();
+
+            if (result == System.Windows.Forms.DialogResult.OK && !string.IsNullOrWhiteSpace(dialog.SelectedPath))
+            {
+                RunPackaging<FolderPackager>(dialog.SelectedPath, dialog.SelectedPath);
+            }
+        }
+
+        private void RunPackaging<T>(string destination, string viewPath) where T : SkinPackager
+        {
+            try
+            {
+                SkinPackager.Package<T>(destination, Model);
+                var openDest = MessageBox.Show("Skins packaged successfully. Did you want to open the destination folder?",
+                    "Success!", MessageBoxButton.YesNo, MessageBoxImage.Information);
+
+                if (openDest == MessageBoxResult.Yes)
                 {
-                    SkinPackager.SaveToArchive(dialog.FileName!, Model);
-                    MessageBox.Show("Success!");
-                }
-                catch (SkinPackageException ex)
-                {
-                    MessageBox.Show(ex.Message, "Error Packaging Skins", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Process.Start("explorer.exe", viewPath);
                 }
             }
+            catch (SkinPackageException ex)
+            {
+                MessageBox.Show(ex.Message, "Error Packaging Skins", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void SettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            var settingsDialog = new SettingsDialog(Settings);
+            bool? result = settingsDialog.ShowDialog();
+
+            if (result == true)
+            {
+                Settings = settingsDialog.SettingsModel.Data;
+                ConfiguratorSettings.SaveConfig(Settings);
+            }
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            try
+            {
+                string tempFolder = Path.Combine(Environment.CurrentDirectory, "Temp");
+                if (Directory.Exists(tempFolder))
+                {
+                    Directory.Delete(tempFolder, true);
+                }
+            }
+            catch { }
         }
     }
 }
