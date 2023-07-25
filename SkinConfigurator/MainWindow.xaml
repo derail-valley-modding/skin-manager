@@ -6,7 +6,8 @@
         xmlns:local="clr-namespace:SkinConfigurator"
         mc:Ignorable="d"
         Title="Skin Configurator" Height="450" Width="800"
-        d:DataContext="{d:DesignInstance {x:Type local:SkinPackModel}}">
+        d:DataContext="{d:DesignInstance {x:Type local:SkinPackModel}}"
+        Closing="Window_Closing">
     <Window.Resources>
         <local:NullToVisibilityConverter x:Key="nullVisibilityConverter"/>
         <local:NullToBoolConverter x:Key="nullToBoolConverter"/>
@@ -28,7 +29,10 @@
         <DockPanel LastChildFill="False">
             <Menu DockPanel.Dock="Top">
                 <MenuItem x:Name="CreatePackButton" Header="New Pack" Click="CreatePackButton_Click" ToolTip="Clear all fields and start anew"/>
-                <MenuItem x:Name="ImportPackButton" Header="Import Pack..." Click="ImportPackButton_Click" ToolTip="Import multiple skins from a folder"/>
+                <MenuItem Header="Import...">
+                    <MenuItem x:Name="ImportPackButton" Header="Import Folder..." Click="ImportPackButton_Click" ToolTip="Import multiple skins from a folder"/>
+                    <MenuItem x:Name="ImportZipButton" Header="Import Old Zip..." Click="ImportZipButton_Click" ToolTip="Import skins from an old UMM or BepInEx pack"/>
+                </MenuItem>
             </Menu>
 
             <Grid DataContext="{Binding ModInfoModel}" DockPanel.Dock="Top"
@@ -58,8 +62,8 @@
                     IsEnabled="{Binding IsValid}"
                     Background="#FF94E2A4" Padding="0,10"/>
 
-            <Button x:Name="TestPackButton" DockPanel.Dock="Bottom" Content="Save for Testing..." Click="TestPackButton_Click"
-                    ToolTip="Save the pack directly to a folder (bypass UMM)"
+            <Button x:Name="TestPackButton" DockPanel.Dock="Bottom" Content="Install Unzipped..." Click="TestPackButton_Click"
+                    ToolTip="Save the pack directly to a folder or mods directory (bypass UMM)"
                     IsEnabled="{Binding IsValid}"
                     Background="#FFFFFF80" Padding="0,10"/>
         </DockPanel>

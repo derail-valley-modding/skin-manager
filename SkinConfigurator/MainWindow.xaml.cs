@@ -39,6 +39,7 @@ namespace SkinConfigurator
             {
                 Description = "Select root folder of skin",
                 UseDescriptionForTitle = true,
+                SelectedPath = Settings.DefaultSkinWorkFolder,
             };
 
             var result = folderDialog.ShowDialog();
@@ -52,6 +53,30 @@ namespace SkinConfigurator
                 }
 
                 Model = PackImporter.ImportFromFolder(folderDialog.SelectedPath);
+            }
+        }
+
+        private void ImportZipButton_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new OpenFileDialog()
+            {
+                Title = "Select Zipped Skin Pack",
+                DefaultExt = ".zip",
+                Filter = "Zip Archives (.zip)|*.zip",
+                InitialDirectory = Settings.DefaultSkinWorkFolder,
+            };
+
+            bool? result = dialog.ShowDialog(this);
+
+            if (result == true)
+            {
+                if (!File.Exists(dialog.FileName))
+                {
+                    MessageBox.Show(this, "Selected path is not a valid Zip Archive", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                Model = PackImporter.ImportFromArchive(dialog.FileName);
             }
         }
 
@@ -164,13 +189,11 @@ namespace SkinConfigurator
 
         private void TestPackButton_Click(object sender, RoutedEventArgs e)
         {
-            string defaultPath = Path.Combine(Settings.DerailValleyDirectory, Model.ModInfoModel.Id!);
-
             var dialog = new System.Windows.Forms.FolderBrowserDialog()
             {
                 Description = "Select destination folder for skins",
                 UseDescriptionForTitle = true,
-                SelectedPath = defaultPath,
+                InitialDirectory = Settings.DerailValleyDirectory,
                 ShowNewFolderButton = true,
             };
 
@@ -211,6 +234,19 @@ namespace SkinConfigurator
                 Settings = settingsDialog.SettingsModel.Data;
                 ConfiguratorSettings.SaveConfig(Settings);
             }
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            try
+            {
+                string tempFolder = Path.Combine(Environment.CurrentDirectory, "Temp");
+                if (Directory.Exists(tempFolder))
+                {
+                    Directory.Delete(tempFolder, true);
+                }
+            }
+            catch { }
         }
     }
 }
