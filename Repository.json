@@ -1,11 +1,21 @@
 {
   "Releases": [
+	{
+      "Id": "SkinManagerMod",
+      "Version": "3.1.1",
+      "DownloadUrl": "https://github.com/derail-valley-modding/skin-manager/releases/download/v3.1.1/SkinManagerMod.zip"
+    },
+    {
+      "Id": "SkinManagerMod",
+      "Version": "3.1.0",
+      "DownloadUrl": "https://github.com/SvetlozarValchev/dv-skin-manager-mod/releases/download/v3.1/SkinManagerMod.zip"
+    },
     {
       "Id": "SkinManagerMod",
       "Version": "2.5.3",
       "DownloadUrl": "https://github.com/SvetlozarValchev/dv-skin-manager-mod/releases/download/v2.5.3/SkinManagerMod.zip"
     },
-	{
+    {
       "Id": "SkinManagerMod",
       "Version": "2.5.2",
       "DownloadUrl": "https://github.com/SvetlozarValchev/dv-skin-manager-mod/releases/download/v2.5.2/SkinManagerMod.zip"
