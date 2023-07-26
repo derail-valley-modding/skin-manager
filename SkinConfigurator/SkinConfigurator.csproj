@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>brush.ico</ApplicationIcon>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -21,5 +22,9 @@
   </PropertyGroup>
 
   <Import Project="..\SMShared\SMShared.projitems" Label="Shared" />
+
+  <ItemGroup>
+    <Content Include="brush.ico" />
+  </ItemGroup>
 	
 </Project>
