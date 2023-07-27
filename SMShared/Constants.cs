@@ -6,7 +6,7 @@ namespace SMShared
     {
         public const string MOD_ID = "SkinManagerMod";
         public const string MOD_NAME = "Skin Manager";
-        public const string MOD_VERSION = "3.1.1";
+        public const string MOD_VERSION = "3.1.2";
 
         public const string SKIN_FOLDER_NAME = "Skins";
         public const string EXPORT_FOLDER_NAME = "Exported";

@@ -11,7 +11,7 @@ using UnityModManagerNet;
 
 namespace SkinManagerMod
 {
-    public class SkinConfig : SkinConfigBase, IEquatable<SkinConfig>
+    public class SkinConfig : SkinConfigBase
     {
         [JsonIgnore]
         public TrainCarLivery Livery;
@@ -59,14 +59,9 @@ namespace SkinManagerMod
 
             return null;
         }
-
-        public bool Equals(SkinConfig other)
-        {
-            return Name == other?.Name;
-        }
     }
 
-    public class ModSkinCollection : IEnumerable<SkinConfig>, IEquatable<ModSkinCollection>
+    public class ModSkinCollection : IEnumerable<SkinConfig>
     {
         public UnityModManager.ModEntry modEntry;
 
@@ -82,10 +77,5 @@ namespace SkinManagerMod
         public IEnumerator<SkinConfig> GetEnumerator() => Configs.GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => Configs.GetEnumerator();
-
-        public bool Equals(ModSkinCollection other)
-        {
-            return modEntry.Info == other?.modEntry.Info;
-        }
     }
 }

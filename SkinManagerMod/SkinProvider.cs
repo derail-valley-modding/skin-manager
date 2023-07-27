@@ -119,7 +119,7 @@ namespace SkinManagerMod
 
         public static void ReloadAllSkins(bool forceSync = false)
         {
-            foreach (var mod in UnityModManager.modEntries)
+            foreach (var mod in UnityModManager.modEntries.Where(m => m.Info.Id != Constants.MOD_ID))
             {
                 ReloadSkinMod(mod, forceSync);
             }
@@ -145,6 +145,8 @@ namespace SkinManagerMod
 
         private static void HandleSkinModToggle(UnityModManager.ModEntry mod, bool nowActive)
         {
+            if ((mod.Info.Id == Constants.MOD_ID) || !string.IsNullOrWhiteSpace(mod.Info.EntryMethod)) return;
+
             if (nowActive)
             {
                 ReloadSkinMod(mod, WorldStreamingInit.IsStreamingDone); // force synchronous if in-game
