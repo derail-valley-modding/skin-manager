@@ -11,7 +11,7 @@ using System.Linq;
 
 namespace SMShared
 {
-    internal static class Remaps
+    public static class Remaps
     {
         private static readonly Dictionary<string, string> _newToOldCarIdMap;
 

@@ -117,23 +117,24 @@ namespace SkinManagerMod
         private static byte[] DDSHeader(int width, int height, bool hasAlpha, int numMipmaps)
         {
             var header = new byte[128];
-            var stream = new MemoryStream(header);
-            stream.Write(Encoding.ASCII.GetBytes("DDS "), 0, 4);
-            stream.Write(BitConverter.GetBytes(124), 0, 4); // dwSize
-            // dwFlags = CAPS | HEIGHT | WIDTH | PIXELFORMAT | MIPMAPCOUNT | LINEARSIZE
-            stream.Write(BitConverter.GetBytes(0x1 | 0x2 | 0x4 | 0x1000 | 0x20000 | 0x80000), 0, 4);
-            stream.Write(BitConverter.GetBytes(height), 0, 4);
-            stream.Write(BitConverter.GetBytes(width), 0, 4);
-            stream.Write(BitConverter.GetBytes(Mipmap0SizeInBytes(width, height, hasAlpha)), 0, 4); // dwPitchOrLinearSize
-            stream.Write(BitConverter.GetBytes(0), 0, 4); // dwDepth
-            stream.Write(BitConverter.GetBytes(numMipmaps), 0, 4); // dwMipMapCount
-            for (int i = 0; i < 11; i++)
-                stream.Write(BitConverter.GetBytes(0), 0, 4); // dwReserved1
-            var pixelFormat = PixelFormat(hasAlpha);
-            stream.Write(pixelFormat, 0, pixelFormat.Length);
-            // dwCaps = COMPLEX | MIPMAP | TEXTURE
-            stream.Write(BitConverter.GetBytes(0x401008), 0, 4);
-            stream.Close();
+            using (var stream = new MemoryStream(header))
+            {
+                stream.Write(Encoding.ASCII.GetBytes("DDS "), 0, 4);
+                stream.Write(BitConverter.GetBytes(124), 0, 4); // dwSize
+                                                                // dwFlags = CAPS | HEIGHT | WIDTH | PIXELFORMAT | MIPMAPCOUNT | LINEARSIZE
+                stream.Write(BitConverter.GetBytes(0x1 | 0x2 | 0x4 | 0x1000 | 0x20000 | 0x80000), 0, 4);
+                stream.Write(BitConverter.GetBytes(height), 0, 4);
+                stream.Write(BitConverter.GetBytes(width), 0, 4);
+                stream.Write(BitConverter.GetBytes(Mipmap0SizeInBytes(width, height, hasAlpha)), 0, 4); // dwPitchOrLinearSize
+                stream.Write(BitConverter.GetBytes(0), 0, 4); // dwDepth
+                stream.Write(BitConverter.GetBytes(numMipmaps), 0, 4); // dwMipMapCount
+                for (int i = 0; i < 11; i++)
+                    stream.Write(BitConverter.GetBytes(0), 0, 4); // dwReserved1
+                var pixelFormat = PixelFormat(hasAlpha);
+                stream.Write(pixelFormat, 0, pixelFormat.Length);
+                // dwCaps = COMPLEX | MIPMAP | TEXTURE
+                stream.Write(BitConverter.GetBytes(0x401008), 0, 4);
+            }
             return header;
         }
 
@@ -150,17 +151,20 @@ namespace SkinManagerMod
 
         public static void WriteDDSGz(FileInfo fileInfo, Texture2D texture)
         {
-            var outfile = new GZipStream(fileInfo.OpenWrite(), CompressionLevel.Optimal);
-            outfile.Write(DDSHeader(texture.width, texture.height, texture.format == TextureFormat.DXT5, texture.mipmapCount), 0, 128);
-            var data = texture.GetRawTextureData<byte>().ToArray();
-            Main.Log($"Writing to {fileInfo.FullName}");
-            outfile.Write(data, 0, data.Length);
-            outfile.Close();
+            using (var fileStream = fileInfo.OpenWrite())
+            using (var outfile = new GZipStream(fileStream, CompressionLevel.Optimal))
+            {
+                outfile.Write(DDSHeader(texture.width, texture.height, texture.format == TextureFormat.DXT5, texture.mipmapCount), 0, 128);
+                var data = texture.GetRawTextureData<byte>().ToArray();
+                Main.Log($"Writing to {fileInfo.FullName}");
+                outfile.Write(data, 0, data.Length);
+            }
         }
 
         public static Task<Texture2D> ReadDDSGz(FileInfo fileInfo, bool linear)
         {
-            GZipStream infile = new GZipStream(fileInfo.OpenRead(), CompressionMode.Decompress);
+            var fileStream = fileInfo.OpenRead();
+            var infile = new GZipStream(fileStream, CompressionMode.Decompress);
 
             try
             {
@@ -188,7 +192,7 @@ namespace SkinManagerMod
                 var nativeArray = texture.GetRawTextureData<byte>();
                 return Task.Run(() =>
                 {
-                    using (infile)
+                    try
                     {
                         buf = new byte[nativeArray.Length];
                         bytesRead = infile.Read(buf, 0, nativeArray.Length);
@@ -197,11 +201,17 @@ namespace SkinManagerMod
                         nativeArray.CopyFrom(buf);
                         return texture;
                     }
+                    finally
+                    {
+                        infile.Close();
+                        fileStream.Close();
+                    }
                 });
             }
             catch (Exception ex)
             {
                 infile.Close();
+                fileStream.Close();
                 throw ex;
             }
         }

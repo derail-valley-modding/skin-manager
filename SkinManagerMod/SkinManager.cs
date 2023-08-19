@@ -1,6 +1,7 @@
 ﻿using DV.JObjectExtstensions;
 using DV.ThingTypes;
 using Newtonsoft.Json.Linq;
+using SMShared;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -20,12 +21,11 @@ namespace SkinManagerMod
 
         private static void ReapplySkinToUsers(SkinConfig skinConfig)
         {
-            var carsInScene = Object.FindObjectsOfType<TrainCar>().Where(tc => tc.carLivery == skinConfig.Livery);
-            foreach (var car in carsInScene)
+            foreach (var car in CarSpawner.Instance.AllCars.Where(tc => tc.carLivery.id == skinConfig.CarId))
             {
-                var toApply = GetCurrentCarSkin(car);
+                var toApply = GetCurrentCarSkin(car, false);
 
-                if (toApply != null)
+                if ((toApply != null) && (toApply.Name == skinConfig.Name))
                 {
                     ApplySkin(car, toApply);
                 }
@@ -33,7 +33,7 @@ namespace SkinManagerMod
         }
 
         /// <summary>Get the currently assigned skin for given car, or a new one if none is assigned</summary>
-        public static Skin GetCurrentCarSkin(TrainCar car)
+        public static Skin GetCurrentCarSkin(TrainCar car, bool returnNewSkin = true)
         {
             if (carGuidToAppliedSkinMap.TryGetValue(car.CarGUID, out var skinName))
             {
@@ -48,7 +48,7 @@ namespace SkinManagerMod
                 }
             }
 
-            return SkinProvider.GetNewSkin(car.carLivery);
+            return returnNewSkin ? SkinProvider.GetNewSkin(car.carLivery) : null;
         }
 
         /// <summary>Save the specified skin to the given car</summary>
@@ -65,6 +65,8 @@ namespace SkinManagerMod
             {
                 SkinProvider.LastSteamerSkin = null;
             }
+
+            SkinProvider.LastDE6Skin = (car.carLivery.id == Constants.DE6_LIVERY_ID) ? skin : null;
         }
 
 

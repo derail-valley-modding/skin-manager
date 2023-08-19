@@ -3,6 +3,7 @@ using System.Linq;
 using DV;
 using DV.ThingTypes;
 using HarmonyLib;
+using SMShared;
 using UnityEngine;
 
 namespace SkinManagerMod
@@ -35,6 +36,7 @@ namespace SkinManagerMod
         private List<Skin> SkinsForCarType = null;
         private int SelectedSkinIdx = 0;
         private Skin SelectedSkin = null;
+        private Skin CurrentSkin = null;
 
         private const float SIGNAL_RANGE = 100f;
         private static readonly Vector3 HIGHLIGHT_BOUNDS_EXTENSION = new Vector3(0.25f, 0.8f, 0f);
@@ -190,6 +192,7 @@ namespace SkinManagerMod
                 case State.SelectSkin:
                     UpdateAvailableSkinsList(SelectedCar.carLivery);
                     SetSelectedSkin(SkinsForCarType?.FirstOrDefault());
+                    CurrentSkin = SkinManager.GetCurrentCarSkin(SelectedCar, false);
 
                     ButtonBehaviour = ButtonBehaviourType.Override;
                     break;
@@ -244,7 +247,15 @@ namespace SkinManagerMod
                     {
                         trainCar = TrainCar.Resolve(Hit.transform.root);
                         PointToCar(trainCar);
-                        display.SetAction("confirm");
+
+                        if (SelectedSkin == CurrentSkin)
+                        {
+                            display.SetAction("reload");
+                        }
+                        else
+                        {
+                            display.SetAction("apply");
+                        }
                     }
 
                     break;
@@ -275,7 +286,14 @@ namespace SkinManagerMod
                     if( (PointedCar != null) && (PointedCar == SelectedCar) )
                     {
                         // clicked on the selected car again, this means confirm
-                        ApplySelectedSkin();
+                        if (SelectedSkin == CurrentSkin)
+                        {
+                            SkinProvider.ReloadSkin(SelectedCar.carLivery.id, SelectedSkin.Name);
+                        }
+                        else
+                        {
+                            ApplySelectedSkin();
+                        }
                         CommsRadioController.PlayAudioFromRadio(ConfirmSound, transform);
                     }
                     else
@@ -347,6 +365,7 @@ namespace SkinManagerMod
             }
 
             SkinManager.ApplySkin(SelectedCar, SelectedSkin);
+            CurrentSkin = SelectedSkin;
 
             if( CarTypes.IsMUSteamLocomotive(SelectedCar.carType) && SelectedCar.rearCoupler.IsCoupled() )
             {
