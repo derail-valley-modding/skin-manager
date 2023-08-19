@@ -35,6 +35,7 @@ namespace SMShared
             "LocoS282A",
             "LocoS282B",
             "LocoS060",
+            "LocoDE6Slug",
             "AutorackBlue",
             "AutorackGreen",
             "AutorackRed",
@@ -67,5 +68,8 @@ namespace SMShared
             "TankWhite",
             "TankYellow",
         };
+
+        public const string DE6_LIVERY_ID = "LocoDE6";
+        public const string SLUG_LIVERY_ID = "LocoDE6Slug";
     }
 }

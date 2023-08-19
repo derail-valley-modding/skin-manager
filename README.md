@@ -1,15 +1,27 @@
 # Skin Manager Mod (For Users)
-## Installation
+## How to Install the Mod:
 1) Download & install Unity Mod Manager from Nexus Mods.
 2) Download the latest Skin Manager release from Github or Nexus Mods. Find the downloaded zip file and drag it into the mods tab of Unity Mod Manager.
 
-## Adding Skins
+## How to Add Skins:
 ### v3.1+ skins with an Info.json file:
 As of v3.1, skins are now treated as their own mods by Unity Mod Manager. If the skin is compatible, you can simply drag and drop the zip into the mods tab of UMM. If this results in an error, you are likely dealing with an older format of skin. See the instructions below.
-### v3.0 skins with a BepInEx content folder:
-The initial release of skin manager for Simulator was based on BepInEx. Skins made for this period of time should have a BepInEx folder inside the archive. Install the skin by extracting the archive and merging its BepInEx folder into the BepInEx folder of the Game (`\Steam\steamapps\common\Derail Valley\BepInEx`).
-### Overhauled skins with a Skins or <car type> folder:
-If you are using an older skin (one that contains either a Skins folder or just car type folders), navigate to the skins folder in your DV install (`\Steam\steamapps\common\Derail Valley\Mods\SkinManagerMod\Skins\`). Extract each of the car type folders from the archive into the SkinManagerMod\Skins folder. The proper skin path should look like this - `\Derail Valley\BepInEx\content\skins\<train-car-type>\<skin-name>\<skin-files>`.
+### v3.0 and Earlier Skins:
+The easiest way to install earlier skins is to use the configurator app:
+1) Download and launch the SkinConfigurator application
+2) In the menu bar, click Import > Import Old Zip...
+3) Use the file picker to select the skin pack that you want to install
+4) Any skins found in the pack will be listed in the window. You may need to adjust the Names and Car IDs by selecting a skin in the list and using the inputs at the bottom of the window. You can also remove skins by selecting them and clicking the "Remove Skin" menu button.
+5) If you only want to use the skin on your own computer, you can click the yellow "Install Unzipped..." button.
+6) A folder picker should appear - if it is not already pointed at your steamapps/common/Derail Valley/Mods folder, navigate there yourself. Select or create a new folder under Mods to hold the skin pack.
+7) Once you've picked the destination, hit Select Folder and you should get a message saying the export was successful.
+8) Run the game
+
+### Last Resort Instructions:
+The initial release of skin manager for Simulator was based on BepInEx. Skins made for this period of time should have a BepInEx folder inside the archive. Install the skin by extracting the archive and merging its BepInEx folder into the BepInEx folder of the Game (*\Steam\steamapps\common\Derail Valley\BepInEx*).
+
+If you are using an older skin (one that contains either a Skins folder or just car type folders), navigate to the skins folder in your DV install (*\Steam\steamapps\common\Derail Valley\Mods\SkinManagerMod\Skins\\*). Extract each of the car type folders from the archive into the *SkinManagerMod\Skins* folder. The proper skin path should look like this - *Derail Valley\Mods\SkinManagerMod\Skins\content\skins\<train-car-type>\<skin-name>\<skin-files>*.
+
 
 # Skin Configurator (For Creators)
 ## Exporting Textures

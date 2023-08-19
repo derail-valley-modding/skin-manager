@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using UnityModManagerNet;
 
@@ -15,6 +13,7 @@ namespace SkinManagerMod
     public class SkinProvider
     {
         public static Skin LastSteamerSkin { get; set; }
+        public static Skin LastDE6Skin { get; set; }
 
         /// <summary>Emitted when skin(s) are reloaded from disk
         public static event Action SkinsLoaded;
@@ -28,6 +27,15 @@ namespace SkinManagerMod
         private static readonly Dictionary<string, SkinGroup> skinGroups = new Dictionary<string, SkinGroup>();
         public static IEnumerable<SkinGroup> AllSkinGroups => skinGroups.Values;
 
+        private static void UnloadSkin(string liveryId, string skinName)
+        {
+            var skinGroup = skinGroups[liveryId];
+            if (skinGroup.Skins.Find(s => s.Name == skinName) is Skin existingSkin)
+            {
+                skinGroup.Skins.Remove(existingSkin);
+            }
+        }
+
         /// <summary>Livery ID to default skin mapping</summary>
         private static readonly Dictionary<string, Skin> defaultSkins = new Dictionary<string, Skin>();
 
@@ -40,23 +48,46 @@ namespace SkinManagerMod
         public static bool TryGetDefaultSkin(string carId, out Skin skin) => defaultSkins.TryGetValue(carId, out skin);
         public static Skin GetDefaultSkin(string carId) => defaultSkins[carId];
 
-        public static Skin FindSkinByName(TrainCarLivery carType, string name)
+        public static Skin FindSkinByName(TrainCarLivery carType, string name) => FindSkinByName(carType.id, name);
+
+        public static Skin FindSkinByName(string carId, string name)
         {
-            if (skinGroups.TryGetValue(carType.id, out var group))
+            if (skinGroups.TryGetValue(carId, out var group))
             {
                 return group.GetSkin(name);
+            }
+            if ((GetDefaultSkin(carId) is Skin defSkin) && (defSkin.Name == name))
+            {
+                return defSkin;
             }
             return null;
         }
 
-        public static List<Skin> GetSkinsForType(TrainCarLivery carType, bool includeDefault = true)
+        public static List<Skin> GetSkinsForType(TrainCarLivery carType, bool includeDefault = true) => GetSkinsForType(carType.id, includeDefault);
+
+        public static List<Skin> GetSkinsForType(string carId, bool includeDefault = true)
         {
-            if (skinGroups.TryGetValue(carType.id, out var group))
+            var result = new List<Skin>();
+
+            if (skinGroups.TryGetValue(carId, out var group))
             {
-                var result = group.Skins;
-                return includeDefault ? result.Append(defaultSkins[carType.id]).ToList() : result;
+                result.AddRange(group.Skins);
             }
-            return includeDefault ? new List<Skin>() { defaultSkins[carType.id] } : new List<Skin>();
+
+            if (Main.Settings.allowDE6SkinsForSlug && (carId == Constants.SLUG_LIVERY_ID))
+            {
+                if (skinGroups.TryGetValue(Constants.DE6_LIVERY_ID, out group))
+                {
+                    result.AddRange(group.Skins);
+                }
+            }
+
+            if (includeDefault)
+            {
+                result.Add(defaultSkins[carId]);
+            }
+
+            return result;
         }
 
         public static Skin GetNewSkin(TrainCarLivery carType)
@@ -66,6 +97,18 @@ namespace SkinManagerMod
                 if (FindSkinByName(carType, LastSteamerSkin.Name) is Skin matchingTenderSkin)
                 {
                     return matchingTenderSkin;
+                }
+            }
+
+            if ((carType.id == Constants.SLUG_LIVERY_ID) && (LastDE6Skin != null))
+            {
+                if (FindSkinByName(carType, LastDE6Skin.Name) is Skin matchingSlugSkin)
+                {
+                    return matchingSlugSkin;
+                }
+                if (Main.Settings.allowDE6SkinsForSlug)
+                {
+                    return LastDE6Skin;
                 }
             }
 
@@ -117,11 +160,59 @@ namespace SkinManagerMod
             return true;
         }
 
-        public static void ReloadAllSkins(bool forceSync = false)
+        /// <summary>
+        /// Synchronously reload all skins for all car types
+        /// </summary>
+        /// <returns>Number of skins reloaded</returns>
+        public static int ReloadAllSkins(bool forceSync = false)
         {
+            int loadedCount = 0;
             foreach (var mod in UnityModManager.modEntries.Where(m => m.Info.Id != Constants.MOD_ID))
             {
-                ReloadSkinMod(mod, forceSync);
+                loadedCount += ReloadSkinMod(mod, forceSync);
+            }
+
+            loadedCount += LoadLegacySkins();
+            return loadedCount;
+        }
+
+        /// <summary>
+        /// Synchronously reload all skins for given car type
+        /// </summary>
+        /// <returns>Number of skins reloaded</returns>
+        public static int ReloadSkinsForType(TrainCarLivery livery)
+        {
+            int reloadedCount = 0;
+
+            foreach (var mod in UnityModManager.modEntries.Where(m => m.Info.Id != Constants.MOD_ID))
+            {
+                var currentConfig = skinConfigs.FirstOrDefault(m => m.modEntry.Info == mod.Info);
+                if ((currentConfig != null) && currentConfig.Any(c => c.CarId == livery.id))
+                {
+                    reloadedCount += ReloadSkinMod(mod, true);
+                }
+            }
+
+            reloadedCount += ReloadLegacySkinsForType(livery);
+            return reloadedCount;
+        }
+
+        /// <summary>
+        /// Synchronously reload a single skin for a single car type
+        /// </summary>
+        public static void ReloadSkin(string liveryId, string skinName)
+        {
+            foreach (var collection in skinConfigs)
+            {
+                foreach (var config in collection)
+                {
+                    if (config.CarId == liveryId && config.Name == skinName)
+                    {
+                        UnloadSkin(liveryId, skinName);
+                        BeginLoadSkin(config, true);
+                        SkinUpdated?.Invoke(config);
+                    }
+                }
             }
         }
 
@@ -172,7 +263,8 @@ namespace SkinManagerMod
         /// <summary>
         /// Load or reload all skins belonging to the given mod
         /// </summary>
-        private static void ReloadSkinMod(UnityModManager.ModEntry mod, bool forceSync = false)
+        /// <returns>Number of skins loaded</returns>
+        private static int ReloadSkinMod(UnityModManager.ModEntry mod, bool forceSync = false)
         {
             // get currently enabled skins
             var removedSkins = new LinkedList<SkinConfig>();
@@ -184,7 +276,7 @@ namespace SkinManagerMod
 
                 foreach (var config in currentConfig)
                 {
-                    skinGroups[config.CarId].Skins.Remove(config.Skin);
+                    UnloadSkin(config.CarId, config.Name);
                     removedSkins.AddLast(config);
                 }
             }
@@ -192,6 +284,7 @@ namespace SkinManagerMod
             // get newly enabled skins
             var updatedSkins = new List<SkinConfig>();
 
+            int loadedCount = 0;
             if (mod.Active)
             {
                 var newConfig = GetSkinConfigs(mod);
@@ -208,6 +301,7 @@ namespace SkinManagerMod
                 }
 
                 skinConfigs.AddLast(newConfig);
+                loadedCount = newConfig.Configs.Count;
             }
 
             // emit events
@@ -220,6 +314,8 @@ namespace SkinManagerMod
             {
                 SkinUpdated?.Invoke(config);
             }
+
+            return loadedCount;
         }
 
         private static Dictionary<string, string> GetCarTextureDictionary(TrainCarLivery carType)
@@ -295,11 +391,11 @@ namespace SkinManagerMod
         {
             if (forceSync || !Main.Settings.parallelLoading)
             {
-                Main.Log($"Synchronous loading {config.Name} @ {config.FolderPath}");
+                Main.LogVerbose($"Synchronous loading {config.Name} @ {config.FolderPath}");
             }
             else
             {
-                Main.Log($"Async loading {config.Name} @ {config.FolderPath}");
+                Main.LogVerbose($"Async loading {config.Name} @ {config.FolderPath}");
             }
 
             var skin = new Skin(config.Name, config.FolderPath);
@@ -354,8 +450,13 @@ namespace SkinManagerMod
         private static string OverhauledSkinFolder => Path.Combine(Main.Instance.Path, Constants.SKIN_FOLDER_NAME);
         private static string BepInExSkinFolder => Path.Combine(Main.Instance.Path, "..", "..", "BepInEx", "content", "skins");
 
-        private static void LoadLegacySkins()
+        private static int LoadLegacySkins()
         {
+            if (skinConfigs.FirstOrDefault(mc => mc.modEntry.Info == Main.Instance.Info) is ModSkinCollection existing)
+            {
+                skinConfigs.Remove(existing);
+            }
+
             var result = new ModSkinCollection(Main.Instance);
 
             foreach (var livery in Globals.G.Types.Liveries)
@@ -365,6 +466,20 @@ namespace SkinManagerMod
             }
 
             skinConfigs.AddLast(result);
+            return result.Configs.Count;
+        }
+
+        private static int ReloadLegacySkinsForType(TrainCarLivery livery)
+        {
+            var collection = skinConfigs.First(mc => mc.modEntry.Info == Main.Instance.Info);
+
+            collection.Configs.RemoveAll(c => c.CarId == livery.id);
+            int initialCount = collection.Configs.Count;
+
+            collection.Configs.AddRange(LoadAllSkinsForType(OverhauledSkinFolder, livery));
+            collection.Configs.AddRange(LoadAllSkinsForType(BepInExSkinFolder, livery));
+
+            return collection.Configs.Count - initialCount;
         }
 
         private static IEnumerable<SkinConfig> LoadAllSkinsForType(string parentFolder, TrainCarLivery livery)
@@ -401,6 +516,7 @@ namespace SkinManagerMod
                 var config = new SkinConfig(name, subDir, carType);
                 BeginLoadSkin(config, false);
 
+                SkinUpdated?.Invoke(config);
                 yield return config;
             }
         }

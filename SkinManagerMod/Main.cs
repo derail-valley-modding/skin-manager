@@ -43,6 +43,7 @@ namespace SkinManagerMod
 
             Instance.OnGUI = OnGUI;
             Instance.OnSaveGUI = OnSaveGUI;
+            Instance.OnHideGUI = OnHideGUI;
 
             QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
             return true;
@@ -59,6 +60,8 @@ namespace SkinManagerMod
             "Random For All Cars"
         };
 
+        private static string _guiMessage;
+
         static void OnGUI(UnityModManager.ModEntry modEntry)
         {
             GUILayout.BeginVertical();
@@ -69,10 +72,12 @@ namespace SkinManagerMod
                 Settings.aniso5 = newAniso;
             }
             Settings.parallelLoading = GUILayout.Toggle(Settings.parallelLoading, "Multi-threaded texture loading");
+            Settings.allowDE6SkinsForSlug = GUILayout.Toggle(Settings.allowDE6SkinsForSlug, "Allow DE6 skins to be applied to slug");
+            Settings.verboseLogging = GUILayout.Toggle(Settings.verboseLogging, "Log extra skin loading information");
 
             GUILayout.Label("Default skin usage:");
             Settings.defaultSkinsMode = (DefaultSkinsMode)GUILayout.SelectionGrid((int)Settings.defaultSkinsMode, defaultSkinModeTexts, 1, "toggle");
-            GUILayout.Space(2);
+            GUILayout.Space(5);
 
             GUILayout.Label("Texture Utility");
 
@@ -108,13 +113,20 @@ namespace SkinManagerMod
 
             if (trainCarSelected != null)
             {
-                if (GUILayout.Button("Export Textures", GUILayout.Width(180)))
+                if (GUILayout.Button("Export Textures", GUILayout.Width(300)))
                 {
                     TextureUtility.DumpTextures(trainCarSelected);
                 }
+
+                if (GUILayout.Button("Reload Skins for Selected Type", GUILayout.Width(300)))
+                {
+                    int reloadedCount = SkinProvider.ReloadSkinsForType(trainCarSelected);
+                    _guiMessage = $"Reloaded {reloadedCount} skins for car {trainCarSelected.id}";
+                }
             }
 
-            if (GUILayout.Button("Export All Textures (Warning: Slow!)", GUILayout.Width(220)))
+            GUILayout.Space(5);
+            if (GUILayout.Button("Export All Textures (Warning: Slow!)", GUILayout.Width(300)))
             {
                 foreach (var livery in Globals.G.Types.Liveries)
                 {
@@ -122,9 +134,16 @@ namespace SkinManagerMod
                 }
             }
 
-            if (GUILayout.Button("Reload Skins (Warning: Slow!)", GUILayout.Width(220)))
+            if (GUILayout.Button("Reload All Skins (Warning: Slow!)", GUILayout.Width(300)))
             {
-                SkinProvider.ReloadAllSkins(true);
+                int reloadedCount = SkinProvider.ReloadAllSkins(true);
+                _guiMessage = $"Reloaded {reloadedCount} skins";
+            }
+
+            if (!string.IsNullOrEmpty(_guiMessage))
+            {
+                GUILayout.Space(2);
+                GUILayout.Label(_guiMessage);
             }
 
             GUILayout.EndVertical();
@@ -135,9 +154,22 @@ namespace SkinManagerMod
             Settings.Save(modEntry);
         }
 
+        static void OnHideGUI(UnityModManager.ModEntry modEntry)
+        {
+            _guiMessage = null;
+        }
+
         public static void Log(string message)
         {
             Instance.Logger.Log(message);
+        }
+
+        public static void LogVerbose(string message)
+        {
+            if (Settings.verboseLogging)
+            {
+                Instance.Logger.Log(message);
+            }
         }
 
         public static void Warning(string message)
@@ -168,6 +200,8 @@ namespace SkinManagerMod
         public bool aniso5 = true;
         public bool parallelLoading = true;
         public DefaultSkinsMode defaultSkinsMode = DefaultSkinsMode.AllowForCustomCars;
+        public bool allowDE6SkinsForSlug = true;
+        public bool verboseLogging = false;
 
         public override void Save(UnityModManager.ModEntry modEntry)
         {
