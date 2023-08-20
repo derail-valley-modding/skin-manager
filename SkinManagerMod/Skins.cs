@@ -7,13 +7,15 @@ namespace SkinManagerMod
 {
     public class Skin
     {
+        public readonly string LiveryId;
         public readonly string Name;
         public readonly string Path;
         public readonly bool IsDefault;
         public readonly List<SkinTexture> SkinTextures = new List<SkinTexture>();
 
-        public Skin(string name, string directory = null, bool isDefault = false)
+        public Skin(string liveryId, string name, string directory = null, bool isDefault = false)
         {
+            LiveryId = liveryId;
             Name = name;
             Path = directory;
             IsDefault = isDefault;
