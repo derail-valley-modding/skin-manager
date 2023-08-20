@@ -45,8 +45,17 @@ namespace SkinManagerMod
 
         #region Provider Methods
 
-        public static bool TryGetDefaultSkin(string carId, out Skin skin) => defaultSkins.TryGetValue(carId, out skin);
-        public static Skin GetDefaultSkin(string carId) => defaultSkins[carId];
+        public static Skin GetDefaultSkin(string carId)
+        {
+            if (defaultSkins.TryGetValue(carId, out Skin existing))
+            {
+                return existing;
+            }
+
+            var newDefault = CreateDefaultSkin(Globals.G.Types.Liveries.First(l => l.id == carId));
+            defaultSkins[carId] = newDefault;
+            return newDefault;
+        }
 
         public static Skin FindSkinByName(TrainCarLivery carType, string name) => FindSkinByName(carType.id, name);
 
@@ -241,7 +250,6 @@ namespace SkinManagerMod
             if (nowActive)
             {
                 ReloadSkinMod(mod, WorldStreamingInit.IsStreamingDone); // force synchronous if in-game
-                SkinsLoaded?.Invoke();
             }
             else
             {
@@ -294,10 +302,8 @@ namespace SkinManagerMod
                     BeginLoadSkin(config, forceSync);
 
                     // check if not removed, but updated
-                    if (removedSkins.Remove(config))
-                    {
-                        updatedSkins.Add(config);
-                    }
+                    removedSkins.Remove(config);
+                    updatedSkins.Add(config);
                 }
 
                 skinConfigs.AddLast(newConfig);
@@ -343,7 +349,7 @@ namespace SkinManagerMod
             //    skinDir = CCLPatch.GetCarFolder(carType);
             //}
 
-            var defaultSkin = new Skin($"Default_{carType.id}", skinDir, isDefault: true);
+            var defaultSkin = new Skin(carType.id, $"Default_{carType.id}", skinDir, isDefault: true);
 
             foreach (var texture in TextureUtility.EnumerateTextures(carType))
             {
@@ -398,7 +404,7 @@ namespace SkinManagerMod
                 Main.LogVerbose($"Async loading {config.Name} @ {config.FolderPath}");
             }
 
-            var skin = new Skin(config.Name, config.FolderPath);
+            var skin = new Skin(config.CarId, config.Name, config.FolderPath);
             config.Skin = skin;
 
             // find correct group, remove existing skin

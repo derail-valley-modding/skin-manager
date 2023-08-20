@@ -21,6 +21,8 @@ namespace SkinManagerMod
 
         private static void ReapplySkinToUsers(SkinConfig skinConfig)
         {
+            if (!CarSpawner.Instance) return;
+
             foreach (var car in CarSpawner.Instance.AllCars.Where(tc => tc.carLivery.id == skinConfig.CarId))
             {
                 var toApply = GetCurrentCarSkin(car, false);
@@ -37,7 +39,8 @@ namespace SkinManagerMod
         {
             if (carGuidToAppliedSkinMap.TryGetValue(car.CarGUID, out var skinName))
             {
-                if (SkinProvider.TryGetDefaultSkin(car.carLivery.id, out Skin defaultSkin) && (skinName == defaultSkin.Name))
+                var defaultSkin = SkinProvider.GetDefaultSkin(car.carLivery.id);
+                if (skinName == defaultSkin.Name)
                 {
                     return defaultSkin;
                 }
