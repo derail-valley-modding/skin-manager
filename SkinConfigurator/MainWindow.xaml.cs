@@ -189,6 +189,13 @@ namespace SkinConfigurator
 
         private void TestPackButton_Click(object sender, RoutedEventArgs e)
         {
+            MessageBox.Show("Select the destination folder for your skin pack - " +
+                "this should be a child of the Mods folder in your DV install directory. You may need " +
+                "to create a folder if this is the first time exporting a pack. For example:\n\n" +
+                "\"C:\\Program Files\\Steam\\steamapps\\common\\Derail Valley\\Mods\\My Beautiful Skin\\\"\n\n" +
+                "THIS WILL CLEAR THE SELECTED FOLDER!\nProceed with caution.",
+                "Select destination folder for skins", MessageBoxButton.OK, MessageBoxImage.Information);
+
             var dialog = new System.Windows.Forms.FolderBrowserDialog()
             {
                 Description = "Select destination folder for skins",
