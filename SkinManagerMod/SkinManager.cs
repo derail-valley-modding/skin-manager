@@ -100,7 +100,7 @@ namespace SkinManagerMod
 
         private static void ApplySkin(Transform objectRoot, Skin skin, Skin defaultSkin)
         {
-            foreach (var renderer in objectRoot.GetComponentsInChildren<MeshRenderer>())
+            foreach (var renderer in objectRoot.GetComponentsInChildren<MeshRenderer>(true))
             {
                 if (!renderer.material)
                 {
