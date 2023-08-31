@@ -1,3 +1,4 @@
+using SMShared;
 using System;
 using System.IO;
 using System.IO.Compression;
@@ -11,7 +12,7 @@ namespace SkinManagerMod
 {
     public static class TextureLoader
     {
-        public static void BustCache(SkinConfig skin, string texturePath)
+        public static void BustCache(SkinJsonFileBase skin, string texturePath)
         {
             var cached = new FileInfo(GetCachePath(skin, texturePath));
             if (cached.Exists)
@@ -20,7 +21,7 @@ namespace SkinManagerMod
             }
         }
 
-        private static Task<Texture2D> TryLoadFromCache(SkinConfig skin, string texturePath, bool linear)
+        private static Task<Texture2D> TryLoadFromCache(SkinJsonFileBase skin, string texturePath, bool linear)
         {
             var texFile = new FileInfo(texturePath);
             var cached = new FileInfo(GetCachePath(skin, texturePath));
@@ -48,7 +49,7 @@ namespace SkinManagerMod
             }
         }
 
-        public static Task<Texture2D> LoadAsync(SkinConfig skin, string texturePath, bool linear)
+        public static Task<Texture2D> LoadAsync(SkinJsonFileBase skin, string texturePath, bool linear)
         {
             var cached = TryLoadFromCache(skin, texturePath, linear);
             if (!cached.IsCompleted || cached.Result != null)
@@ -71,7 +72,7 @@ namespace SkinManagerMod
             });
         }
 
-        public static Texture2D LoadSync(SkinConfig skin, string texturePath, bool linear)
+        public static Texture2D LoadSync(SkinJsonFileBase skin, string texturePath, bool linear)
         {
             var texture = new Texture2D(0, 0, textureFormat: TextureFormat.RGBA32, mipChain: true, linear: linear);
             texture.LoadImage(File.ReadAllBytes(texturePath));
@@ -79,7 +80,7 @@ namespace SkinManagerMod
             return texture;
         }
 
-        private static string GetCachePath(SkinConfig skin, string texturePath)
+        private static string GetCachePath(SkinJsonFileBase skin, string texturePath)
         {
             // SkinManagerMod/Cache/<carId>/<skinName>/<textureName>.dds.gz
             string cacheFileName = Path.GetFileNameWithoutExtension(texturePath) + ".dds.gz";

@@ -1,5 +1,6 @@
 ﻿using DV.ThingTypes;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -12,13 +13,15 @@ namespace SkinManagerMod
         public readonly string Path;
         public readonly bool IsDefault;
         public readonly List<SkinTexture> SkinTextures = new List<SkinTexture>();
+        public readonly string[] ResourcePaths;
 
-        public Skin(string liveryId, string name, string directory = null, bool isDefault = false)
+        public Skin(string liveryId, string name, string directory = null, bool isDefault = false, string[] resourcePaths = null)
         {
             LiveryId = liveryId;
             Name = name;
             Path = directory;
             IsDefault = isDefault;
+            ResourcePaths = resourcePaths;
         }
 
         public bool ContainsTexture(string name)
@@ -29,6 +32,26 @@ namespace SkinManagerMod
         public SkinTexture GetTexture(string name)
         {
             return SkinTextures.Find(tex => tex.Name == name);
+        }
+
+        public FileInfo GetResource(string filename)
+        {
+            string absPath = System.IO.Path.Combine(Path, filename);
+            if (File.Exists(absPath))
+            {
+                return new FileInfo(absPath);
+            }
+
+            foreach (string resourceFolder in ResourcePaths)
+            {
+                absPath = System.IO.Path.Combine(resourceFolder, filename);
+                if (File.Exists(absPath))
+                {
+                    return new FileInfo(absPath);
+                }
+            }
+
+            return null;
         }
     }
 

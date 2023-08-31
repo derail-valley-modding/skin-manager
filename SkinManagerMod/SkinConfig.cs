@@ -22,6 +22,12 @@ namespace SkinManagerMod
         [JsonIgnore]
         public Skin Skin;
 
+        [JsonIgnore]
+        public List<ResourcePack> Resources = new List<ResourcePack>();
+
+        [JsonIgnore]
+        public string[] ResourcePaths => Resources.Select(r => r.FolderPath).ToArray();
+
         public SkinConfig() { }
 
         public SkinConfig(string name, string folderPath, TrainCarLivery livery)
@@ -68,6 +74,7 @@ namespace SkinManagerMod
         public bool IsEnabled => modEntry.Active;
 
         public readonly List<SkinConfig> Configs = new List<SkinConfig>();
+        public readonly List<ResourcePack> ResourcePacks = new List<ResourcePack>();
 
         public ModSkinCollection(UnityModManager.ModEntry modEntry)
         {

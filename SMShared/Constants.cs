@@ -14,6 +14,7 @@ namespace SMShared
         
         public const string MOD_INFO_FILE = "Info.json";
         public const string SKIN_CONFIG_FILE = "skin.json";
+        public const string SKIN_RESOURCE_FILE = "skin_resource.json";
 
         public static readonly string[] SupportedImageExtensions = { ".png", ".jpeg", ".jpg" };
 

@@ -7,10 +7,17 @@ using System;
 namespace SMShared
 {
     [Serializable]
-    public class SkinConfigBase
+    public class SkinJsonFileBase
     {
         public string Name;
         public string CarId;
+
+        public SkinJsonFileBase() { }
+    }
+
+    public class SkinConfigBase : SkinJsonFileBase
+    {
+        public string[] ResourceNames;
 
         public SkinConfigBase() { }
     }
