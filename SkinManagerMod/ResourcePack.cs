@@ -1,7 +1,7 @@
 ﻿using DV;
 using DV.ThingTypes;
 using Newtonsoft.Json;
-using SMShared;
+using SMShared.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,7 +9,7 @@ using System.Linq;
 
 namespace SkinManagerMod
 {
-    public class ResourcePack : SkinJsonFileBase
+    public class ResourcePack : ResourceConfigJson
     {
         [JsonIgnore]
         public TrainCarLivery Livery;

@@ -24,6 +24,13 @@ namespace SMShared
             return SupportedImageExtensions.Contains(ext);
         }
 
+        public static bool IsSkinConfigFile(string filename)
+        {
+            return filename.EndsWith(MOD_INFO_FILE) ||
+                filename.EndsWith(SKIN_CONFIG_FILE) ||
+                filename.EndsWith(SKIN_RESOURCE_FILE);
+        }
+
         public const string CUSTOM_TYPE = "CUSTOM";
 
         public static readonly string[] LiveryNames =

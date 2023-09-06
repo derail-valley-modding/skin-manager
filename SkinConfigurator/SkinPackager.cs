@@ -1,4 +1,5 @@
-﻿using SMShared;
+﻿using SkinConfigurator.ViewModels;
+using SMShared;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,7 +18,7 @@ namespace SkinConfigurator
         protected readonly string _destPath;
         protected readonly SkinPackModel _model;
 
-        protected static readonly JsonSerializerOptions _serializeOptions = new()
+        public static readonly JsonSerializerOptions JsonSettings = new()
         {
             WriteIndented = true,
             IncludeFields = true,
@@ -29,7 +30,6 @@ namespace SkinConfigurator
         {
             try
             {
-                model.Trim();
                 using var packager = (T)Activator.CreateInstance(typeof(T), new object[] { path, model })!;
                 packager.WriteModel();
             }
@@ -49,7 +49,7 @@ namespace SkinConfigurator
         {
             WriteModInfo();
 
-            foreach (var skin in _model.SkinConfigModels)
+            foreach (var skin in _model.PackComponents)
             {
                 WriteSkin(skin);
             }
@@ -57,27 +57,11 @@ namespace SkinConfigurator
 
         protected abstract void WriteModInfo();
 
-        protected abstract void WriteSkin(SkinConfigModel skin);
-
-        protected static string GetTargetFileName(string folderName, string sourcePath, string liveryId)
-        {
-            if (Constants.IsSupportedExtension(Path.GetExtension(sourcePath)))
-            {
-                string filename = Path.GetFileNameWithoutExtension(sourcePath);
-                string extension = Path.GetExtension(sourcePath);
-
-                if (Remaps.TryGetUpdatedTextureName(liveryId, filename, out string newName))
-                {
-                    return Path.Combine(folderName, string.Concat(newName, extension));
-                }
-            }
-
-            return Path.Combine(folderName, Path.GetFileName(sourcePath));
-        }
+        protected abstract void WriteSkin(PackComponentModel skin);
 
         protected string GetSkinFolderName(string skinName, string liveryId)
         {
-            if (_model.SkinConfigModels.Any(s => (s.Name == skinName) && (s.CarId != liveryId)))
+            if (_model.PackComponents.Any(s => (s.Name == skinName) && (s.CarId != liveryId)))
             {
                 // exporting same skin for another car type, prefix name
                 return $"{skinName}_{liveryId}";

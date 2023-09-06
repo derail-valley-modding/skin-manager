@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using SkinConfigurator.ViewModels;
 
 namespace SkinConfigurator
 {
@@ -35,23 +36,26 @@ namespace SkinConfigurator
         protected override void WriteModInfo()
         {
             using var stream = _archive.CreateEntry(Constants.MOD_INFO_FILE).Open();
-            JsonSerializer.Serialize(stream, _model.ModInfoModel, _serializeOptions);
+            JsonSerializer.Serialize(stream, _model.ModInfoModel.JsonModel(), JsonSettings);
         }
 
-        protected override void WriteSkin(SkinConfigModel skin)
+        protected override void WriteSkin(PackComponentModel skin)
         {
             // skin.json
-            string folderName = GetSkinFolderName(skin.Name, skin.CarId);
-            var jsonEntry = _archive.CreateEntry(Path.Combine(folderName, Constants.SKIN_CONFIG_FILE));
+            string folderName = GetSkinFolderName(skin.Name!, skin.CarId!);
+            string jsonFileName = skin.Type == PackComponentType.Skin ? Constants.SKIN_CONFIG_FILE : Constants.SKIN_RESOURCE_FILE;
+            var jsonEntry = _archive.CreateEntry(Path.Combine(folderName, jsonFileName));
             using var jsonStream = jsonEntry.Open();
-            JsonSerializer.Serialize(jsonStream, skin, _serializeOptions);
+
+            var json = skin.JsonModel();
+            JsonSerializer.Serialize(jsonStream, json, json.GetType(), JsonSettings);
             jsonStream.Close();
 
             // textures & whatever else
-            foreach (var sourceFile in Directory.EnumerateFiles(skin.FolderPath))
+            foreach (var sourceFile in skin.Items)
             {
-                string relativePath = GetTargetFileName(folderName, sourceFile, skin.CarId);
-                _archive.CreateEntryFromFile(sourceFile, relativePath);
+                string relativePath = Path.Combine(folderName, sourceFile.FileName);
+                _archive.CreateEntryFromFile(sourceFile.TempPath, relativePath);
             }
         }
     }

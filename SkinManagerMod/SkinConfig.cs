@@ -1,7 +1,7 @@
 ﻿using DV;
 using DV.ThingTypes;
 using Newtonsoft.Json;
-using SMShared;
+using SMShared.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -11,7 +11,7 @@ using UnityModManagerNet;
 
 namespace SkinManagerMod
 {
-    public class SkinConfig : SkinConfigBase
+    public class SkinConfig : SkinConfigJson
     {
         [JsonIgnore]
         public TrainCarLivery Livery;

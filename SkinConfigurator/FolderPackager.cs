@@ -1,4 +1,5 @@
-﻿using SMShared;
+﻿using SkinConfigurator.ViewModels;
+using SMShared;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -35,25 +36,28 @@ namespace SkinConfigurator
         {
             string dest = GetAbsoluteDestination(Constants.MOD_INFO_FILE);
             using var stream = File.Open(dest, FileMode.Create);
-            JsonSerializer.Serialize(stream, _model.ModInfoModel, _serializeOptions);
+            JsonSerializer.Serialize(stream, _model.ModInfoModel.JsonModel(), JsonSettings);
         }
 
-        protected override void WriteSkin(SkinConfigModel skin)
+        protected override void WriteSkin(PackComponentModel skin)
         {
-            string folderName = GetSkinFolderName(skin.Name, skin.CarId);
+            string folderName = GetSkinFolderName(skin.Name!, skin.CarId!);
             string folderPath = GetAbsoluteDestination(folderName);
             Directory.CreateDirectory(folderPath);
 
-            string jsonPath = Path.Combine(folderPath, Constants.SKIN_CONFIG_FILE);
+            string jsonFileName = skin.Type == PackComponentType.Skin ? Constants.SKIN_CONFIG_FILE : Constants.SKIN_RESOURCE_FILE;
+            string jsonPath = Path.Combine(folderPath, jsonFileName);
             using var jsonStream = File.Open(jsonPath, FileMode.Create);
-            JsonSerializer.Serialize(jsonStream, skin, _serializeOptions);
+
+            var json = skin.JsonModel();
+            JsonSerializer.Serialize(jsonStream, json, json.GetType(), JsonSettings);
 
             // textures & whatever else
-            foreach (var sourceFile in Directory.EnumerateFiles(skin.FolderPath))
+            foreach (var sourceFile in skin.Items)
             {
-                string relativePath = GetTargetFileName(folderName, sourceFile, skin.CarId);
+                string relativePath = Path.Combine(folderName, sourceFile.FileName);
                 string absPath = GetAbsoluteDestination(relativePath);
-                File.Copy(sourceFile, absPath, true);
+                File.Copy(sourceFile.TempPath, absPath, true);
             }
         }
     }

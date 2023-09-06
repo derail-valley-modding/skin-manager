@@ -31,10 +31,23 @@ namespace SkinConfigurator
         }
     }
 
-    public interface IPackageable
+    public sealed class BoolToVisibilityConverter : IValueConverter
+    {
+        public Visibility FalseState { get; set; } = Visibility.Collapsed;
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return Equals(value, true) ? Visibility.Visible : FalseState;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public interface IValidated
     {
         bool IsValid { get; }
-
-        void Trim();
     }
 }
