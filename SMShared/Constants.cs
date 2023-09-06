@@ -14,6 +14,7 @@ namespace SMShared
         
         public const string MOD_INFO_FILE = "Info.json";
         public const string SKIN_CONFIG_FILE = "skin.json";
+        public const string SKIN_RESOURCE_FILE = "skin_resource.json";
 
         public static readonly string[] SupportedImageExtensions = { ".png", ".jpeg", ".jpg" };
 
@@ -21,6 +22,13 @@ namespace SMShared
         {
             var ext = extension.ToLowerInvariant();
             return SupportedImageExtensions.Contains(ext);
+        }
+
+        public static bool IsSkinConfigFile(string filename)
+        {
+            return filename.EndsWith(MOD_INFO_FILE) ||
+                filename.EndsWith(SKIN_CONFIG_FILE) ||
+                filename.EndsWith(SKIN_RESOURCE_FILE);
         }
 
         public const string CUSTOM_TYPE = "CUSTOM";

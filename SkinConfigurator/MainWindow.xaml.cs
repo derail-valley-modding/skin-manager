@@ -1,10 +1,15 @@
 ﻿using Microsoft.Win32;
+using SkinConfigurator.ViewModels;
 using SMShared;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 
 namespace SkinConfigurator
 {
@@ -13,9 +18,9 @@ namespace SkinConfigurator
     /// </summary>
     public partial class MainWindow : Window
     {
-        public SkinPackModel Model
+        public MainWindowViewModel Model
         {
-            get => (SkinPackModel)DataContext;
+            get => (MainWindowViewModel)DataContext;
             set => DataContext = value;
         }
 
@@ -23,14 +28,51 @@ namespace SkinConfigurator
 
         public MainWindow()
         {
+            string staging = Path.Combine(Environment.CurrentDirectory, "Temp", "Staging");
+            Directory.CreateDirectory(staging);
+
             InitializeComponent();
-            Model = new SkinPackModel();
+            Model = new MainWindowViewModel();
             Settings = ConfiguratorSettings.LoadConfig();
+
+            //var texes = GetCarTex("P:\\SteamLibrary\\steamapps\\common\\Derail Valley\\Mods\\SkinManagerMod\\Exported");
+            //var settings = new JsonSerializerOptions()
+            //{
+            //    WriteIndented = true,
+            //};
+            //string result = JsonSerializer.Serialize(texes, settings);
+            //File.WriteAllText(Path.Combine(Environment.CurrentDirectory, "tex.json"), result);
         }
+
+        IEnumerable<string> GetNames(string folder)
+        {
+            string[] ext = { ".png", ".jpeg", ".jpg" };
+            return Directory.GetFiles(folder)
+                .Where(s => ext.Contains(Path.GetExtension(s)))
+                .Select(s => Path.GetFileName(s))
+                .OrderBy(s => s);
+        }
+
+        Dictionary<string, string[]> GetCarTex(string baseFolder)
+        {
+            var result = new Dictionary<string, string[]>();
+            foreach (string subDir in Directory.EnumerateDirectories(baseFolder))
+            {
+                result.Add(Path.GetFileName(subDir), GetNames(subDir).ToArray());
+            }
+            return result;
+        }
+
+        #region Project Menu
 
         private void CreatePackButton_Click(object sender, RoutedEventArgs e)
         {
-            Model = new SkinPackModel();
+            Model.Reset();
+        }
+
+        private void OpenPackButton_Click(object sender, RoutedEventArgs e)
+        {
+
         }
 
         private void ImportPackButton_Click(object sender, RoutedEventArgs e)
@@ -52,7 +94,7 @@ namespace SkinConfigurator
                     return;
                 }
 
-                Model = PackImporter.ImportFromFolder(folderDialog.SelectedPath);
+                Model.SkinPack = PackImporter.ImportFromFolder(folderDialog.SelectedPath);
             }
         }
 
@@ -76,7 +118,20 @@ namespace SkinConfigurator
                     return;
                 }
 
-                Model = PackImporter.ImportFromArchive(dialog.FileName);
+                Model.SkinPack = PackImporter.ImportFromArchive(dialog.FileName);
+            }
+        }
+
+        #endregion
+
+        #region Skins Menu
+
+        private void NewSkinButton_Click(object sender, RoutedEventArgs e)
+        {
+            string? carId = PromptForCarType();
+            if (carId != null)
+            {
+                Model.AddComponent(carId);
             }
         }
 
@@ -100,7 +155,7 @@ namespace SkinConfigurator
                 }
 
                 string? carId = PromptForCarType();
-                Model.AddSkinConfig(folderDialog.SelectedPath, carId);
+                Model.AddComponent(carId, folderDialog.SelectedPath);
             }
         }
 
@@ -132,22 +187,53 @@ namespace SkinConfigurator
 
                     if (hasTextures)
                     {
-                        Model.AddSkinConfig(subDir, carId);
+                        Model.AddComponent(carId, subDir);
                     }
+                }
+            }
+        }
+
+        private void UpgradeSkinButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (Model.SelectedSkin is PackComponentModel skin)
+            {
+                foreach (var item in skin.Items.Where(f => f.CanUpgradeFileName))
+                {
+                    item.UpgradeFileName();
                 }
             }
         }
 
         private void RemoveSkinButton_Click(object sender, RoutedEventArgs e)
         {
-            Model.RemoveSelectedSkin();
+            Model.RemoveSelectedComponent();
         }
+
+        #endregion
+
+        #region Settings
+
+        private void SettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            var settingsDialog = new SettingsDialog(Settings);
+            bool? result = settingsDialog.ShowDialog();
+
+            if (result == true)
+            {
+                Settings = settingsDialog.SettingsModel.Data;
+                ConfiguratorSettings.SaveConfig(Settings);
+            }
+        }
+
+        #endregion
+
+        #region Skin Properties
 
         private void SelectCarTypeButton_Click(object sender, RoutedEventArgs e)
         {
-            if (Model.SelectedSkinConfig is SkinConfigModel skin)
+            if (Model.SelectedSkin is PackComponentModel skin)
             {
-                skin.BindingCarId = PromptForCarType();
+                skin.CarId = PromptForCarType();
             }
         }
 
@@ -168,12 +254,98 @@ namespace SkinConfigurator
             return null;
         }
 
+        private void SelectResourcesButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (Model.SelectedSkin == null) return;
+
+            var resourceSelect = new SelectResourcesWindow(this, Model.SkinPack.ResourceOptions);
+            bool? result = resourceSelect.ShowDialog();
+
+            if (result == true)
+            {
+                Model.SelectedSkin.Resources = resourceSelect.SelectedResources;
+            }
+        }
+
+        #endregion
+
+        #region Skin File Management
+
+        private void AddFileButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (Model.SelectedSkin == null) return;
+
+            string texExtensions = string.Join(';', Constants.SupportedImageExtensions.Select(e => $"*{e}"));
+
+            var browser = new OpenFileDialog()
+            {
+                Title = "Select Skin Files To Include",
+                Filter = $"Texture Files|{texExtensions}|All Files|*.*",
+                InitialDirectory = Settings.DefaultSkinWorkFolder,
+                Multiselect = true,
+            };
+
+            bool? result = browser.ShowDialog();
+            if (result == true)
+            {
+                foreach (string filePath in browser.FileNames)
+                {
+                    Model.SelectedSkin.AddItem(filePath);
+                }
+            }
+        }
+
+        private void ReplaceFileButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (Model.SelectedSkin is PackComponentModel currentComp && Model.SelectedSkinFile is SkinFileModel currentFile)
+            {
+                string texExtensions = string.Join(';', Constants.SupportedImageExtensions.Select(e => $"*{e}"));
+
+                var browser = new OpenFileDialog()
+                {
+                    Title = "Select Replacement Skin File",
+                    Filter = $"Texture Files|{texExtensions}|All Files|*.*",
+                    InitialDirectory = Settings.DefaultSkinWorkFolder,
+                    Multiselect = false,
+                };
+
+                bool? result = browser.ShowDialog();
+                if (result == true)
+                {
+                    var newItem = Model.SelectedSkin.AddItem(browser.FileName);
+                    newItem.FileName = currentFile.FileName;
+                }
+
+                currentComp.RemoveItem(currentFile);
+            }
+        }
+
+        private void RemoveFileButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (Model.SelectedSkin is PackComponentModel currentComp && Model.SelectedSkinFile is SkinFileModel currentFile)
+            {
+                currentComp.RemoveItem(currentFile);
+            }
+        }
+
+        private void UpgradeFileNameButton_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender is Button button) && (button.DataContext is SkinFileModel file))
+            {
+                file.UpgradeFileName();
+            }
+        }
+
+        #endregion
+
+        #region Packaging
+
         private void PackageButton_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new SaveFileDialog()
             {
                 Title = "Select Destination Zip",
-                FileName = Model.ModInfoModel.Id,
+                FileName = Model.SkinPack.ModInfoModel.Id,
                 AddExtension = true,
                 DefaultExt = ".zip",
                 Filter = "Zip Archives (.zip)|*.zip",
@@ -216,7 +388,7 @@ namespace SkinConfigurator
         {
             try
             {
-                SkinPackager.Package<T>(destination, Model);
+                SkinPackager.Package<T>(destination, Model.SkinPack);
                 var openDest = MessageBox.Show("Skins packaged successfully. Did you want to open the destination folder?",
                     "Success!", MessageBoxButton.YesNo, MessageBoxImage.Information);
 
@@ -231,29 +403,83 @@ namespace SkinConfigurator
             }
         }
 
-        private void SettingsButton_Click(object sender, RoutedEventArgs e)
-        {
-            var settingsDialog = new SettingsDialog(Settings);
-            bool? result = settingsDialog.ShowDialog();
+        #endregion
 
-            if (result == true)
-            {
-                Settings = settingsDialog.SettingsModel.Data;
-                ConfiguratorSettings.SaveConfig(Settings);
-            }
+        #region Drag and Drop
+
+        private Point _mouseStartPoint;
+        protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
+        {
+            base.OnPreviewMouseLeftButtonDown(e);
+            _mouseStartPoint = e.GetPosition(null);
         }
 
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        protected override void OnPreviewMouseMove(MouseEventArgs e)
         {
-            try
+            base.OnPreviewMouseMove(e);
+            if (e.LeftButton == MouseButtonState.Pressed && (e.OriginalSource is FrameworkElement source) && (source.DataContext is SkinFileModel file))
             {
-                string tempFolder = Path.Combine(Environment.CurrentDirectory, "Temp");
-                if (Directory.Exists(tempFolder))
+                var newPos = e.GetPosition(null);
+
+                if (Math.Abs(newPos.X - _mouseStartPoint.X) > SystemParameters.MinimumHorizontalDragDistance ||
+                    Math.Abs(newPos.Y - _mouseStartPoint.Y) > SystemParameters.MinimumVerticalDragDistance)
                 {
-                    Directory.Delete(tempFolder, true);
+                    var data = new DataObject(typeof(SkinFileModel), file);
+                    DragDrop.DoDragDrop(source, data, DragDropEffects.Move);
                 }
             }
-            catch { }
         }
+
+        protected override void OnDrop(DragEventArgs e)
+        {
+            base.OnDrop(e);
+
+            if (e.Data.GetData(typeof(SkinFileModel)) is SkinFileModel file)
+            {
+                if (GetTargetSkin(e.OriginalSource as DependencyObject) is PackComponentModel target)
+                {
+                    file.Parent.RemoveItem(file);
+                    target.AddItem(file);
+                }
+            }
+            else if (e.Data.GetData(DataFormats.FileDrop) is string[] files)
+            {
+                if (IsChildOf(e.OriginalSource as DependencyObject, SkinFileList) && Model.SelectedSkin is PackComponentModel target)
+                {
+                    foreach (string path in files)
+                    {
+                        target.AddItem(path);
+                    }
+                }
+            }
+        }
+
+        private static PackComponentModel? GetTargetSkin(DependencyObject? source)
+        {
+            while (source != null)
+            {
+                if (source is FrameworkElement elem && elem.DataContext is PackComponentModel component)
+                {
+                    return component;
+                }
+
+                source = VisualTreeHelper.GetParent(source);
+            }
+
+            return null;
+        }
+
+        private static bool IsChildOf(DependencyObject? child, DependencyObject parent)
+        {
+            while (child != null)
+            {
+                if (child == parent) return true;
+
+                child = VisualTreeHelper.GetParent(child);
+            }
+            return false;
+        }
+
+        #endregion
     }
 }

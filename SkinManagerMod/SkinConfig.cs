@@ -1,7 +1,7 @@
 ﻿using DV;
 using DV.ThingTypes;
 using Newtonsoft.Json;
-using SMShared;
+using SMShared.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -11,7 +11,7 @@ using UnityModManagerNet;
 
 namespace SkinManagerMod
 {
-    public class SkinConfig : SkinConfigBase
+    public class SkinConfig : SkinConfigJson
     {
         [JsonIgnore]
         public TrainCarLivery Livery;
@@ -21,6 +21,12 @@ namespace SkinManagerMod
 
         [JsonIgnore]
         public Skin Skin;
+
+        [JsonIgnore]
+        public List<ResourcePack> Resources = new List<ResourcePack>();
+
+        [JsonIgnore]
+        public string[] ResourcePaths => Resources.Select(r => r.FolderPath).ToArray();
 
         public SkinConfig() { }
 
@@ -68,6 +74,7 @@ namespace SkinManagerMod
         public bool IsEnabled => modEntry.Active;
 
         public readonly List<SkinConfig> Configs = new List<SkinConfig>();
+        public readonly List<ResourcePack> ResourcePacks = new List<ResourcePack>();
 
         public ModSkinCollection(UnityModManager.ModEntry modEntry)
         {

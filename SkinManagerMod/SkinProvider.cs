@@ -5,8 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityModManagerNet;
+using static Oculus.Avatar.CAPI;
 
 namespace SkinManagerMod
 {
@@ -217,30 +219,19 @@ namespace SkinManagerMod
                 {
                     if (config.CarId == liveryId && config.Name == skinName)
                     {
+                        if (config.Resources.Any())
+                        {
+                            ReloadSkinMod(collection.modEntry, true);
+                            return;
+                        }
+
                         UnloadSkin(liveryId, skinName);
                         BeginLoadSkin(config, true);
                         SkinUpdated?.Invoke(config);
+                        return;
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// Load all skin config files belonging to the given mod
-        /// </summary>
-        private static ModSkinCollection GetSkinConfigs(UnityModManager.ModEntry mod)
-        {
-            var result = new ModSkinCollection(mod);
-
-            foreach (string file in Directory.EnumerateFiles(mod.Path, Constants.SKIN_CONFIG_FILE, SearchOption.AllDirectories))
-            {
-                if (SkinConfig.LoadFromFile(file) is SkinConfig config)
-                {
-                    result.Configs.Add(config);
-                }
-            }
-
-            return result;
         }
 
         private static void HandleSkinModToggle(UnityModManager.ModEntry mod, bool nowActive)
@@ -295,7 +286,41 @@ namespace SkinManagerMod
             int loadedCount = 0;
             if (mod.Active)
             {
-                var newConfig = GetSkinConfigs(mod);
+                var newConfig = new ModSkinCollection(mod);
+
+                // load common resources first
+                foreach (string file in Directory.EnumerateFiles(mod.Path, Constants.SKIN_RESOURCE_FILE, SearchOption.AllDirectories))
+                {
+                    if (ResourcePack.LoadFromFile(file) is ResourcePack resourceConfig)
+                    {
+                        BeginLoadResources(resourceConfig);
+                        newConfig.ResourcePacks.Add(resourceConfig);
+                    }
+                }
+
+                // then load all skin configs
+                foreach (string file in Directory.EnumerateFiles(mod.Path, Constants.SKIN_CONFIG_FILE, SearchOption.AllDirectories))
+                {
+                    if (SkinConfig.LoadFromFile(file) is SkinConfig config)
+                    {
+                        newConfig.Configs.Add(config);
+
+                        if (config.ResourceNames != null)
+                        {
+                            foreach (string name in config.ResourceNames)
+                            {
+                                if (newConfig.ResourcePacks.Find(p => p.Name == name) is ResourcePack pack)
+                                {
+                                    config.Resources.Add(pack);
+                                }
+                                else
+                                {
+                                    Main.Warning($"Failed to find resource with name \"{name}\" while loading {config.Name} for {config.CarId}");
+                                }
+                            }
+                        }
+                    }
+                }
 
                 foreach (var config in newConfig)
                 {
@@ -389,6 +414,45 @@ namespace SkinManagerMod
             return false;
         }
 
+        internal static void BeginLoadResources(ResourcePack config, bool forceSync = false)
+        {
+            if (forceSync || !Main.Settings.parallelLoading)
+            {
+                Main.LogVerbose($"Synchronous loading resource {config.Name} @ {config.FolderPath}");
+            }
+            else
+            {
+                Main.LogVerbose($"Async loading resource {config.Name} @ {config.FolderPath}");
+            }
+
+            var textureNames = GetCarTextureDictionary(config.Livery);
+
+            // load skin files from directory
+            var files = Directory.EnumerateFiles(config.FolderPath);
+            foreach (var texturePath in files)
+            {
+                if (!Constants.IsSupportedExtension(Path.GetExtension(texturePath)))
+                    continue;
+
+                string fileName = Path.GetFileNameWithoutExtension(texturePath);
+
+                if (TryGetTextureForFilename(config.CarId, ref fileName, textureNames, out string textureProp))
+                {
+                    var linear = textureProp == "_BumpMap";
+
+                    if (!forceSync && Main.Settings.parallelLoading)
+                    {
+                        config.Textures.Add(new SkinTexture(fileName, TextureLoader.LoadAsync(config, texturePath, linear)));
+                    }
+                    else
+                    {
+                        TextureLoader.BustCache(config, texturePath);
+                        config.Textures.Add(new SkinTexture(fileName, TextureLoader.LoadSync(config, texturePath, linear)));
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Create a skin from the given directory, load textures, and add it to the given group
         /// </summary>
@@ -404,7 +468,7 @@ namespace SkinManagerMod
                 Main.LogVerbose($"Async loading {config.Name} @ {config.FolderPath}");
             }
 
-            var skin = new Skin(config.CarId, config.Name, config.FolderPath);
+            var skin = new Skin(config.CarId, config.Name, config.FolderPath, resourcePaths: config.ResourcePaths);
             config.Skin = skin;
 
             // find correct group, remove existing skin
@@ -441,6 +505,15 @@ namespace SkinManagerMod
                         TextureLoader.BustCache(config, texturePath);
                         skin.SkinTextures.Add(new SkinTexture(fileName, TextureLoader.LoadSync(config, texturePath, linear)));
                     }
+                }
+            }
+
+            // add resource files if not already included in skin
+            foreach (var texture in config.Resources.SelectMany(x => x.Textures))
+            {
+                if (!skin.SkinTextures.Any(t => t.Name == texture.Name))
+                {
+                    skin.SkinTextures.Add(texture);
                 }
             }
 

@@ -10,7 +10,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Constants.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Json\ModInfoJson.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Json\ResourceConfigJson.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Json\SkinConfigJson.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Remaps.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)SkinConfigBase.cs" />
   </ItemGroup>
 </Project>

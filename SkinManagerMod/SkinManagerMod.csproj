@@ -76,6 +76,7 @@
     <Compile Include="CarPatches.cs" />
     <None Include="CCLPatch.cs" />
     <Compile Include="CommsRadioSkinSwitcher.cs" />
+    <Compile Include="ResourcePack.cs" />
     <Compile Include="SkinConfig.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
