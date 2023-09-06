@@ -373,7 +373,16 @@ namespace SkinManagerMod
                 if( (attachedCar != null) && CarTypes.IsTender(attachedCar.carLivery) )
                 {
                     // car attached behind loco is tender
-                    Skin tenderSkin = SkinProvider.FindSkinByName(attachedCar.carLivery, SelectedSkin.Name);
+                    Skin tenderSkin;
+                    if (SelectedSkin.IsDefault)
+                    {
+                        tenderSkin = SkinProvider.GetDefaultSkin(attachedCar.carLivery.id);
+                    }
+                    else
+                    {
+                        tenderSkin = SkinProvider.FindSkinByName(attachedCar.carLivery, SelectedSkin.Name);
+                    }
+
                     if (tenderSkin != null)
                     {
                         // found a matching skin for the tender :D
