@@ -17,7 +17,11 @@ namespace SkinManagerMod
             var cached = new FileInfo(GetCachePath(skin, texturePath));
             if (cached.Exists)
             {
-                cached.Delete();
+                try
+                {
+                    cached.Delete();
+                }
+                catch { }
             }
         }
 
@@ -152,23 +156,26 @@ namespace SkinManagerMod
 
         public static void WriteDDSGz(FileInfo fileInfo, Texture2D texture)
         {
+            Main.Log($"Writing to {fileInfo.FullName}");
             using (var fileStream = fileInfo.OpenWrite())
             using (var outfile = new GZipStream(fileStream, CompressionLevel.Optimal))
             {
                 outfile.Write(DDSHeader(texture.width, texture.height, texture.format == TextureFormat.DXT5, texture.mipmapCount), 0, 128);
                 var data = texture.GetRawTextureData<byte>().ToArray();
-                Main.Log($"Writing to {fileInfo.FullName}");
                 outfile.Write(data, 0, data.Length);
             }
         }
 
         public static Task<Texture2D> ReadDDSGz(FileInfo fileInfo, bool linear)
         {
-            var fileStream = fileInfo.OpenRead();
-            var infile = new GZipStream(fileStream, CompressionMode.Decompress);
-
+            FileStream fileStream = null;
+            GZipStream infile = null;
             try
             {
+                Main.LogVerbose($"Reading from {fileInfo.FullName}");
+                fileStream = fileInfo.OpenRead();
+                infile = new GZipStream(fileStream, CompressionMode.Decompress);
+
                 var buf = new byte[4096];
                 var bytesRead = infile.Read(buf, 0, 128);
                 if (bytesRead != 128 || Encoding.ASCII.GetString(buf, 0, 4) != "DDS ")
@@ -211,8 +218,8 @@ namespace SkinManagerMod
             }
             catch (Exception ex)
             {
-                infile.Close();
-                fileStream.Close();
+                infile?.Close();
+                fileStream?.Close();
                 throw ex;
             }
         }

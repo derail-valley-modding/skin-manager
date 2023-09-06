@@ -491,7 +491,7 @@ namespace SkinManagerMod
 
                 string fileName = Path.GetFileNameWithoutExtension(texturePath);
 
-                if (!loading.Contains(fileName) && TryGetTextureForFilename(skinGroup.TrainCarType.id, ref fileName, textureNames, out string textureProp))
+                if (TryGetTextureForFilename(skinGroup.TrainCarType.id, ref fileName, textureNames, out string textureProp) && !loading.Contains(fileName))
                 {
                     var linear = textureProp == "_BumpMap";
                     loading.Add(fileName);
