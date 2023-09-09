@@ -44,7 +44,7 @@ namespace SkinConfigurator
             // skin.json
             string folderName = GetSkinFolderName(skin.Name!, skin.CarId!);
             string jsonFileName = skin.Type == PackComponentType.Skin ? Constants.SKIN_CONFIG_FILE : Constants.SKIN_RESOURCE_FILE;
-            var jsonEntry = _archive.CreateEntry(Path.Combine(folderName, jsonFileName));
+            var jsonEntry = _archive.CreateEntry($"{folderName}/{jsonFileName}");
             using var jsonStream = jsonEntry.Open();
 
             var json = skin.JsonModel();
@@ -54,8 +54,8 @@ namespace SkinConfigurator
             // textures & whatever else
             foreach (var sourceFile in skin.Items)
             {
-                string relativePath = Path.Combine(folderName, sourceFile.FileName);
-                _archive.CreateEntryFromFile(sourceFile.TempPath, relativePath);
+                string entryPath = $"{folderName}/{sourceFile.FileName}";
+                _archive.CreateEntryFromFile(sourceFile.TempPath, entryPath);
             }
         }
     }

@@ -183,7 +183,7 @@
                         </Style>
                     </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
-                        <ItemContainerTemplate DataType="model:PackItemModel">
+                        <ItemContainerTemplate DataType="model:SkinFileModel">
                             <Grid ContextMenu="{StaticResource SkinFileContextMenu}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
@@ -192,7 +192,8 @@
 
                                 <Image Width="64px" Height="64px" Source="{Binding Preview}"/>
                                 <UniformGrid Rows="2" Grid.Column="1">
-                                    <ComboBox IsEditable="True" Text="{Binding FileName}" ItemsSource="{Binding Path=DataContext.DefaultTextureNames, RelativeSource={RelativeSource AncestorType=ListView}, Mode=OneWay}"/>
+                                    <local:SpecialCombo IsEditable="True" Text="{Binding FileName, UpdateSourceTrigger=LostFocus}" 
+                                              ItemsSource="{Binding Path=DataContext.DefaultTextureNames, RelativeSource={RelativeSource AncestorType=ListView}, Mode=OneWay}"/>
                                     <Button Grid.Row="1" Content="Upgrade Filename" Click="UpgradeFileNameButton_Click" 
                                             Visibility="{Binding CanUpgradeFileName, Mode=OneWay, Converter={StaticResource boolToCollapseConverter}}"
                                             Background="PaleGoldenrod"/>

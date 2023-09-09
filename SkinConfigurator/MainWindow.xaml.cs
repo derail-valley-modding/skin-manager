@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -70,11 +71,6 @@ namespace SkinConfigurator
             Model.Reset();
         }
 
-        private void OpenPackButton_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
         private void ImportPackButton_Click(object sender, RoutedEventArgs e)
         {
             using var folderDialog = new System.Windows.Forms.FolderBrowserDialog()
@@ -94,7 +90,10 @@ namespace SkinConfigurator
                     return;
                 }
 
-                Model.SkinPack = PackImporter.ImportFromFolder(folderDialog.SelectedPath);
+                using (new WaitCursor())
+                {
+                    Model.SkinPack = PackImporter.ImportFromFolder(folderDialog.SelectedPath);
+                }
             }
         }
 
@@ -118,7 +117,10 @@ namespace SkinConfigurator
                     return;
                 }
 
-                Model.SkinPack = PackImporter.ImportFromArchive(dialog.FileName);
+                using (new WaitCursor())
+                {
+                    Model.SkinPack = PackImporter.ImportFromArchive(dialog.FileName);
+                }
             }
         }
 
@@ -180,14 +182,17 @@ namespace SkinConfigurator
 
                 string? carId = PromptForCarType();
 
-                foreach (string subDir in Directory.GetDirectories(folderDialog.SelectedPath))
+                using (new WaitCursor())
                 {
-                    bool hasTextures = Directory.EnumerateFiles(subDir)
-                        .Any(f => Constants.IsSupportedExtension(Path.GetExtension(f)));
-
-                    if (hasTextures)
+                    foreach (string subDir in Directory.GetDirectories(folderDialog.SelectedPath))
                     {
-                        Model.AddComponent(carId, subDir);
+                        bool hasTextures = Directory.EnumerateFiles(subDir)
+                            .Any(f => Constants.IsSupportedExtension(Path.GetExtension(f)));
+
+                        if (hasTextures)
+                        {
+                            Model.AddComponent(carId, subDir);
+                        }
                     }
                 }
             }
@@ -386,20 +391,32 @@ namespace SkinConfigurator
 
         private void RunPackaging<T>(string destination, string viewPath) where T : SkinPackager
         {
-            try
+            using (new WaitCursor())
             {
-                SkinPackager.Package<T>(destination, Model.SkinPack);
-                var openDest = MessageBox.Show("Skins packaged successfully. Did you want to open the destination folder?",
-                    "Success!", MessageBoxButton.YesNo, MessageBoxImage.Information);
-
-                if (openDest == MessageBoxResult.Yes)
+                try
                 {
-                    Process.Start("explorer.exe", viewPath);
+                    SkinPackager.Package<T>(destination, Model.SkinPack);
+
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        var openDest = MessageBox.Show("Skins packaged successfully. Did you want to open the destination folder?",
+                            "Success!", MessageBoxButton.YesNo, MessageBoxImage.Information);
+
+                        if (openDest == MessageBoxResult.Yes)
+                        {
+                            Process.Start("explorer.exe", viewPath);
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("Skins packaged successfully.", 
+                            "Success!", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
                 }
-            }
-            catch (SkinPackageException ex)
-            {
-                MessageBox.Show(ex.Message, "Error Packaging Skins", MessageBoxButton.OK, MessageBoxImage.Error);
+                catch (SkinPackageException ex)
+                {
+                    MessageBox.Show(ex.Message, "Error Packaging Skins", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 
