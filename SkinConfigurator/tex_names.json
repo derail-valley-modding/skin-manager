@@ -529,6 +529,39 @@
     "TrainCarAccessories_n.png",
     "TrainCarAccessories_s.png"
   ],
+  "StockBrown": [
+    "Bogie2_01d.png",
+    "Bogie2_01n.png",
+    "Bogie2_01s.png",
+    "CarStockcar_Brown_d.png",
+    "CarStockcar_n.png",
+    "CarStockcar_s.png",
+    "TrainCarAccessories_d.png",
+    "TrainCarAccessories_n.png",
+    "TrainCarAccessories_s.png"
+  ],
+  "StockGreen": [
+    "Bogie2_01d.png",
+    "Bogie2_01n.png",
+    "Bogie2_01s.png",
+    "CarStockcar_Green_d.png",
+    "CarStockcar_n.png",
+    "CarStockcar_s.png",
+    "TrainCarAccessories_d.png",
+    "TrainCarAccessories_n.png",
+    "TrainCarAccessories_s.png"
+  ],
+  "StockRed": [
+    "Bogie2_01d.png",
+    "Bogie2_01n.png",
+    "Bogie2_01s.png",
+    "CarStockcar_Red_d.png",
+    "CarStockcar_n.png",
+    "CarStockcar_s.png",
+    "TrainCarAccessories_d.png",
+    "TrainCarAccessories_n.png",
+    "TrainCarAccessories_s.png"
+  ],
   "TankBlack": [
     "Bogie2_01d.png",
     "Bogie2_01n.png",
@@ -569,6 +602,16 @@
     "CarTankOrange_01.png",
     "CarTankOrange_01s.png",
     "CarTankPaint_01n.png",
+    "TrainCarAccessories_d.png",
+    "TrainCarAccessories_n.png",
+    "TrainCarAccessories_s.png"
+  ],
+  "TankShortMilk": [
+    "Bogie2_01d.png",
+    "Bogie2_01n.png",
+    "Bogie2_01s.png",
+    "CarTanker_WhiteMilk_d.png",
+    "CarTanker_WhiteMilk_s.png",
     "TrainCarAccessories_d.png",
     "TrainCarAccessories_n.png",
     "TrainCarAccessories_s.png"
