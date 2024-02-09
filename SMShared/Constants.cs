@@ -40,6 +40,7 @@ namespace SMShared
             "LocoDE6",
             "LocoDH4",
             "LocoDM3",
+            "LocoMicroshunter",
             "LocoS282A",
             "LocoS282B",
             "LocoS060",
@@ -79,7 +80,6 @@ namespace SMShared
             "TankChrome",
             "TankWhite",
             "TankYellow",
-            "LocoMicroshunter",
         };
 
         public const string DE6_LIVERY_ID = "LocoDE6";
