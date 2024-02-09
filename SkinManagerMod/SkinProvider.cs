@@ -47,6 +47,18 @@ namespace SkinManagerMod
 
         #region Provider Methods
 
+        public static SkinGroup GetSkinGroup(TrainCarLivery livery)
+        {
+            if (skinGroups.TryGetValue(livery.id, out SkinGroup group))
+            {
+                return group;
+            }
+
+            var newGroup = new SkinGroup(livery);
+            skinGroups[livery.id] = newGroup;
+            return newGroup;
+        }
+
         public static Skin GetDefaultSkin(string carId)
         {
             if (defaultSkins.TryGetValue(carId, out Skin existing))
@@ -157,8 +169,6 @@ namespace SkinManagerMod
             {
                 var defaultSkin = CreateDefaultSkin(livery);
                 defaultSkins.Add(livery.id, defaultSkin);
-
-                skinGroups[livery.id] = new SkinGroup(livery);
             }
 
             ReloadAllSkins();
@@ -472,7 +482,7 @@ namespace SkinManagerMod
             config.Skin = skin;
 
             // find correct group, remove existing skin
-            var skinGroup = skinGroups[config.Livery.id];
+            var skinGroup = GetSkinGroup(config.Livery);
             if (skinGroup.Skins.Find(s => s.Name == config.Name) is Skin existingSkin)
             {
                 skinGroup.Skins.Remove(existingSkin);
