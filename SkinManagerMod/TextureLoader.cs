@@ -152,9 +152,13 @@ namespace SkinManagerMod
             return blockWidth * blockHeight * bytesPerBlock;
         }
 
+        private const int DDS_HEADER_SIZE = 128;
+        private const int DDS_HEADER_DXT10_SIZE = 20;
         private static byte[] DDSHeader(int width, int height, TextureFormat textureFormat, int numMipmaps)
         {
-            var header = new byte[128];
+            var needsDXGIHeader = textureFormat != TextureFormat.DXT1 && textureFormat != TextureFormat.DXT5;
+            var headerSize = needsDXGIHeader ? DDS_HEADER_SIZE + DDS_HEADER_DXT10_SIZE : DDS_HEADER_SIZE;
+            var header = new byte[headerSize];
             using (var stream = new MemoryStream(header))
             {
                 stream.Write(Encoding.ASCII.GetBytes("DDS "), 0, 4);
@@ -172,6 +176,9 @@ namespace SkinManagerMod
                 stream.Write(pixelFormat, 0, pixelFormat.Length);
                 // dwCaps = COMPLEX | MIPMAP | TEXTURE
                 stream.Write(BitConverter.GetBytes(0x401008), 0, 4);
+
+                if (needsDXGIHeader)
+                    stream.Write(DDSHeaderDXT10(textureFormat), 0, DDS_HEADER_DXT10_SIZE);
             }
             return header;
         }
@@ -214,7 +221,7 @@ namespace SkinManagerMod
 
         private static byte[] DDSHeaderDXT10(TextureFormat textureFormat)
         {
-            var headerDXT10 = new byte[20];
+            var headerDXT10 = new byte[DDS_HEADER_DXT10_SIZE];
             using (var stream = new MemoryStream(headerDXT10))
             {
                 stream.Write(BitConverter.GetBytes(DXGIFormat(textureFormat)), 0, 4); // dxgiFormat
@@ -234,12 +241,7 @@ namespace SkinManagerMod
             {
                 var header = DDSHeader(texture.width, texture.height, texture.format, texture.mipmapCount);
                 outfile.Write(header, 0, header.Length);
-                if (texture.format != TextureFormat.DXT1 && texture.format != TextureFormat.DXT5)
-                {
-                    // compressed formats other than DXT1-5 require DX10
-                    var headerDXT10 = DDSHeaderDXT10(texture.format);
-                    outfile.Write(headerDXT10, 0, headerDXT10.Length);
-                }
+
                 var data = texture.GetRawTextureData<byte>().ToArray();
                 outfile.Write(data, 0, data.Length);
             }
@@ -248,7 +250,7 @@ namespace SkinManagerMod
         private static Texture2D ReadDDSHeader(Stream infile, bool linear)
         {
             var buf = new byte[4096];
-            var bytesRead = infile.Read(buf, 0, 128);
+            var bytesRead = infile.Read(buf, 0, DDS_HEADER_SIZE);
             if (bytesRead != 128 || Encoding.ASCII.GetString(buf, 0, 4) != "DDS ")
                 throw new DDSReadException("File is not a DDS file");
 
@@ -270,8 +272,8 @@ namespace SkinManagerMod
                     break;
                 case "DX10":
                     // read DDS_HEADER_DXT10 header extension
-                    bytesRead = infile.Read(buf, 0, 20);
-                    if (bytesRead != 20)
+                    bytesRead = infile.Read(buf, 0, DDS_HEADER_DXT10_SIZE);
+                    if (bytesRead != DDS_HEADER_DXT10_SIZE)
                         throw new DDSReadException("Could not read DXT10 header from DDS file");
                     int dxgiFormat = BitConverter.ToInt32(buf, 0);
                     switch (dxgiFormat)
