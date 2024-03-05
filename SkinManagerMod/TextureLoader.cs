@@ -25,7 +25,7 @@ namespace SkinManagerMod
             }
         }
 
-        private static Task<Texture2D> TryLoadFromCache(ResourceConfigJson skin, string texturePath, bool linear)
+        private static Task<Texture2D> TryLoadFromCache(ResourceConfigJson skin, string texturePath, bool isNormalMap)
         {
             var texFile = new FileInfo(texturePath);
             var cached = new FileInfo(GetCachePath(skin, texturePath));
@@ -37,17 +37,18 @@ namespace SkinManagerMod
 
             if (cached.LastWriteTimeUtc < texFile.LastWriteTimeUtc)
             {
-                cached.Delete();
+                Main.LogVerbose($"Cached texture {cached.FullName} is out of date");
+                BustCache(skin, texturePath);
                 return Task.FromResult<Texture2D>(null);
             }
 
             try
             {
-                return DDSUtils.ReadDDSGz(cached, linear);
+                return DDSUtils.ReadDDSGz(cached, isNormalMap);
             }
             catch (DDSReadException e)
             {
-                Main.Warning($"Error loading cached skin {skin.Name}: {e.Message}");
+                Main.Warning($"Error loading cached texture {cached.FullName}: {e.Message}");
                 BustCache(skin, texturePath);
                 return Task.FromResult<Texture2D>(null);
             }
@@ -69,6 +70,7 @@ namespace SkinManagerMod
             var texture = new Texture2D(info.width, info.height, format,
                 mipChain: true, linear: isNormalMap);
             var nativeArray = texture.GetRawTextureData<byte>();
+            Main.LogVerbose($"Loading texture {texturePath} as {format} with StbImage");
             return Task.Run(() =>
             {
                 PopulateTexture(texturePath, format, nativeArray);
@@ -81,7 +83,9 @@ namespace SkinManagerMod
 
         public static Texture2D LoadSync(ResourceConfigJson skin, string texturePath, bool isNormalMap)
         {
-            var texture = new Texture2D(0, 0, textureFormat: TextureFormat.RGBA32, mipChain: true, linear: isNormalMap);
+            var textureFormat = TextureFormat.RGBA32;
+            var texture = new Texture2D(0, 0, textureFormat, mipChain: true, linear: isNormalMap);
+            Main.LogVerbose($"Loading texture {texturePath} as {textureFormat} with LoadImage");
             texture.LoadImage(File.ReadAllBytes(texturePath));
 
             return texture;
@@ -293,17 +297,26 @@ namespace SkinManagerMod
             return texture;
         }
 
-        public static Task<Texture2D> ReadDDSGz(FileInfo fileInfo, bool linear)
+        public static Task<Texture2D> ReadDDSGz(FileInfo fileInfo, bool isNormalMap)
         {
             FileStream fileStream = null;
             GZipStream infile = null;
             try
             {
-                Main.LogVerbose($"Reading from {fileInfo.FullName}");
                 fileStream = fileInfo.OpenRead();
                 infile = new GZipStream(fileStream, CompressionMode.Decompress);
 
-                var texture = ReadDDSHeader(infile, linear);
+                var texture = ReadDDSHeader(infile, isNormalMap);
+                if (isNormalMap && texture.format != TextureFormat.BC5)
+                {
+                    Main.LogVerbose($"Cached normal map texture {fileInfo.FullName} has old format {texture.format}");
+                    infile.Close();
+                    fileStream.Close();
+                    File.Delete(fileInfo.FullName);
+                    return Task.FromResult<Texture2D>(null);
+                }
+
+                Main.LogVerbose($"Reading cached {texture.format} texture from {fileInfo.FullName}");
                 var nativeArray = texture.GetRawTextureData<byte>();
                 return Task.Run(() =>
                 {
