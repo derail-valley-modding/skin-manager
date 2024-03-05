@@ -10,9 +10,16 @@ namespace SkinManagerMod
         [DllImport(Lib, EntryPoint = nameof(GetImageInfo))]
         private static extern int GetImageInfo(string filename, out uint x, out uint y, out uint comp);
         [DllImport(Lib, EntryPoint = nameof(ReadImageAsBCx))]
-        private static extern int ReadImageAsBCx(string filename, int flipVertically, int useAlpha, IntPtr dest, int destSize);
+        private static extern int ReadImageAsBCx(string filename, int flipVertically, int format, IntPtr dest, int destSize);
         [DllImport(Lib, EntryPoint = nameof(ReadImageAsRGBA))]
         private static extern int ReadImageAsRGBA(string filename, int flipVertically, IntPtr dest, int destSize);
+
+        public enum TextureFormat
+        {
+            BC1 = 1,
+            BC3 = 3,
+            BC5 = 5,
+        }
 
         public struct ImageInfo
         {
@@ -34,9 +41,11 @@ namespace SkinManagerMod
             };
         }
 
-        public static void ReadAndCompressImageWithMipmaps(string filename, bool flipVertically, bool useAlpha, IntPtr dest, int destSize)
+        public static void ReadAndCompressImageWithMipmaps(string filename, bool flipVertically, TextureFormat format, IntPtr dest, int destSize)
         {
-            bool success = ReadImageAsBCx(filename, flipVertically ? 1 : 0, useAlpha ? 1 : 0, dest, destSize) != 0;
+            if (Array.IndexOf(Enum.GetValues(typeof(TextureFormat)), format) < 0)
+                throw new ArgumentOutOfRangeException("format", $"Unknown texture format {format}");
+            bool success = ReadImageAsBCx(filename, flipVertically ? 1 : 0, (int)format, dest, destSize) != 0;
             if (!success)
                 throw new Exception($"Unable to read {filename}");
         }

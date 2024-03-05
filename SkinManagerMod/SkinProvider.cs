@@ -303,7 +303,7 @@ namespace SkinManagerMod
                 {
                     if (ResourcePack.LoadFromFile(file) is ResourcePack resourceConfig)
                     {
-                        BeginLoadResources(resourceConfig);
+                        BeginLoadResources(resourceConfig, forceSync);
                         newConfig.ResourcePacks.Add(resourceConfig);
                     }
                 }
