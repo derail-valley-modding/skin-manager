@@ -71,7 +71,7 @@
       <HintPath>D:\Games\SteamLibrary\steamapps\common\Derail Valley\DerailValley_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.PhysicsModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL" />
-    <Reference Include="UnityModManager, Version=0.26.0.0, Culture=neutral, processorArchitecture=MSIL" />
+    <Reference Include="UnityModManager" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CarPatches.cs" />
