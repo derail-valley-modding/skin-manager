@@ -180,6 +180,9 @@ namespace SkinManagerMod
                 stream.Write(pixelFormat, 0, pixelFormat.Length);
                 // dwCaps = COMPLEX | MIPMAP | TEXTURE
                 stream.Write(BitConverter.GetBytes(0x401008), 0, 4);
+                // dwCaps2, dwCaps3, dwCaps4, dwReserved2
+                for (int i = 0; i < 4; i++)
+                   stream.Write(BitConverter.GetBytes(0), 0, 4);
 
                 if (needsDXGIHeader)
                     stream.Write(DDSHeaderDXT10(textureFormat), 0, DDS_HEADER_DXT10_SIZE);
