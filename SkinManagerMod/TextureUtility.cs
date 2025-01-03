@@ -8,10 +8,24 @@ namespace SkinManagerMod
 {
     public static class TextureUtility
     {
-        private static readonly string[] standardShaderUniqueTextures = new[] { "_MainTex", "_BumpMap", "_MetallicGlossMap", "_EmissionMap" };
-        private static readonly string[] standardShaderAllTextures = new[] { "_MainTex", "_BumpMap", "_MetallicGlossMap", "_EmissionMap", "_OcclusionMap" };
-        private const string METAL_GLOSS_TEXTURE = "_MetallicGlossMap";
-        private const string OCCLUSION_TEXTURE = "_OcclusionMap";
+        public static class PropNames
+        {
+            public static readonly string Main = "_MainTex";
+            public static readonly string BumpMap = "_BumpMap";
+            public static readonly string MetalGlossMap = "_MetallicGlossMap";
+            public static readonly string EmissionMap = "_EmissionMap";
+            public static readonly string OcclusionMap = "_OcclusionMap";
+
+            public static readonly string[] UniqueTextures =
+            {
+                Main, BumpMap, MetalGlossMap, EmissionMap,
+            };
+
+            public static readonly string[] AllTextures =
+            {
+                Main, BumpMap, MetalGlossMap, EmissionMap, OcclusionMap,
+            };
+        }
 
         /// <summary>
         /// Export all textures associated with the given car type
@@ -149,7 +163,7 @@ namespace SkinManagerMod
             {
                 if (!renderer.material) continue;
 
-                foreach (string textureName in standardShaderUniqueTextures)
+                foreach (string textureName in PropNames.UniqueTextures)
                 {
                     if (GetMaterialTexture(renderer, textureName) is Texture2D texture)
                     {
@@ -198,7 +212,7 @@ namespace SkinManagerMod
             {
                 if (!renderer.material) continue;
 
-                foreach (string textureProperty in standardShaderUniqueTextures)
+                foreach (string textureProperty in PropNames.UniqueTextures)
                 {
                     if (GetMaterialTexture(renderer, textureProperty) is Texture2D texture)
                     {
@@ -217,47 +231,6 @@ namespace SkinManagerMod
         {
             if (!Main.Settings.aniso5) return;
             tex.anisoLevel = 5;
-        }
-
-        /// <summary>
-        /// Actually assign applicable skin textures to a renderer, using default skin to supply fallbacks
-        /// </summary>
-        public static void ApplyTextures(MeshRenderer renderer, Skin skin, Skin defaultSkin)
-        {
-            foreach (string textureID in standardShaderAllTextures)
-            {
-                var currentTexture = GetMaterialTexture(renderer, textureID);
-
-                if (currentTexture != null)
-                {
-                    if (skin.ContainsTexture(currentTexture.name))
-                    {
-                        var skinTexture = skin.GetTexture(currentTexture.name);
-                        renderer.material.SetTexture(textureID, skinTexture.TextureData);
-
-                        if (textureID == METAL_GLOSS_TEXTURE)
-                        {
-                            if (!GetMaterialTexture(renderer, OCCLUSION_TEXTURE))
-                            {
-                                renderer.material.SetTexture(OCCLUSION_TEXTURE, skinTexture.TextureData);
-                            }
-                        }
-                    }
-                    else if ((defaultSkin != null) && defaultSkin.ContainsTexture(currentTexture.name))
-                    {
-                        var skinTexture = defaultSkin.GetTexture(currentTexture.name);
-                        renderer.material.SetTexture(textureID, skinTexture.TextureData);
-
-                        if (textureID == METAL_GLOSS_TEXTURE)
-                        {
-                            if (!GetMaterialTexture(renderer, OCCLUSION_TEXTURE))
-                            {
-                                renderer.material.SetTexture(OCCLUSION_TEXTURE, skinTexture.TextureData);
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 }

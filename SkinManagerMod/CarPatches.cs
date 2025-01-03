@@ -1,50 +1,45 @@
-﻿using HarmonyLib;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
+﻿using DV.Customization.Paint;
+using HarmonyLib;
 
 namespace SkinManagerMod
 {
-    [HarmonyPatch]
-    class CarSpawner_SpawnCar_Patch
+    [HarmonyPatch(typeof(CarSpawner))]
+    internal static class CarSpawnerPatches
     {
-        static IEnumerable<MethodBase> TargetMethods()
+        [HarmonyPatch(nameof(CarSpawner.BaseSpawn))]
+        [HarmonyPostfix]
+        private static void BaseSpawn(bool uniqueCar, TrainCar __result)
         {
-            yield return AccessTools.Method(typeof(CarSpawner), nameof(CarSpawner.SpawnCar));
-            yield return AccessTools.Method(typeof(CarSpawner), nameof(CarSpawner.SpawnLoadedCar));
-        }
+            if (uniqueCar)
+            {
+                Main.LogVerbose($"Spawn unique {__result.ID}");
+                return;
+            }
 
-        static void Postfix(TrainCar __result)
-        {
-            var skin = SkinManager.GetCurrentCarSkin(__result);
-            if ((skin != null) && !skin.IsDefault)
+            var skinName = SkinManager.GetCurrentCarSkin(__result);
+            if (!string.IsNullOrEmpty(skinName))
             {
                 // only need to replace textures if not staying with default skin
-                SkinManager.ApplySkin(__result, skin);
+                SkinManager.ApplySkin(__result, skinName);
             }
         }
     }
 
-    [HarmonyPatch]
-    class TrainCar_LoadInterior_Patch
+    [HarmonyPatch(typeof(TrainCarPaint))]
+    internal static class TrainCarPaintPatch
     {
-        static IEnumerable<MethodBase> TargetMethods()
+        [HarmonyPatch(nameof(TrainCarPaint.CurrentTheme), MethodType.Setter)]
+        [HarmonyPostfix]
+        public static void AfterCurrentThemeSet(TrainCarPaint __instance, PaintTheme ___currentTheme)
         {
-            yield return AccessTools.Method(typeof(TrainCar), nameof(TrainCar.LoadInterior));
-            yield return AccessTools.Method(typeof(TrainCar), nameof(TrainCar.LoadExternalInteractables));
-            yield return AccessTools.Method(typeof(TrainCar), nameof(TrainCar.LoadDummyExternalInteractables));
-        }
+            var trainCar = TrainCar.Resolve(__instance.gameObject);
+            string themeName = ___currentTheme ? ___currentTheme.name : null;
 
-        static void Postfix(TrainCar __instance)
-        {
-            var skin = SkinManager.GetCurrentCarSkin(__instance);
-            if ((skin != null) && !skin.IsDefault)
-            {
-                SkinManager.ApplySkinToInterior(__instance, skin);
-            }
+            Main.Log($"Applying skin {themeName} to car {trainCar.ID} {__instance.TargetArea}");
+
+            if (__instance.TargetArea != TrainCarPaint.Target.Exterior) return;
+
+            SkinManager.SetAppliedCarSkin(trainCar, themeName);
         }
     }
 }

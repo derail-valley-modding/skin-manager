@@ -1,21 +1,48 @@
 ﻿using DV;
+using DV.Customization.Paint;
 using DV.ThingTypes;
+using DVLangHelper.Data;
 using SMShared;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityModManagerNet;
-using static Oculus.Avatar.CAPI;
 
 namespace SkinManagerMod
 {
     public class SkinProvider
     {
-        public static Skin LastSteamerSkin { get; set; }
-        public static Skin LastDE6Skin { get; set; }
+        public static readonly string DefaultThemeName = "DVRT";
+        public static readonly string DefaultNewThemeName = "DVRT_New";
+        public static readonly string DemoThemeName = "Relic";
+        public static readonly string DemoRustyThemeName = "Relic_Rusty";
+
+        public static readonly string[] BuiltInThemeNames = { DefaultThemeName, DefaultNewThemeName, DemoThemeName, DemoRustyThemeName };
+
+        private static PaintTheme[] _builtInThemes = null;
+        public static PaintTheme[] BuiltInThemes
+        {
+            get
+            {
+                if (_builtInThemes == null)
+                {
+                    _builtInThemes = new PaintTheme[BuiltInThemeNames.Length];
+                    for (int i = 0; i < BuiltInThemeNames.Length; i++)
+                    {
+                        PaintTheme.TryLoad(BuiltInThemeNames[i], out var theme);
+                        _builtInThemes[i] = theme;
+                    }
+                }
+                return _builtInThemes;
+            }
+        }
+
+        public static bool IsBuiltInTheme(string themeName) => BuiltInThemeNames.Contains(themeName);
+
+        public static string LastSteamerSkin { get; set; }
+        public static string LastDE6Skin { get; set; }
 
         /// <summary>Emitted when skin(s) are reloaded from disk
         public static event Action SkinsLoaded;
@@ -45,6 +72,23 @@ namespace SkinManagerMod
             new Dictionary<TrainCarLivery, Dictionary<string, string>>();
 
 
+        /// <summary>Skin Name to Paint Theme (combined liveries)</summary>
+        public static Dictionary<string, PaintTheme> PaintThemes { get; private set; } = new Dictionary<string, PaintTheme>();
+
+        private static void RegisterNewTheme(PaintTheme theme)
+        {
+            string lowerName = theme.name.ToLower();
+            if (PaintTheme.loadedThemes.ContainsKey(lowerName))
+            {
+                Main.Error($"Skin \"{theme.name}\" conflicts with an existing or built-in paint theme");
+                return;
+            }
+
+            PaintThemes.Add(theme.name, theme);
+            PaintTheme.loadedThemes.Add(lowerName, theme);
+        }
+
+
         #region Provider Methods
 
         public static SkinGroup GetSkinGroup(TrainCarLivery livery)
@@ -53,7 +97,7 @@ namespace SkinManagerMod
             {
                 return group;
             }
-
+            
             var newGroup = new SkinGroup(livery);
             skinGroups[livery.id] = newGroup;
             return newGroup;
@@ -86,50 +130,64 @@ namespace SkinManagerMod
             return null;
         }
 
-        public static List<Skin> GetSkinsForType(TrainCarLivery carType, bool includeDefault = true) => GetSkinsForType(carType.id, includeDefault);
+        public static List<PaintTheme> GetSkinsForType(TrainCarLivery carType, bool includeDefault = true, bool sort = true) =>
+            GetSkinsForType(carType.id, includeDefault);
 
-        public static List<Skin> GetSkinsForType(string carId, bool includeDefault = true)
+        public static List<PaintTheme> GetSkinsForType(string carId, bool includeDefault = true, bool sort = true)
         {
-            var result = new List<Skin>();
+            var result = new List<PaintTheme>();
 
             if (skinGroups.TryGetValue(carId, out var group))
             {
-                result.AddRange(group.Skins);
+                result.AddRange(group.Skins.Select(GetThemeForSkin));
             }
 
             if (Main.Settings.allowDE6SkinsForSlug && (carId == Constants.SLUG_LIVERY_ID))
             {
                 if (skinGroups.TryGetValue(Constants.DE6_LIVERY_ID, out group))
                 {
-                    result.AddRange(group.Skins);
+                    result.AddRange(group.Skins.Select(GetThemeForSkin));
                 }
             }
 
             if (includeDefault)
             {
-                result.Add(defaultSkins[carId]);
+                result.AddRange(BuiltInThemes);
             }
 
+            if (sort)
+            {
+                result.Sort(CompareThemes);
+            }
             return result;
         }
 
-        public static Skin GetNewSkin(TrainCarLivery carType)
+        private static int CompareThemes(PaintTheme a, PaintTheme b)
+        {
+            string aName = a.LocalizedName;
+            if (string.IsNullOrEmpty(aName)) aName = a.AssetName;
+
+            string bName = b.LocalizedName;
+            if (string.IsNullOrEmpty(bName)) bName = b.AssetName;
+
+            return aName.CompareTo(bName);
+        }
+
+        private static PaintTheme GetThemeForSkin(Skin skin) => PaintThemes[skin.Name];
+
+        public static string GetNewSkin(TrainCarLivery carType)
         {
             if (CarTypes.IsTender(carType) && (LastSteamerSkin != null))
             {
-                if (FindSkinByName(carType, LastSteamerSkin.Name) is Skin matchingTenderSkin)
+                if (FindSkinByName(carType, LastSteamerSkin) is Skin)
                 {
-                    return matchingTenderSkin;
+                    return LastSteamerSkin;
                 }
             }
 
             if ((carType.id == Constants.SLUG_LIVERY_ID) && (LastDE6Skin != null))
             {
-                if (FindSkinByName(carType, LastDE6Skin.Name) is Skin matchingSlugSkin)
-                {
-                    return matchingSlugSkin;
-                }
-                if (Main.Settings.allowDE6SkinsForSlug)
+                if (FindSkinByName(carType, LastDE6Skin) is Skin || Main.Settings.allowDE6SkinsForSlug)
                 {
                     return LastDE6Skin;
                 }
@@ -146,15 +204,11 @@ namespace SkinManagerMod
                 int choice = UnityEngine.Random.Range(0, nChoices);
                 if (choice < group.Skins.Count)
                 {
-                    return group.Skins[choice];
+                    return group.Skins[choice].Name;
                 }
             }
 
             // fall back to default skin
-            if (defaultSkins.TryGetValue(carType.id, out Skin skin))
-            {
-                return skin;
-            }
             return null;
         }
 
@@ -165,14 +219,7 @@ namespace SkinManagerMod
 
         public static bool Initialize()
         {
-            foreach (var livery in Globals.G.Types.Liveries)
-            {
-                var defaultSkin = CreateDefaultSkin(livery);
-                defaultSkins.Add(livery.id, defaultSkin);
-            }
-
             ReloadAllSkins();
-            LoadLegacySkins();
 
             UnityModManager.toggleModsListen += HandleSkinModToggle;
 
@@ -528,6 +575,48 @@ namespace SkinManagerMod
             }
 
             skinGroup.Skins.Add(skin);
+
+            skin.LoadingFinished += CreateThemeFromSkin;
+            skin.StartLoadFinishedListener();
+        }
+
+        private static void CreateThemeFromSkin(Skin skin)
+        {
+            var subs = skin.CreateSubstitutions();
+
+            if (PaintThemes.TryGetValue(skin.Name, out var theme))
+            {
+                Main.LogVerbose($"Merging into theme {skin.Name}");
+                MergeSubstitutions(theme, subs);
+            }
+            else
+            {
+                Main.LogVerbose($"Create new theme {skin.Name}");
+                theme = ScriptableObject.CreateInstance<PaintTheme>();
+                UnityEngine.Object.DontDestroyOnLoad(theme);
+                theme.assetName = skin.Name;
+                theme.name = skin.Name;
+
+                theme.nameLocalizationKey = "mod/skins/" + skin.Name.Replace(' ', '_').ToLowerInvariant();
+                Main.Translations.AddTranslation(theme.nameLocalizationKey, DVLanguage.English, skin.Name.Replace('_', ' '));
+
+                MergeSubstitutions(theme, subs);
+                RegisterNewTheme(theme);
+            }
+        }
+
+        private static void MergeSubstitutions(PaintTheme theme, PaintTheme.Substitution[] toMerge)
+        {
+            if (toMerge is null || toMerge.Length == 0) return;
+
+            int currentLength = theme.substitutions.Length;
+            var newArray = new PaintTheme.Substitution[currentLength + toMerge.Length];
+
+            Array.Copy(theme.substitutions, newArray, currentLength);
+            Array.Copy(toMerge, 0, newArray, currentLength, toMerge.Length);
+
+            theme.substitutions = newArray;
+            theme.substitutionDictionary = null;
         }
 
         #endregion

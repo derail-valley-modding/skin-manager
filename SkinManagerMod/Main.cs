@@ -8,6 +8,7 @@ using System.IO;
 using System.Reflection;
 using UnityEngine;
 using SMShared;
+using DVLangHelper.Runtime;
 
 namespace SkinManagerMod
 {
@@ -15,7 +16,7 @@ namespace SkinManagerMod
     {
         public static UnityModManager.ModEntry Instance { get; private set; }
         public static SkinManagerSettings Settings { get; private set; }
-        
+        public static TranslationInjector Translations { get; private set; }
 
         public static string ExportFolderPath => Path.Combine(Instance.Path, Constants.EXPORT_FOLDER_NAME);
         public static string GetExportFolderForCar(string carId)
@@ -29,14 +30,15 @@ namespace SkinManagerMod
         {
             Instance = modEntry;
             Settings = UnityModManager.ModSettings.Load<SkinManagerSettings>(modEntry);
-            
+            Translations = new TranslationInjector(Constants.MOD_ID);
+
             //CCLPatch.Initialize();
+            CarMaterialData.Initialize();
             if (!SkinProvider.Initialize())
             {
                 Error("Failed to initialize skin manager");
                 return false;
             }
-            SkinManager.Initialize();
 
             var harmony = new Harmony(Constants.MOD_ID);
             harmony.PatchAll(Assembly.GetExecutingAssembly());
