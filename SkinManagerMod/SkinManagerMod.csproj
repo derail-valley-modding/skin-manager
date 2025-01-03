@@ -83,7 +83,6 @@
     <Compile Include="CarMaterialData.cs" />
     <Compile Include="CarPatches.cs" />
     <Compile Include="ThreadHelper.cs" />
-    <None Include="CCLPatch.cs" />
     <Compile Include="CommsRadioSkinSwitcher.cs" />
     <Compile Include="ResourcePack.cs" />
     <Compile Include="SkinConfig.cs" />
@@ -96,6 +95,7 @@
     <Compile Include="StbImage.cs" />
     <Compile Include="TextureLoader.cs" />
     <Compile Include="TextureUtility.cs" />
+    <Compile Include="Translations.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Krafs.Publicizer">

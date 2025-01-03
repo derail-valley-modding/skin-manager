@@ -20,6 +20,8 @@ namespace SkinManagerMod
 
         public event Action<Skin> LoadingFinished;
 
+        private PaintTheme.Substitution[] _cachedSubstitutions = null;
+
         public void StartLoadFinishedListener()
         {
             var toAwait = SkinTextures.Select(t => t.LoadingTask)
@@ -73,8 +75,10 @@ namespace SkinManagerMod
             return null;
         }
 
-        public PaintTheme.Substitution[] CreateSubstitutions()
+        public PaintTheme.Substitution[] GetSubstitutions()
         {
+            if (!(_cachedSubstitutions is null)) return _cachedSubstitutions;
+
             var carData = CarMaterialData.GetDataForCar(LiveryId);
 
             // map default material to new material
@@ -84,12 +88,16 @@ namespace SkinManagerMod
             {
                 var exteriorUses = carData.Exterior.GetTextureAssignments(texture.Name);
                 MapTextureUsesToNewMaterial(texture, subMap, exteriorUses);
+
+                var interiorUses = carData.Interior.GetTextureAssignments(texture.Name);
+                MapTextureUsesToNewMaterial(texture, subMap, interiorUses);
             }
 
             var subs = subMap
                 .Select(kvp => new PaintTheme.Substitution { original = kvp.Key, substitute = kvp.Value })
                 .ToArray();
 
+            _cachedSubstitutions = subs;
             return subs;
         }
 

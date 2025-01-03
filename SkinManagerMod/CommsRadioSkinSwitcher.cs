@@ -122,8 +122,7 @@ namespace SkinManagerMod
 
         public void SetStartingDisplay()
         {
-            string content = "Aim at the vehicle you wish to repaint.";
-            display.SetDisplay("REPAINT", content, "");
+            display.SetDisplay(CommsRadioLocalization.MODE_PAINTJOB, Translations.SelectCarPrompt, string.Empty);
         }
 
         #endregion
@@ -251,34 +250,34 @@ namespace SkinManagerMod
 
                         if (SelectedSkin == CurrentSkin)
                         {
-                            display.SetAction("reload");
+                            display.SetAction(Translations.ReloadAction);
                         }
                         else
                         {
-                            display.SetAction(CommsRadioLocalization.SELECT);
+                            display.SetAction(Translations.SelectAction); ;
                         }
                     }
                     else
                     {
                         PointToCar(null);
-                        display.SetAction(CommsRadioLocalization.CANCEL);
+                        display.SetAction(Translations.CancelAction);
                     }
 
                     break;
 
                 case State.SelectAreas:
-                    display.SetContent($"Select Areas:\n{AreaToPaintName}");
+                    display.SetContent($"{Translations.SelectAreasPrompt}\n{AreaToPaintName}");
 
                     if (Physics.Raycast(signalOrigin.position, signalOrigin.forward, out Hit, SIGNAL_RANGE, TrainCarMask) &&
                         (trainCar = TrainCar.Resolve(Hit.transform.root)) && (trainCar == SelectedCar))
                     {
                         PointToCar(trainCar);
-                        display.SetAction(CommsRadioLocalization.CONFIRM);
+                        display.SetAction(Translations.ConfirmAction);
                     }
                     else
                     {
                         PointToCar(null);
-                        display.SetAction(CommsRadioLocalization.CANCEL);
+                        display.SetAction(Translations.CancelAction);
                     }
                     break;
 
@@ -448,13 +447,14 @@ namespace SkinManagerMod
         {
             if (!skin)
             {
+                // should never actually reach this code due to built in themes
                 SelectedSkin = null;
                 display.SetContent("No Available Themes!");
             }
             else
             {
                 SelectedSkin = skin.name;
-                string displayName = $"Select Paint Theme:\n{skin.LocalizedName}";
+                string displayName = $"{Translations.SelectPaintPrompt}\n{skin.LocalizedName}";
                 display.SetContent(displayName);
             }
         }

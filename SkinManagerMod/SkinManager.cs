@@ -5,15 +5,33 @@ using Newtonsoft.Json.Linq;
 using SMShared;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SkinManagerMod
 {
     public static class SkinManager
     {
-        //private static Dictionary<TrainCarType, string> CustomCarTypes;
-
         private static readonly Dictionary<string, string> carGuidToAppliedSkinMap = new Dictionary<string, string>();
 
+        public static void Initialize()
+        {
+            SkinProvider.SkinUpdated += ReapplySkinToUsers;
+        }
+
+        private static void ReapplySkinToUsers(SkinConfig skinConfig)
+        {
+            if (!CarSpawner.Instance) return;
+
+            foreach (var car in CarSpawner.Instance.AllCars.Where(tc => tc.carLivery.id == skinConfig.CarId))
+            {
+                var toApply = GetCurrentCarSkin(car, false);
+
+                if ((toApply != null) && (toApply == skinConfig.Name))
+                {
+                    ApplySkin(car, toApply);
+                }
+            }
+        }
 
         /// <summary>Get the currently assigned skin for given car, or a new one if none is assigned</summary>
         public static string GetCurrentCarSkin(TrainCar car, bool returnNewSkin = true)

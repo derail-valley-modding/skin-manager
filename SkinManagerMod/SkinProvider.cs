@@ -56,18 +56,6 @@ namespace SkinManagerMod
         private static readonly Dictionary<string, SkinGroup> skinGroups = new Dictionary<string, SkinGroup>();
         public static IEnumerable<SkinGroup> AllSkinGroups => skinGroups.Values;
 
-        private static void UnloadSkin(string liveryId, string skinName)
-        {
-            var skinGroup = skinGroups[liveryId];
-            if (skinGroup.Skins.Find(s => s.Name == skinName) is Skin existingSkin)
-            {
-                skinGroup.Skins.Remove(existingSkin);
-            }
-        }
-
-        /// <summary>Livery ID to default skin mapping</summary>
-        private static readonly Dictionary<string, Skin> defaultSkins = new Dictionary<string, Skin>();
-
         private static readonly Dictionary<TrainCarLivery, Dictionary<string, string>> cachedCarTextures =
             new Dictionary<TrainCarLivery, Dictionary<string, string>>();
 
@@ -88,6 +76,16 @@ namespace SkinManagerMod
             PaintTheme.loadedThemes.Add(lowerName, theme);
         }
 
+        private static void UnregisterTheme(string themeName)
+        {
+            if (PaintThemes.TryGetValue(themeName, out var theme))
+            {
+                UnityEngine.Object.Destroy(theme);
+            }
+            PaintThemes.Remove(themeName);
+            PaintTheme.loadedThemes.Remove(themeName.ToLower());
+        }
+
 
         #region Provider Methods
 
@@ -103,18 +101,6 @@ namespace SkinManagerMod
             return newGroup;
         }
 
-        public static Skin GetDefaultSkin(string carId)
-        {
-            if (defaultSkins.TryGetValue(carId, out Skin existing))
-            {
-                return existing;
-            }
-
-            var newDefault = CreateDefaultSkin(Globals.G.Types.Liveries.First(l => l.id == carId));
-            defaultSkins[carId] = newDefault;
-            return newDefault;
-        }
-
         public static Skin FindSkinByName(TrainCarLivery carType, string name) => FindSkinByName(carType.id, name);
 
         public static Skin FindSkinByName(string carId, string name)
@@ -123,15 +109,11 @@ namespace SkinManagerMod
             {
                 return group.GetSkin(name);
             }
-            if ((GetDefaultSkin(carId) is Skin defSkin) && (defSkin.Name == name))
-            {
-                return defSkin;
-            }
             return null;
         }
 
         public static List<PaintTheme> GetSkinsForType(TrainCarLivery carType, bool includeDefault = true, bool sort = true) =>
-            GetSkinsForType(carType.id, includeDefault);
+            GetSkinsForType(carType.id, includeDefault, sort);
 
         public static List<PaintTheme> GetSkinsForType(string carId, bool includeDefault = true, bool sort = true)
         {
@@ -209,7 +191,7 @@ namespace SkinManagerMod
             }
 
             // fall back to default skin
-            return null;
+            return DefaultThemeName;
         }
 
         #endregion
@@ -291,6 +273,25 @@ namespace SkinManagerMod
             }
         }
 
+        private static void UnloadSkin(string liveryId, string skinName)
+        {
+            var skinGroup = skinGroups[liveryId];
+            if (skinGroup.Skins.Find(s => s.Name == skinName) is Skin existingSkin)
+            {
+                skinGroup.Skins.Remove(existingSkin);
+
+                if (PaintThemes.TryGetValue(skinName, out var theme))
+                {
+                    UnMergeSubstitutions(theme, existingSkin.GetSubstitutions());
+
+                    if (theme.substitutions.Length == 0)
+                    {
+                        UnregisterTheme(skinName);
+                    }
+                }
+            }
+        }
+
         private static void HandleSkinModToggle(UnityModManager.ModEntry mod, bool nowActive)
         {
             if ((mod.Info.Id == Constants.MOD_ID) || !string.IsNullOrWhiteSpace(mod.Info.EntryMethod)) return;
@@ -309,7 +310,7 @@ namespace SkinManagerMod
 
                     foreach (var config in currentConfig)
                     {
-                        skinGroups[config.CarId].Skins.Remove(config.Skin);
+                        UnloadSkin(config.CarId, config.Name);
                         SkinDisabled?.Invoke(config);
                     }
                 }
@@ -415,33 +416,6 @@ namespace SkinManagerMod
                 cachedCarTextures.Add(carType, textures);
             }
             return textures;
-        }
-
-        /// <summary>
-        /// Create a skin containing the default/starting textures of a car
-        /// </summary>
-        private static Skin CreateDefaultSkin(TrainCarLivery carType)
-        {
-            GameObject carPrefab = carType.prefab;
-            if (carPrefab == null) return null;
-
-            string skinDir = null;
-            //if (CCLPatch.IsCustomCarType(carType))
-            //{
-            //    skinDir = CCLPatch.GetCarFolder(carType);
-            //}
-
-            var defaultSkin = new Skin(carType.id, $"Default_{carType.id}", skinDir, isDefault: true);
-
-            foreach (var texture in TextureUtility.EnumerateTextures(carType))
-            {
-                if (!defaultSkin.ContainsTexture(texture.name))
-                {
-                    defaultSkin.SkinTextures.Add(new SkinTexture(texture.name, texture));
-                }
-            }
-
-            return defaultSkin;
         }
 
         /// <summary>
@@ -576,20 +550,7 @@ namespace SkinManagerMod
 
             skinGroup.Skins.Add(skin);
 
-            skin.LoadingFinished += CreateThemeFromSkin;
-            skin.StartLoadFinishedListener();
-        }
-
-        private static void CreateThemeFromSkin(Skin skin)
-        {
-            var subs = skin.CreateSubstitutions();
-
-            if (PaintThemes.TryGetValue(skin.Name, out var theme))
-            {
-                Main.LogVerbose($"Merging into theme {skin.Name}");
-                MergeSubstitutions(theme, subs);
-            }
-            else
+            if (!PaintThemes.TryGetValue(skin.Name, out var theme))
             {
                 Main.LogVerbose($"Create new theme {skin.Name}");
                 theme = ScriptableObject.CreateInstance<PaintTheme>();
@@ -600,8 +561,25 @@ namespace SkinManagerMod
                 theme.nameLocalizationKey = "mod/skins/" + skin.Name.Replace(' ', '_').ToLowerInvariant();
                 Main.Translations.AddTranslation(theme.nameLocalizationKey, DVLanguage.English, skin.Name.Replace('_', ' '));
 
-                MergeSubstitutions(theme, subs);
                 RegisterNewTheme(theme);
+            }
+
+            skin.LoadingFinished += AddSkinTexturesToTheme;
+            skin.StartLoadFinishedListener();
+        }
+
+        private static void AddSkinTexturesToTheme(Skin skin)
+        {
+            var subs = skin.GetSubstitutions();
+
+            if (PaintThemes.TryGetValue(skin.Name, out var theme))
+            {
+                Main.LogVerbose($"Merging into theme {skin.Name}");
+                MergeSubstitutions(theme, subs);
+            }
+            else
+            {
+                Main.Error($"Couldn't find theme for skin {skin.Name}");
             }
         }
 
@@ -617,6 +595,29 @@ namespace SkinManagerMod
 
             theme.substitutions = newArray;
             theme.substitutionDictionary = null;
+        }
+
+        public static void UnMergeSubstitutions(PaintTheme theme, PaintTheme.Substitution[] toRemove)
+        {
+            if (toRemove is null || toRemove.Length == 0) return;
+
+            var result = new List<PaintTheme.Substitution>(theme.substitutions.Length - toRemove.Length);
+
+            foreach (var substitution in theme.substitutions)
+            {
+                if (!toRemove.Any(s => SubstitutionsMatch(s, substitution)))
+                {
+                    result.Add(substitution);
+                }
+            }
+
+            theme.substitutions = result.ToArray();
+            theme.substitutionDictionary = null;
+        }
+
+        private static bool SubstitutionsMatch(PaintTheme.Substitution a, PaintTheme.Substitution b)
+        {
+            return (a.original == b.original) && (a.substitute == b.substitute);
         }
 
         #endregion

@@ -30,15 +30,17 @@ namespace SkinManagerMod
         {
             Instance = modEntry;
             Settings = UnityModManager.ModSettings.Load<SkinManagerSettings>(modEntry);
-            Translations = new TranslationInjector(Constants.MOD_ID);
 
-            //CCLPatch.Initialize();
+            Translations = new TranslationInjector(Constants.MOD_ID);
+            Translations.AddTranslationsFromWebCsv("https://docs.google.com/spreadsheets/d/1TrI4RuUgCijOuCjxM_WsOO9AV0BO4noTIZIzal3HbnY/export?format=csv&gid=1691364666");
+
             CarMaterialData.Initialize();
             if (!SkinProvider.Initialize())
             {
                 Error("Failed to initialize skin manager");
                 return false;
             }
+            SkinManager.Initialize();
 
             var harmony = new Harmony(Constants.MOD_ID);
             harmony.PatchAll(Assembly.GetExecutingAssembly());
