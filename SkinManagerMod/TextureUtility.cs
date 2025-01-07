@@ -232,5 +232,46 @@ namespace SkinManagerMod
             if (!Main.Settings.aniso5) return;
             tex.anisoLevel = 5;
         }
+
+        /// <summary>
+        /// Actually assign applicable skin textures to a renderer, using default skin to supply fallbacks
+        /// </summary>
+        public static void ApplyTextures(MeshRenderer renderer, Skin skin, Skin defaultSkin)
+        {
+            foreach (string textureID in PropNames.AllTextures)
+            {
+                var currentTexture = GetMaterialTexture(renderer, textureID);
+
+                if (currentTexture != null)
+                {
+                    if (skin.ContainsTexture(currentTexture.name))
+                    {
+                        var skinTexture = skin.GetTexture(currentTexture.name);
+                        renderer.material.SetTexture(textureID, skinTexture.TextureData);
+
+                        if (textureID == PropNames.MetalGlossMap)
+                        {
+                            if (!GetMaterialTexture(renderer, PropNames.OcclusionMap))
+                            {
+                                renderer.material.SetTexture(PropNames.OcclusionMap, skinTexture.TextureData);
+                            }
+                        }
+                    }
+                    else if ((defaultSkin != null) && defaultSkin.ContainsTexture(currentTexture.name))
+                    {
+                        var skinTexture = defaultSkin.GetTexture(currentTexture.name);
+                        renderer.material.SetTexture(textureID, skinTexture.TextureData);
+
+                        if (textureID == PropNames.MetalGlossMap)
+                        {
+                            if (!GetMaterialTexture(renderer, PropNames.OcclusionMap))
+                            {
+                                renderer.material.SetTexture(PropNames.OcclusionMap, skinTexture.TextureData);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

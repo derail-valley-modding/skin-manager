@@ -18,17 +18,25 @@ namespace SkinManagerMod
         public readonly List<SkinTexture> SkinTextures = new List<SkinTexture>();
         public readonly string[] ResourcePaths;
 
+        public readonly bool IsThemeable;
+        public SkinTexture CanLabelTexture;
+
         public event Action<Skin> LoadingFinished;
 
         private PaintTheme.Substitution[] _cachedSubstitutions = null;
 
         public void StartLoadFinishedListener()
         {
-            var toAwait = SkinTextures.Select(t => t.LoadingTask)
-                .Where(t => !(t is null) && !t.IsCompleted)
-                .ToArray();
+            var toAwait = SkinTextures
+                .Select(t => t.LoadingTask)
+                .Where(t => !(t is null) && !t.IsCompleted);
 
-            Task.WhenAll(toAwait).ContinueWith(OnLoadFinished);
+            if (!(CanLabelTexture?.LoadingTask is null) && !CanLabelTexture.LoadingTask.IsCompleted)
+            {
+                toAwait.Append(CanLabelTexture.LoadingTask);
+            }
+
+            Task.WhenAll(toAwait.ToArray()).ContinueWith(OnLoadFinished);
         }
 
         private void OnLoadFinished(Task _ = null)
@@ -36,13 +44,15 @@ namespace SkinManagerMod
             ThreadHelper.Instance.EnqueueAction(() => LoadingFinished?.Invoke(this));
         }
 
-        public Skin(string liveryId, string name, string directory = null, bool isDefault = false, string[] resourcePaths = null)
+        public Skin(string liveryId, string name, string directory, bool isDefault = false, string[] resourcePaths = null)
         {
             LiveryId = liveryId;
             Name = name;
             Path = directory;
             IsDefault = isDefault;
             ResourcePaths = resourcePaths;
+
+            IsThemeable = SkinProvider.IsThemeable(liveryId);
         }
 
         public bool ContainsTexture(string name)
@@ -119,6 +129,8 @@ namespace SkinManagerMod
     public class SkinTexture
     {
         public readonly string Name;
+        public readonly DateTime LastModified;
+
         private Task<Texture2D> task;
         public Task LoadingTask => task;
 
@@ -155,7 +167,7 @@ namespace SkinManagerMod
             }
         }
 
-        public SkinTexture(string name, Texture2D textureData)
+        public SkinTexture(string name, Texture2D textureData, DateTime? lastModified = null)
         {
             Name = name;
 
@@ -164,12 +176,14 @@ namespace SkinManagerMod
             TextureUtility.SetTextureOptions(textureData);
 
             _textureData = textureData;
+            LastModified = lastModified ?? DateTime.MinValue;
         }
 
-        public SkinTexture(string name, Task<Texture2D> task)
+        public SkinTexture(string name, Task<Texture2D> task, DateTime lastModified)
         {
             Name = name;
             this.task = task;
+            LastModified = lastModified;
         }
     }
 

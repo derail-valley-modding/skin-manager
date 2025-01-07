@@ -34,7 +34,7 @@ namespace SkinManagerMod
         private MeshRenderer HighlighterRender;
         private PaintArea AreaToPaint = PaintArea.All;
 
-        private List<PaintTheme> SkinsForCarType = null;
+        private List<string> SkinsForCarType = null;
         private int SelectedSkinIdx = 0;
         private string SelectedSkin = null;
         private string CurrentSkin = null;
@@ -331,7 +331,16 @@ namespace SkinManagerMod
                         }
                         else
                         {
-                            SetState(State.SelectAreas);
+                            if (SkinProvider.IsThemeable(PointedCar.carLivery.id))
+                            {
+                                SetState(State.SelectAreas);
+                            }
+                            else
+                            {
+                                // for regular cars, skip area selection
+                                ApplySelectedSkin();
+                                ResetState();
+                            }
                         }
                         CommsRadioController.PlayAudioFromRadio(ConfirmSound, transform);
                     }
@@ -443,9 +452,9 @@ namespace SkinManagerMod
             }
         }
 
-        private void SetSelectedSkin(PaintTheme skin)
+        private void SetSelectedSkin(string skinName)
         {
-            if (!skin)
+            if (string.IsNullOrEmpty(skinName))
             {
                 // should never actually reach this code due to built in themes
                 SelectedSkin = null;
@@ -453,8 +462,14 @@ namespace SkinManagerMod
             }
             else
             {
-                SelectedSkin = skin.name;
-                string displayName = $"{Translations.SelectPaintPrompt}\n{skin.LocalizedName}";
+                SelectedSkin = skinName;
+
+                if (skinName == SkinProvider.GetDefaultSkinName(SelectedCar.carLivery.id))
+                {
+                    skinName = SkinProvider.DefaultThemeName;
+                }
+
+                string displayName = $"{Translations.SelectPaintPrompt}\n{skinName}";
                 display.SetContent(displayName);
             }
         }

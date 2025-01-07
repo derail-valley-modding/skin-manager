@@ -126,6 +126,14 @@ namespace SMShared
                 // 282 & tender new UVs -> no mappings :(
 
                 {
+                    "LocoDH4",
+                    new TextureMapping
+                    {
+                        { "LocoDH4_ExteriorBody_01", "LocoDH4_Body_01", TextureMapping.DNS },
+                    }
+                },
+
+                {
                     "LocoDE6",
                     new TextureMapping
                     {

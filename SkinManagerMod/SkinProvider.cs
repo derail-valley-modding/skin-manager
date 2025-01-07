@@ -3,6 +3,7 @@ using DV.Customization.Paint;
 using DV.ThingTypes;
 using DVLangHelper.Data;
 using SMShared;
+using SMShared.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -56,12 +57,51 @@ namespace SkinManagerMod
         private static readonly Dictionary<string, SkinGroup> skinGroups = new Dictionary<string, SkinGroup>();
         public static IEnumerable<SkinGroup> AllSkinGroups => skinGroups.Values;
 
+        /// <summary>Livery ID to default skin mapping</summary>
+        private static readonly Dictionary<string, Skin> defaultSkins = new Dictionary<string, Skin>();
+
         private static readonly Dictionary<TrainCarLivery, Dictionary<string, string>> cachedCarTextures =
             new Dictionary<TrainCarLivery, Dictionary<string, string>>();
 
 
         /// <summary>Skin Name to Paint Theme (combined liveries)</summary>
-        public static Dictionary<string, PaintTheme> PaintThemes { get; private set; } = new Dictionary<string, PaintTheme>();
+        private static PaintTheme[] _cachedThemeList = null;
+        private static readonly Dictionary<string, PaintTheme> _themeDict = new Dictionary<string, PaintTheme>();
+        private static readonly Dictionary<string, SkinTexture> _canLabelDict = new Dictionary<string, SkinTexture>();
+
+        private static readonly HashSet<string> _themeableLiveries = Globals.G.Types.Liveries
+            .Where(l => !CarTypes.IsRegularCar(l))
+            .Select(l => l.id)
+            .ToHashSet();
+
+        public static bool IsThemeable(TrainCarLivery livery) => _themeableLiveries.Contains(livery.id);
+        public static bool IsThemeable(string liveryId) => _themeableLiveries.Contains(liveryId);
+
+        public static PaintTheme[] PaintThemes
+        {
+            get
+            {
+                if (_cachedThemeList is null)
+                {
+                    _cachedThemeList = _themeDict.Values.ToArray();
+                    ShuffleThemes();
+                }
+                return _cachedThemeList;
+            }
+        }
+
+        public static void ShuffleThemes()
+        {
+            // Fisher Yates shuffle
+            var arr = PaintThemes;
+            for (int i = arr.Length - 1; i > 0; i--)
+            {
+                int j = UnityEngine.Random.Range(0, i);
+                (arr[i], arr[j]) = (arr[j], arr[i]);
+            }
+        }
+
+        public static bool TryGetTheme(string themeName, out PaintTheme theme) => _themeDict.TryGetValue(themeName, out theme);
 
         private static void RegisterNewTheme(PaintTheme theme)
         {
@@ -72,18 +112,31 @@ namespace SkinManagerMod
                 return;
             }
 
-            PaintThemes.Add(theme.name, theme);
+            _themeDict.Add(theme.name, theme);
             PaintTheme.loadedThemes.Add(lowerName, theme);
+
+            _cachedThemeList = null;
         }
 
         private static void UnregisterTheme(string themeName)
         {
-            if (PaintThemes.TryGetValue(themeName, out var theme))
+            if (_themeDict.TryGetValue(themeName, out var theme))
             {
                 UnityEngine.Object.Destroy(theme);
             }
-            PaintThemes.Remove(themeName);
+            _themeDict.Remove(themeName);
             PaintTheme.loadedThemes.Remove(themeName.ToLower());
+        }
+
+        public static bool TryGetCanLabel(string themeName, out Texture2D texture)
+        {
+            if (_canLabelDict.TryGetValue(themeName, out var skinTex))
+            {
+                texture = skinTex.TextureData;
+                return true;
+            }
+            texture = null;
+            return false;
         }
 
 
@@ -101,10 +154,27 @@ namespace SkinManagerMod
             return newGroup;
         }
 
+        public static Skin GetDefaultSkin(string carId)
+        {
+            if (defaultSkins.TryGetValue(carId, out Skin existing))
+            {
+                return existing;
+            }
+
+            var newDefault = CreateDefaultSkin(Globals.G.Types.Liveries.First(l => l.id == carId));
+            defaultSkins[carId] = newDefault;
+            return newDefault;
+        }
+
         public static Skin FindSkinByName(TrainCarLivery carType, string name) => FindSkinByName(carType.id, name);
 
         public static Skin FindSkinByName(string carId, string name)
         {
+            if (name == GetDefaultSkinName(carId))
+            {
+                return GetDefaultSkin(carId);
+            }
+
             if (skinGroups.TryGetValue(carId, out var group))
             {
                 return group.GetSkin(name);
@@ -112,36 +182,48 @@ namespace SkinManagerMod
             return null;
         }
 
-        public static List<PaintTheme> GetSkinsForType(TrainCarLivery carType, bool includeDefault = true, bool sort = true) =>
+        public static List<string> GetSkinsForType(TrainCarLivery carType, bool includeDefault = true, bool sort = true) =>
             GetSkinsForType(carType.id, includeDefault, sort);
 
-        public static List<PaintTheme> GetSkinsForType(string carId, bool includeDefault = true, bool sort = true)
+        public static List<string> GetSkinsForType(string carId, bool includeDefault = true, bool sort = true)
         {
-            var result = new List<PaintTheme>();
+            var result = new List<string>();
 
             if (skinGroups.TryGetValue(carId, out var group))
             {
-                result.AddRange(group.Skins.Select(GetThemeForSkin));
+                result.AddRange(group.Skins.Select(s => s.Name));
             }
 
             if (Main.Settings.allowDE6SkinsForSlug && (carId == Constants.SLUG_LIVERY_ID))
             {
                 if (skinGroups.TryGetValue(Constants.DE6_LIVERY_ID, out group))
                 {
-                    result.AddRange(group.Skins.Select(GetThemeForSkin));
+                    result.AddRange(group.Skins.Select(s => s.Name));
                 }
             }
 
             if (includeDefault)
             {
-                result.AddRange(BuiltInThemes);
+                if (IsThemeable(carId))
+                {
+                    result.AddRange(BuiltInThemeNames);
+                }
+                else
+                {
+                    result.Add(GetDefaultSkinName(carId));
+                }
             }
 
             if (sort)
             {
-                result.Sort(CompareThemes);
+                result.Sort();
             }
             return result;
+        }
+
+        private static int CompareSkins(Skin a, Skin b)
+        {
+            return a.Name.CompareTo(b.Name);
         }
 
         private static int CompareThemes(PaintTheme a, PaintTheme b)
@@ -155,7 +237,7 @@ namespace SkinManagerMod
             return aName.CompareTo(bName);
         }
 
-        private static PaintTheme GetThemeForSkin(Skin skin) => PaintThemes[skin.Name];
+        private static PaintTheme GetThemeForSkin(Skin skin) => _themeDict[skin.Name];
 
         public static string GetNewSkin(TrainCarLivery carType)
         {
@@ -280,7 +362,7 @@ namespace SkinManagerMod
             {
                 skinGroup.Skins.Remove(existingSkin);
 
-                if (PaintThemes.TryGetValue(skinName, out var theme))
+                if (_themeDict.TryGetValue(skinName, out var theme))
                 {
                     UnMergeSubstitutions(theme, existingSkin.GetSubstitutions());
 
@@ -419,6 +501,35 @@ namespace SkinManagerMod
         }
 
         /// <summary>
+        /// Create a skin containing the default/starting textures of a car
+        /// </summary>
+        private static Skin CreateDefaultSkin(TrainCarLivery carType)
+        {
+            GameObject carPrefab = carType.prefab;
+            if (carPrefab == null) return null;
+
+            string skinDir = null;
+            //if (CCLPatch.IsCustomCarType(carType))
+            //{
+            //    skinDir = CCLPatch.GetCarFolder(carType);
+            //}
+
+            var defaultSkin = new Skin(carType.id, GetDefaultSkinName(carType.id), skinDir, isDefault: true);
+
+            foreach (var texture in TextureUtility.EnumerateTextures(carType))
+            {
+                if (!defaultSkin.ContainsTexture(texture.name))
+                {
+                    defaultSkin.SkinTextures.Add(new SkinTexture(texture.name, texture));
+                }
+            }
+
+            return defaultSkin;
+        }
+
+        public static string GetDefaultSkinName(string liveryId) => $"Default_{liveryId}";
+
+        /// <summary>
         /// Try to find the car texture/material property that matches the given file
         /// </summary>
         /// <param name="liveryId">Used to find remaps for legacy texture names</param>
@@ -471,15 +582,7 @@ namespace SkinManagerMod
                 {
                     var linear = textureProp == "_BumpMap";
 
-                    if (!forceSync && Main.Settings.parallelLoading)
-                    {
-                        config.Textures.Add(new SkinTexture(fileName, TextureLoader.LoadAsync(config, texturePath, linear)));
-                    }
-                    else
-                    {
-                        TextureLoader.BustCache(config, texturePath);
-                        config.Textures.Add(new SkinTexture(fileName, TextureLoader.LoadSync(config, texturePath, linear)));
-                    }
+                    config.Textures.Add(BeginLoadTexture(fileName, config, texturePath, linear, forceSync));
                 }
             }
         }
@@ -522,20 +625,18 @@ namespace SkinManagerMod
 
                 string fileName = Path.GetFileNameWithoutExtension(texturePath);
 
+                if (string.Equals(fileName, Constants.PAINT_CAN_LABEL_FILENAME, StringComparison.OrdinalIgnoreCase))
+                {
+                    skin.CanLabelTexture = BeginLoadTexture(fileName, config, texturePath, false, forceSync);
+                    continue;
+                }
+
                 if (TryGetTextureForFilename(skinGroup.TrainCarType.id, ref fileName, textureNames, out string textureProp) && !loading.Contains(fileName))
                 {
                     var linear = textureProp == "_BumpMap";
                     loading.Add(fileName);
 
-                    if (!forceSync && Main.Settings.parallelLoading)
-                    {
-                        skin.SkinTextures.Add(new SkinTexture(fileName, TextureLoader.LoadAsync(config, texturePath, linear)));
-                    }
-                    else
-                    {
-                        TextureLoader.BustCache(config, texturePath);
-                        skin.SkinTextures.Add(new SkinTexture(fileName, TextureLoader.LoadSync(config, texturePath, linear)));
-                    }
+                    skin.SkinTextures.Add(BeginLoadTexture(fileName, config, texturePath, linear, forceSync));
                 }
             }
 
@@ -550,7 +651,7 @@ namespace SkinManagerMod
 
             skinGroup.Skins.Add(skin);
 
-            if (!PaintThemes.TryGetValue(skin.Name, out var theme))
+            if (skin.IsThemeable && !_themeDict.TryGetValue(skin.Name, out var theme))
             {
                 Main.LogVerbose($"Create new theme {skin.Name}");
                 theme = ScriptableObject.CreateInstance<PaintTheme>();
@@ -568,14 +669,41 @@ namespace SkinManagerMod
             skin.StartLoadFinishedListener();
         }
 
+        private static SkinTexture BeginLoadTexture(string fileName, ResourceConfigJson config, string texturePath, bool linear, bool forceSync)
+        {
+            var fileInfo = new FileInfo(texturePath);
+            var modifiedTime = fileInfo.LastWriteTimeUtc;
+
+            if (!forceSync && Main.Settings.parallelLoading)
+            {
+                return new SkinTexture(fileName, TextureLoader.LoadAsync(config, texturePath, linear), modifiedTime);
+            }
+            else
+            {
+                TextureLoader.BustCache(config, texturePath);
+                return new SkinTexture(fileName, TextureLoader.LoadSync(config, texturePath, linear), modifiedTime);
+            }
+        }
+
         private static void AddSkinTexturesToTheme(Skin skin)
         {
+            if (!skin.IsThemeable) return;
+
             var subs = skin.GetSubstitutions();
 
-            if (PaintThemes.TryGetValue(skin.Name, out var theme))
+            if (_themeDict.TryGetValue(skin.Name, out var theme))
             {
                 Main.LogVerbose($"Merging into theme {skin.Name}");
                 MergeSubstitutions(theme, subs);
+
+                if (!(skin.CanLabelTexture is null))
+                {
+                    if (!_canLabelDict.TryGetValue(skin.Name, out var existingLabel) ||
+                        (skin.CanLabelTexture.LastModified > existingLabel.LastModified))
+                    {
+                        _canLabelDict.Add(skin.Name, skin.CanLabelTexture);
+                    }
+                }
             }
             else
             {
@@ -586,6 +714,8 @@ namespace SkinManagerMod
         private static void MergeSubstitutions(PaintTheme theme, PaintTheme.Substitution[] toMerge)
         {
             if (toMerge is null || toMerge.Length == 0) return;
+
+            toMerge = toMerge.Where(sub => !theme.substitutions.Any(existSub => SubstitutesSameMaterial(sub, existSub))).ToArray();
 
             int currentLength = theme.substitutions.Length;
             var newArray = new PaintTheme.Substitution[currentLength + toMerge.Length];
@@ -613,6 +743,11 @@ namespace SkinManagerMod
 
             theme.substitutions = result.ToArray();
             theme.substitutionDictionary = null;
+        }
+
+        private static bool SubstitutesSameMaterial(PaintTheme.Substitution a, PaintTheme.Substitution b)
+        {
+            return a.original == b.original;
         }
 
         private static bool SubstitutionsMatch(PaintTheme.Substitution a, PaintTheme.Substitution b)

@@ -6,6 +6,7 @@ using SMShared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace SkinManagerMod
 {
@@ -74,6 +75,12 @@ namespace SkinManagerMod
 
         public static void ApplySkin(TrainCar trainCar, string skinName, PaintArea area = PaintArea.All)
         {
+            if (!SkinProvider.IsThemeable(trainCar.carLivery.id))
+            {
+                ApplyNonThemeSkin(trainCar, skinName);
+                return;
+            }
+
             if (PaintTheme.TryLoad(skinName, out PaintTheme newTheme))
             {
                 if (area.HasFlag(PaintArea.Interior) && trainCar.PaintInterior)
@@ -95,6 +102,34 @@ namespace SkinManagerMod
             else
             {
                 Main.Log($"Couldn't find paint theme {skinName} for car {trainCar.ID}");
+            }
+        }
+
+        private static void ApplyNonThemeSkin(TrainCar trainCar, string skinName)
+        {
+            var skin = SkinProvider.FindSkinByName(trainCar.carLivery.id, skinName);
+            if (skin == null) return;
+
+            var defaultSkin = SkinProvider.GetDefaultSkin(trainCar.carLivery.id);
+            ApplyNonThemeSkinToTransform(trainCar.gameObject.transform, skin, defaultSkin);
+            if (trainCar.interior)
+            {
+                ApplyNonThemeSkinToTransform(trainCar.gameObject.transform, skin, defaultSkin);
+            }
+
+            SetAppliedCarSkin(trainCar, skinName);
+        }
+
+        private static void ApplyNonThemeSkinToTransform(Transform objectRoot, Skin skin, Skin defaultSkin)
+        {
+            foreach (var renderer in objectRoot.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                if (!renderer.material)
+                {
+                    continue;
+                }
+
+                TextureUtility.ApplyTextures(renderer, skin, defaultSkin);
             }
         }
 
