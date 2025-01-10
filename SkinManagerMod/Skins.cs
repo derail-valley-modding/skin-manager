@@ -36,7 +36,15 @@ namespace SkinManagerMod
                 toAwait.Append(CanLabelTexture.LoadingTask);
             }
 
-            Task.WhenAll(toAwait.ToArray()).ContinueWith(OnLoadFinished);
+            var taskArr = toAwait.ToArray();
+            if ((taskArr.Length == 0) || taskArr.All(t => t.IsCompleted))
+            {
+                LoadingFinished?.Invoke(this);
+            }
+            else
+            {
+                Task.WhenAll(taskArr).ContinueWith(OnLoadFinished);
+            }
         }
 
         private void OnLoadFinished(Task _ = null)

@@ -77,11 +77,23 @@
       <HintPath>D:\Games\SteamLibrary\steamapps\common\Derail Valley\DerailValley_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.PhysicsModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL" />
+    <Reference Include="UnityEngine.UI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" />
+    <Reference Include="UnityEngine.UIModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL" />
     <Reference Include="UnityModManager" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CarMaterialData.cs" />
     <Compile Include="CarPatches.cs" />
+    <Compile Include="Items\CustomPaintInventorySpec.cs" />
+    <Compile Include="Items\InventoryPatches.cs" />
+    <Compile Include="Items\PaintCanThemeNameProvider.cs" />
+    <Compile Include="Items\PaintFactory.cs" />
+    <Compile Include="Items\ShopPaintCanStocker.cs" />
+    <Compile Include="Items\ShopPatches.cs" />
+    <Compile Include="Palette\ColorCutQuantizer.cs" />
+    <Compile Include="Palette\ColorHistogram.cs" />
+    <Compile Include="Palette\ColorUtils.cs" />
+    <Compile Include="Palette\Palette.cs" />
     <Compile Include="ThreadHelper.cs" />
     <Compile Include="CommsRadioSkinSwitcher.cs" />
     <Compile Include="ResourcePack.cs" />

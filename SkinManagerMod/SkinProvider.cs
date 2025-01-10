@@ -77,6 +77,9 @@ namespace SkinManagerMod
         public static bool IsThemeable(TrainCarLivery livery) => _themeableLiveries.Contains(livery.id);
         public static bool IsThemeable(string liveryId) => _themeableLiveries.Contains(liveryId);
 
+        public static IEnumerable<string> ThemeableLiveryIds => _themeableLiveries;
+        public static IEnumerable<SkinGroup> ThemeableSkinGroups => skinGroups.Where(g => _themeableLiveries.Contains(g.Key)).Select(g => g.Value);
+
         public static PaintTheme[] PaintThemes
         {
             get
@@ -126,6 +129,8 @@ namespace SkinManagerMod
             }
             _themeDict.Remove(themeName);
             PaintTheme.loadedThemes.Remove(themeName.ToLower());
+
+            _cachedThemeList = null;
         }
 
         public static bool TryGetCanLabel(string themeName, out Texture2D texture)
