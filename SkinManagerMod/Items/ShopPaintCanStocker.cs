@@ -38,14 +38,13 @@ namespace SkinManagerMod.Items
 
             _preInjectionModules = Shop.scanItemResourceModules;
             int originalModuleCount = _preInjectionModules.Length;
-            bool modifiedShopData = false;
 
             var postInjectionModules = new ScanItemCashRegisterModule[_preInjectionModules.Length + nToStock];
             Array.Copy(_preInjectionModules, postInjectionModules, _preInjectionModules.Length);
 
             for (int i = 0; i < nToStock; i++)
             {
-                var module = CreateModuleForTheme(themes[i], ref modifiedShopData);
+                var module = CreateModuleForTheme(themes[i]);
                 _injectedModules.Add(module);
 
                 postInjectionModules[originalModuleCount + i] = module;
@@ -55,11 +54,6 @@ namespace SkinManagerMod.Items
 
             Shop.scanItemResourceModules = postInjectionModules;
             CashRegister.registerModules = postInjectionModules;
-
-            if (modifiedShopData)
-            {
-                GlobalShopController.Instance.Fire_GlobalShopDataChanged();
-            }
 
             SkinProvider.ShuffleThemes();
         }
@@ -77,7 +71,7 @@ namespace SkinManagerMod.Items
         }
 
 
-        private ScanItemCashRegisterModule CreateModuleForTheme(PaintTheme theme, ref bool modifiedShopData)
+        private ScanItemCashRegisterModule CreateModuleForTheme(PaintTheme theme)
         {
             if (!PaintFactory.ShopDataInjected)
             {

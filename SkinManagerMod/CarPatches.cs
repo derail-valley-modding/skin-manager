@@ -1,21 +1,22 @@
 ﻿using DV.Customization.Paint;
 using HarmonyLib;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace SkinManagerMod
 {
-    [HarmonyPatch(typeof(CarSpawner))]
+    [HarmonyPatch]
     internal static class CarSpawnerPatches
     {
-        [HarmonyPatch(nameof(CarSpawner.BaseSpawn))]
-        [HarmonyPostfix]
-        private static void BaseSpawn(bool uniqueCar, TrainCar __result)
+        static IEnumerable<MethodBase> TargetMethods()
         {
-            if (uniqueCar)
-            {
-                Main.LogVerbose($"Spawn unique {__result.ID}");
-                return;
-            }
+            yield return AccessTools.Method(typeof(CarSpawner), nameof(CarSpawner.SpawnCar));
+            yield return AccessTools.Method(typeof(CarSpawner), nameof(CarSpawner.SpawnLoadedCar));
+        }
 
+        [HarmonyPostfix]
+        private static void BaseSpawn(TrainCar __result)
+        {
             var skinName = SkinManager.GetCurrentCarSkin(__result);
             if (!string.IsNullOrEmpty(skinName))
             {

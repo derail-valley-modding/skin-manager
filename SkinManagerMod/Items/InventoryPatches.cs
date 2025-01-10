@@ -42,7 +42,7 @@ namespace SkinManagerMod.Items
 
         private static GameObject CustomInstantiateItem(GameObject prefab, Vector3 position, Quaternion rotation, StorageItemData itemData)
         {
-            if (itemData.state.TryGetValue(Constants.CUSTOM_THEME_SAVEDATA_KEY, out JToken themeToken))
+            if ((itemData?.state != null) && itemData.state.TryGetValue(Constants.CUSTOM_THEME_SAVEDATA_KEY, out JToken themeToken))
             {
                 if ((string)themeToken is string themeName)
                 {

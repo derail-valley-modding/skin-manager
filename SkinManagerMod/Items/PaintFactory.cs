@@ -403,13 +403,14 @@ namespace SkinManagerMod.Items
 
         public static bool ShopDataInjected { get; private set; } = false;
         private static GameObject _dummyItemSpecHolder;
-        private static Dictionary<string, CustomPaintInventorySpec> _dummyItemSpecs = new Dictionary<string, CustomPaintInventorySpec>();
+        private static readonly Dictionary<string, CustomPaintInventorySpec> _dummyItemSpecs = new Dictionary<string, CustomPaintInventorySpec>();
 
         public static CustomPaintInventorySpec GetDummyItemSpec(string themeName) => _dummyItemSpecs[themeName];
 
         public static void InjectShopData()
         {
             if (ShopDataInjected) return;
+            Main.Log("Injecting global shop data");
 
             _dummyItemSpecHolder = new GameObject("[SM] Dummy Item Holder");
 
@@ -444,6 +445,17 @@ namespace SkinManagerMod.Items
             }
 
             ShopDataInjected = true;
+        }
+
+        public static void DestroyInjectedShopData()
+        {
+            if (!ShopDataInjected) return;
+            Main.Log("Destroying global shop data");
+
+            _dummyItemSpecs.Clear();
+            UnityEngine.Object.Destroy(_dummyItemSpecHolder);
+
+            ShopDataInjected = false;
         }
     }
 }

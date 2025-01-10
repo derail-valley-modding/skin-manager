@@ -9,6 +9,7 @@ using System.Reflection;
 using UnityEngine;
 using SMShared;
 using DVLangHelper.Runtime;
+using SkinManagerMod.Items;
 
 namespace SkinManagerMod
 {
@@ -41,6 +42,8 @@ namespace SkinManagerMod
                 return false;
             }
             SkinManager.Initialize();
+
+            UnloadWatcher.UnloadRequested += PaintFactory.DestroyInjectedShopData;
 
             var harmony = new Harmony(Constants.MOD_ID);
             harmony.PatchAll(Assembly.GetExecutingAssembly());

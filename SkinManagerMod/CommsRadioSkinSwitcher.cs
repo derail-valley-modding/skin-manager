@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
 using DV;
 using DV.Customization.Paint;
 using DV.ThingTypes;
@@ -487,16 +489,36 @@ namespace SkinManagerMod
     [HarmonyPatch(typeof(CommsRadioController))]
     internal static class CommsRadio_Awake_Patch
     {
+        public static CommsRadioSkinSwitcher SkinSwitcher = null;
+
         [HarmonyPatch(nameof(CommsRadioController.Awake))]
         [HarmonyPostfix]
         private static void AfterAwake(CommsRadioController __instance, List<ICommsRadioMode> ___allModes)
         {
             CommsRadioSkinSwitcher.Controller = __instance;
-            var skinSwitcher = __instance.gameObject.AddComponent<CommsRadioSkinSwitcher>();
-            ___allModes.Add(skinSwitcher);
+            SkinSwitcher = __instance.gameObject.AddComponent<CommsRadioSkinSwitcher>();
 
-            var paintMode = __instance.GetComponentInChildren<CommsRadioPaintjob>(true);
-            ___allModes.Remove(paintMode);
+            int paintModeIndex = ___allModes.IndexOf(__instance.carPaintjobControl);
+            ___allModes[paintModeIndex] = SkinSwitcher;
+        }
+
+        [HarmonyPatch(nameof(CommsRadioController.UpdateModesAvailability))]
+        [HarmonyTranspiler]
+        private static IEnumerable<CodeInstruction> UpdateModesAvailability(IEnumerable<CodeInstruction> instructions)
+        {
+            foreach (var instruction in instructions)
+            {
+                if ((instruction.opcode == OpCodes.Ldfld) && (instruction.operand is FieldInfo field) && (field.Name == nameof(CommsRadioController.carPaintjobControl)))
+                {
+                    var skinSwitcherField = AccessTools.Field(typeof(CommsRadio_Awake_Patch), nameof(SkinSwitcher));
+                    yield return new CodeInstruction(OpCodes.Pop); // get out of here, 'this' reference
+                    yield return new CodeInstruction(OpCodes.Ldsfld, skinSwitcherField);
+                }
+                else
+                {
+                    yield return instruction;
+                }
+            }
         }
     }
 }
