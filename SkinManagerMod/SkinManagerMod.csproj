@@ -94,6 +94,7 @@
     <Compile Include="Palette\ColorHistogram.cs" />
     <Compile Include="Palette\ColorUtils.cs" />
     <Compile Include="Palette\Palette.cs" />
+    <Compile Include="ThemeSettings.cs" />
     <Compile Include="ThreadHelper.cs" />
     <Compile Include="CommsRadioSkinSwitcher.cs" />
     <Compile Include="ResourcePack.cs" />

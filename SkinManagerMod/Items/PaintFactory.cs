@@ -132,13 +132,20 @@ namespace SkinManagerMod.Items
                     name = $"PaintCan_Label_SM_{themeName}",
                 };
 
-                if (SkinProvider.TryGetCanLabel(themeName, out Texture2D labelTexture))
+                if (SkinProvider.TryGetThemeSettings(themeName, out ThemeSettings settings))
                 {
-                    material.mainTexture = labelTexture;
+                    if (settings.CanLabel != null)
+                    {
+                        material.mainTexture = settings.CanLabel.TextureData;
+                    }
+                    else
+                    {
+
+                    }
                 }
                 else
                 {
-                    GeneratePaletteLabelMaterial(material, themeName);
+                    GenerateDefaultLabelMaterial(material, themeName);
                 }
 
                 _labelMaterials.Add(themeName, material);
@@ -172,29 +179,42 @@ namespace SkinManagerMod.Items
             }
         }
 
-        private static void GeneratePaletteLabelMaterial(Material labelMaterial, string themeName)
+        private static void GenerateDefaultLabelMaterial(Material labelMaterial, string themeName, ThemeSettings themeSettings = null)
         {
             SkinProvider.TryGetTheme(themeName, out var theme);
 
-            var bodySubstitution = theme.substitutions.OrderBy(s => s.original.name)
-                .FirstOrDefault(s => s.original.name.Contains("Body"));
+            Color baseColor, accentA, accentB;
 
-            if (!bodySubstitution.original)
+            if (themeSettings != null)
             {
-                Main.Error($"No body sub for theme {themeName}");
-                labelMaterial.mainTexture = Texture2D.whiteTexture;
-                return;
+                // use user supplied colors
+                baseColor = themeSettings.LabelBaseColor ?? Color.white;
+                accentA = themeSettings.LabelAccentColorA ?? Color.white;
+                accentB = themeSettings.LabelAccentColorB ?? Color.white;
             }
+            else
+            {
+                // calculate label colors from texture palette
+                var bodySubstitution = theme.substitutions.OrderBy(s => s.original.name)
+                    .FirstOrDefault(s => s.original.name.Contains("Body"));
 
-            var palette = Palette.Generate((Texture2D)bodySubstitution.substitute.mainTexture, 12);
+                if (!bodySubstitution.original)
+                {
+                    Main.Error($"No body sub for theme {themeName}");
+                    labelMaterial.mainTexture = Texture2D.whiteTexture;
+                    return;
+                }
 
-            //WritePaletteBmp(palette, themeName);
+                var palette = Palette.Generate((Texture2D)bodySubstitution.substitute.mainTexture, 12);
 
-            var byPopulation = palette.mSwatches.OrderByDescending(s => s.Population).ToList();
-            var mostUsedColor = byPopulation.First().ToColor();
+                //WritePaletteBmp(palette, themeName);
 
-            var accentA = GetAccentColor(byPopulation, mostUsedColor);
-            var accentB = GetSaturatedColor(byPopulation, mostUsedColor, accentA);
+                var byPopulation = palette.mSwatches.OrderByDescending(s => s.Population).ToList();
+                baseColor = byPopulation.First().ToColor();
+
+                accentA = GetAccentColor(byPopulation, baseColor);
+                accentB = GetSaturatedColor(byPopulation, baseColor, accentA);
+            }
 
             int texWidth = _labelBackgroundTexture.width;
             int texHeight = _labelBackgroundTexture.height;
@@ -205,7 +225,7 @@ namespace SkinManagerMod.Items
             GL.Clear(true, true, Color.clear);
 
             BlitLabelSection(_labelBackgroundTexture, blitTarget, Color.white);
-            BlitLabelSection(_labelAccentBottom, blitTarget, mostUsedColor);
+            BlitLabelSection(_labelAccentBottom, blitTarget, baseColor);
             BlitLabelSection(_labelAccentCenter, blitTarget, accentA);
             BlitLabelSection(_labelAccentTop, blitTarget, accentB);
 

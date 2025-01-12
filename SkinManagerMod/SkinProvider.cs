@@ -2,6 +2,7 @@
 using DV.Customization.Paint;
 using DV.ThingTypes;
 using DVLangHelper.Data;
+using Newtonsoft.Json;
 using SMShared;
 using SMShared.Json;
 using System;
@@ -64,10 +65,11 @@ namespace SkinManagerMod
             new Dictionary<TrainCarLivery, Dictionary<string, string>>();
 
 
-        /// <summary>Skin Name to Paint Theme (combined liveries)</summary>
+        // Skin Name to Paint Theme (combined liveries)
         private static PaintTheme[] _cachedThemeList = null;
         private static readonly Dictionary<string, PaintTheme> _themeDict = new Dictionary<string, PaintTheme>();
-        private static readonly Dictionary<string, SkinTexture> _canLabelDict = new Dictionary<string, SkinTexture>();
+        private static readonly Dictionary<string, ThemeSettings> _themeSettings = new Dictionary<string, ThemeSettings>();
+        
 
         private static readonly HashSet<string> _themeableLiveries = Globals.G.Types.Liveries
             .Where(l => !CarTypes.IsRegularCar(l))
@@ -133,16 +135,8 @@ namespace SkinManagerMod
             _cachedThemeList = null;
         }
 
-        public static bool TryGetCanLabel(string themeName, out Texture2D texture)
-        {
-            if (_canLabelDict.TryGetValue(themeName, out var skinTex))
-            {
-                texture = skinTex.TextureData;
-                return true;
-            }
-            texture = null;
-            return false;
-        }
+        public static bool TryGetThemeSettings(string themeName, out ThemeSettings themeSettings) =>
+            _themeSettings.TryGetValue(themeName, out themeSettings);
 
 
         #region Provider Methods
@@ -433,6 +427,12 @@ namespace SkinManagerMod
             {
                 var newConfig = new ModSkinCollection(mod);
 
+                string themeConfigPath = Path.Combine(mod.Path, Constants.THEME_CONFIG_FILE);
+                if (File.Exists(themeConfigPath))
+                {
+                    TryLoadThemeConfigFile(themeConfigPath);
+                }
+
                 // load common resources first
                 foreach (string file in Directory.EnumerateFiles(mod.Path, Constants.SKIN_RESOURCE_FILE, SearchOption.AllDirectories))
                 {
@@ -492,6 +492,51 @@ namespace SkinManagerMod
             }
 
             return loadedCount;
+        }
+
+        private static void TryLoadThemeConfigFile(string configPath)
+        {
+            try
+            {
+                string contents = File.ReadAllText(configPath);
+                var parsedConfig = JsonConvert.DeserializeObject<ThemeConfigJson>(contents);
+
+                if ((parsedConfig.Themes is null) || (parsedConfig.Themes.Length == 0))
+                {
+                    Main.Warning($"Found theme config file, but it is empty: {configPath}");
+                    return;
+                }
+
+                foreach (var configItem in parsedConfig.Themes)
+                {
+                    if (string.IsNullOrEmpty(configItem.Name))
+                    {
+                        Main.Warning($"Theme config contains an invalid theme name: {configPath}");
+                        continue;
+                    }
+
+                    if (string.IsNullOrEmpty(parsedConfig.Version) || !Version.TryParse(parsedConfig.Version, out var version))
+                    {
+                        Main.Warning($"Theme config contains a missing or invalid version: {configPath}");
+                        continue;
+                    }
+
+                    var newSettings = ThemeSettings.Create(configPath, configItem, version);
+
+                    if (TryGetThemeSettings(configItem.Name, out var settings))
+                    {
+                        settings.Merge(newSettings);
+                    }
+                    else
+                    {
+                        _themeSettings.Add(configItem.Name, newSettings);
+                    }
+                }
+            }
+            catch
+            {
+                Main.Error($"Failed to parse theme config, please check the syntax: {configPath}");
+            }
         }
 
         private static Dictionary<string, string> GetCarTextureDictionary(TrainCarLivery carType)
@@ -630,12 +675,6 @@ namespace SkinManagerMod
 
                 string fileName = Path.GetFileNameWithoutExtension(texturePath);
 
-                if (string.Equals(fileName, Constants.PAINT_CAN_LABEL_FILENAME, StringComparison.OrdinalIgnoreCase))
-                {
-                    skin.CanLabelTexture = BeginLoadTexture(fileName, config, texturePath, false, forceSync);
-                    continue;
-                }
-
                 if (TryGetTextureForFilename(skinGroup.TrainCarType.id, ref fileName, textureNames, out string textureProp) && !loading.Contains(fileName))
                 {
                     var linear = textureProp == "_BumpMap";
@@ -700,15 +739,6 @@ namespace SkinManagerMod
             {
                 Main.LogVerbose($"Merging into theme {skin.Name}");
                 MergeSubstitutions(theme, subs);
-
-                if (!(skin.CanLabelTexture is null))
-                {
-                    if (!_canLabelDict.TryGetValue(skin.Name, out var existingLabel) ||
-                        (skin.CanLabelTexture.LastModified > existingLabel.LastModified))
-                    {
-                        _canLabelDict.Add(skin.Name, skin.CanLabelTexture);
-                    }
-                }
             }
             else
             {

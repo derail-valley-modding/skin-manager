@@ -13,6 +13,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Json\ModInfoJson.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Json\ResourceConfigJson.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Json\SkinConfigJson.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Json\ThemeConfigJson.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Remaps.cs" />
   </ItemGroup>
 </Project>

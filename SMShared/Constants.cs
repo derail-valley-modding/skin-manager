@@ -13,6 +13,7 @@ namespace SMShared
         public const string CACHE_FOLDER_NAME = "Cache";
         
         public const string MOD_INFO_FILE = "Info.json";
+        public const string THEME_CONFIG_FILE = "theme_config.json";
         public const string SKIN_CONFIG_FILE = "skin.json";
         public const string SKIN_RESOURCE_FILE = "skin_resource.json";
 

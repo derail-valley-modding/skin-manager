@@ -19,7 +19,6 @@ namespace SkinManagerMod
         public readonly string[] ResourcePaths;
 
         public readonly bool IsThemeable;
-        public SkinTexture CanLabelTexture;
 
         public event Action<Skin> LoadingFinished;
 
@@ -30,11 +29,6 @@ namespace SkinManagerMod
             var toAwait = SkinTextures
                 .Select(t => t.LoadingTask)
                 .Where(t => !(t is null) && !t.IsCompleted);
-
-            if (!(CanLabelTexture?.LoadingTask is null) && !CanLabelTexture.LoadingTask.IsCompleted)
-            {
-                toAwait.Append(CanLabelTexture.LoadingTask);
-            }
 
             var taskArr = toAwait.ToArray();
             if ((taskArr.Length == 0) || taskArr.All(t => t.IsCompleted))
