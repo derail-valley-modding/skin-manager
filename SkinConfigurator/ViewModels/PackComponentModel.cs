@@ -59,11 +59,22 @@ namespace SkinConfigurator.ViewModels
 
         public bool HasResources => _type == PackComponentType.Skin;
 
+        public event EventHandler<SkinNameChangedEventArgs>? NameChanged;
+
         private string? _name;
         public string? Name
         {
             get => _name;
-            set => SetValidationValue(nameof(Name), ref _name, value);
+            set
+            {
+                string? oldName = _name;
+                SetValidationValue(nameof(Name), ref _name, value);
+
+                if ((_type == PackComponentType.Skin) && (oldName != value))
+                {
+                    NameChanged?.Invoke(this, new SkinNameChangedEventArgs(oldName, value));
+                }
+            }
         }
 
         private string? _carId;
@@ -149,5 +160,17 @@ namespace SkinConfigurator.ViewModels
     {
         Skin = 0,
         Resource = 1,
+    }
+
+    public sealed class SkinNameChangedEventArgs : EventArgs
+    {
+        public readonly string? OldName;
+        public readonly string? NewName;
+
+        public SkinNameChangedEventArgs(string? oldName, string? newName)
+        {
+            OldName = oldName;
+            NewName = newName;
+        }
     }
 }

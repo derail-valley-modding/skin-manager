@@ -7,13 +7,9 @@
         xmlns:local="clr-namespace:SkinConfigurator"
         xmlns:model="clr-namespace:SkinConfigurator.ViewModels"
         mc:Ignorable="d"
-        Title="Skin Packager" Height="450" Width="800"
+        Title="Skin Packager" Height="600" Width="1000"
         d:DataContext="{d:DesignInstance {x:Type model:MainWindowViewModel}}">
     <Window.Resources>
-        <local:NullToVisibilityConverter x:Key="nullVisibilityConverter"/>
-        <local:BoolToVisibilityConverter x:Key="boolToCollapseConverter" FalseState="Collapsed"/>
-        <local:NullToBoolConverter x:Key="nullBoolConverter"/>
-
         <ObjectDataProvider x:Key="componentTypes" ObjectType="{x:Type sys:Enum}" MethodName="GetValues">
             <ObjectDataProvider.MethodParameters>
                 <x:Type TypeName="model:PackComponentType"/>
@@ -40,11 +36,11 @@
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
-                <!--<RowDefinition Height="*"/>-->
+                <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
             <!-- Main mod info -->
-            <DockPanel LastChildFill="False">
+            <DockPanel LastChildFill="False" Grid.RowSpan="2">
                 <StackPanel DataContext="{Binding SkinPack.ModInfoModel}" DockPanel.Dock="Top" FocusManager.IsFocusScope="True">
                     <Label Content="Pack Config:"/>
 
@@ -73,7 +69,7 @@
 
 
             <!-- Individual Skins -->
-            <DockPanel Grid.Column="1" LastChildFill="True" Margin="7,0,0,0">
+            <DockPanel Grid.Column="1" Grid.RowSpan="2" LastChildFill="True" Margin="7,0,0,0">
                 <Grid DockPanel.Dock="Top">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -131,10 +127,15 @@
                           SelectionMode="Single" SelectionUnit="FullRow"
                           CanUserAddRows="False"
                           SelectedItem="{Binding SelectedSkin}" FocusManager.IsFocusScope="True">
+                    <DataGrid.Resources>
+                        <local:PackComponentTypeVisibilityConverter x:Key="skinToThemeVisibility" VisibleValue="Skin"/>
+                    </DataGrid.Resources>
                     <DataGrid.ContextMenu>
                         <ContextMenu>
                             <MenuItem Header="Upgrade" Click="UpgradeSkinButton_Click"
                                       Visibility="{Binding SelectedSkin.CanUpgrade, Converter={StaticResource boolToCollapseConverter}}"/>
+                            <MenuItem x:Name="SkinContextAddThemeButton" Header="Create Theme Config" Click="AddThemeConfigButton_Click"
+                                      Visibility="{Binding SelectedSkin.Type, Converter={StaticResource skinToThemeVisibility}}"/>
                             <MenuItem Header="Remove" Click="RemoveSkinButton_Click"/>
                         </ContextMenu>
                     </DataGrid.ContextMenu>
@@ -160,9 +161,9 @@
             <GridSplitter Grid.Column="2" Width="7" HorizontalAlignment="Left"/>
 
             <!-- Skin Items -->
-            <DockPanel LastChildFill="True" Grid.Column="2" Visibility="{Binding SelectedSkin, Converter={StaticResource nullVisibilityConverter}}" Margin="7,0,0,0">
+            <DockPanel LastChildFill="True" Grid.Column="2" IsEnabled="{Binding SelectedSkin, Converter={StaticResource nullBoolConverter}, FallbackValue=False}" Margin="7,0,0,0">
                 <UniformGrid Columns="4" DockPanel.Dock="Top">
-                    <Label Content="Files:"/>
+                    <Label Content="Skin Files:"/>
                     <Button x:Name="AddFileButton" Content="Add..." Click="AddFileButton_Click"/>
                     <Button x:Name="ReplaceFileButton" Content="Replace..." Click="ReplaceFileButton_Click"
                             IsEnabled="{Binding SelectedSkinFile, Converter={StaticResource nullBoolConverter}, FallbackValue=False}"/>
@@ -199,6 +200,29 @@
                                             Background="PaleGoldenrod"/>
                                 </UniformGrid>
                             </Grid>
+                        </ItemContainerTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </DockPanel>
+
+            <GridSplitter Grid.Column="3" Width="7" HorizontalAlignment="Left"/>
+            
+            <!-- Theme Config -->
+            <DockPanel Grid.Column="2" Grid.Row="1" LastChildFill="True" Margin="7,0,0,0">
+                <UniformGrid Columns="4" DockPanel.Dock="Top">
+                    <Label Content="Paint Cans:" DockPanel.Dock="Top"/>
+                    <Button x:Name="AddThemeConfigButton" Content="New" Click="AddThemeConfigButton_Click"/>
+                    <Button x:Name="ImportThemeConfigButton" Content="Import..." Click="ImportThemeConfigButton_Click"/>
+                    <Button x:Name="RemoveThemeConfigButton" Content="Remove" Click="RemoveThemeConfigButton_Click"
+                            IsEnabled="{Binding SelectedThemeConfig, Converter={StaticResource nullBoolConverter}, FallbackValue=False}"/>
+                </UniformGrid>
+
+                <ListView x:Name="ThemeConfigList" ItemsSource="{Binding SkinPack.ThemeConfigs}" d:ItemsSource="{d:SampleData}"
+                          SelectedItem="{Binding SelectedThemeConfig}" HorizontalContentAlignment="Stretch" FocusManager.IsFocusScope="True"
+                          ScrollViewer.CanContentScroll="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListView.ItemTemplate>
+                        <ItemContainerTemplate DataType="model:ThemeConfigModel">
+                            <local:ThemeConfigEditor HorizontalAlignment="Stretch" RemoveClicked="RemoveThemeConfigButton_Click"/>
                         </ItemContainerTemplate>
                     </ListView.ItemTemplate>
                 </ListView>

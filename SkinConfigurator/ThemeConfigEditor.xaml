@@ -1,0 +1,76 @@
+﻿<UserControl x:Class="SkinConfigurator.ThemeConfigEditor"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:SkinConfigurator"
+             xmlns:model="clr-namespace:SkinConfigurator.ViewModels"
+             mc:Ignorable="d" 
+             d:DesignHeight="100" d:DesignWidth="400"
+             d:DataContext="{d:DesignInstance Type=model:ThemeConfigModel, IsDesignTimeCreatable=True}">
+    <UserControl.Resources>
+        <ContextMenu x:Key="ThemeConfigContextMenu">
+            <MenuItem Header="Remove" Click="RemoveThemeConfig_Click"/>
+        </ContextMenu>
+        <Style TargetType="Label" x:Key="NameErrorStyle">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsValid}" Value="False">
+                    <Setter Property="Foreground" Value="Red"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid HorizontalAlignment="Stretch" ContextMenu="{StaticResource ThemeConfigContextMenu}">
+        <Grid.Resources>
+            <Style x:Key="LabelColorStyle" TargetType="Border">
+                <Setter Property="BorderBrush" Value="Black"/>
+                <Setter Property="BorderThickness" Value="2px"/>
+            </Style>
+        </Grid.Resources>
+        
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <Label Grid.Row="0" Grid.Column="0" Content="Theme Name:" Style="{StaticResource NameErrorStyle}"/>
+        <ComboBox Grid.Row="0" Grid.Column="1" Margin="7,0,0,0" x:Name="ThemeNameCombo"
+                  SelectedItem="{Binding ThemeName, Mode=OneWay}"
+                  ItemsSource="{Binding AvailableSkinNames}"
+                  SelectionChanged="ComboBox_SelectionChanged"/>
+
+        <UniformGrid Grid.Row="1" Grid.Column="0" Rows="3">
+            <CheckBox Content="Use Custom Texture" IsChecked="{Binding UseCustomTexture}"/>
+            <Button Content="Set Texture..." Click="ClickSetTexture"
+                    Visibility="{Binding UseCustomTexture, Converter={StaticResource boolToHiddenConverter}}"/>
+            <Button Content="Remove Texture" Click="ClickRemoveTexture"
+                    IsEnabled="{Binding HasValidImage}" Visibility="{Binding UseCustomTexture, Converter={StaticResource boolToHiddenConverter}}"/>
+        </UniformGrid>
+
+        <UniformGrid Grid.Row="1" Grid.Column="1" Rows="3" Cursor="Hand" Margin="7,0,0,0">
+            <Border Style="{StaticResource LabelColorStyle}" x:Name="SelectAccentB" MouseDown="ClickAccentB"
+                    Background="{Binding LabelAccentColorB, Converter={StaticResource colorBrushConverter}}" d:Background="DarkRed">
+                <Label Content="Top Band" Foreground="{Binding LabelAccentColorB, Converter={StaticResource textColorConverter}}" HorizontalAlignment="Center"/>
+            </Border>
+            <Border Style="{StaticResource LabelColorStyle}" x:Name="SelectAccentA" MouseDown="ClickAccentA"
+                    Background="{Binding LabelAccentColorA, Converter={StaticResource colorBrushConverter}}" d:Background="Gold">
+                <Label Content="Middle Band" Foreground="{Binding LabelAccentColorA, Converter={StaticResource textColorConverter}}" HorizontalAlignment="Center"/>
+            </Border>
+            <Border Style="{StaticResource LabelColorStyle}" x:Name="SelectBase" MouseDown="ClickBaseColor"
+                    Background="{Binding LabelBaseColor, Converter={StaticResource colorBrushConverter}}" d:Background="DarkGreen">
+                <Label Content="Lower Band" Foreground="{Binding LabelBaseColor, Converter={StaticResource textColorConverter}}" HorizontalAlignment="Center"/>
+            </Border>
+        </UniformGrid>
+        <Grid Panel.ZIndex="2" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="7,0,0,0"
+                Background="LightGray"
+                Visibility="{Binding UseCustomTexture, Converter={StaticResource boolToHiddenConverter}}">
+            <Label x:Name="PreviewDummy"/>
+            <Image x:Name="PreviewDisplay" Width="{Binding ActualWidth, ElementName=PreviewDummy}"  Source="{Binding Preview}"/>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -1,5 +1,6 @@
 ﻿using SkinConfigurator.ViewModels;
 using SMShared;
+using SMShared.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -59,6 +60,31 @@ namespace SkinConfigurator
                 string absPath = GetAbsoluteDestination(relativePath);
                 File.Copy(sourceFile.TempPath, absPath, true);
             }
+        }
+
+        protected override void WriteThemeConfig()
+        {
+            string dest = GetAbsoluteDestination(Constants.THEME_CONFIG_FILE);
+
+            var json = new ThemeConfigJson()
+            {
+                Version = _model.ModInfoModel.Version,
+                Themes = new ThemeConfigItem[_model.ThemeConfigs.Count],
+            };
+
+            for (int i = 0; i < _model.ThemeConfigs.Count; i++)
+            {
+                var config = _model.ThemeConfigs[i];
+                if (config.UseCustomTexture)
+                {
+                    string destPath = config.PackagedLabelTexturePath;
+                    File.Copy(config.TempPath, destPath, true);
+                }
+                json.Themes[i] = config.JsonModel();
+            }
+
+            using var stream = File.Open(dest, FileMode.Create);
+            JsonSerializer.Serialize(stream, json, json.GetType(), JsonSettings);
         }
     }
 }

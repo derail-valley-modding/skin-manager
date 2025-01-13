@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -25,7 +26,7 @@ namespace SkinConfigurator
             set => DataContext = value;
         }
 
-        public ConfiguratorSettings Settings;
+        public static ConfiguratorSettings Settings { get; private set; } = new ConfiguratorSettings();
 
         public MainWindow()
         {
@@ -36,13 +37,13 @@ namespace SkinConfigurator
             Model = new MainWindowViewModel();
             Settings = ConfiguratorSettings.LoadConfig();
 
-            //var texes = GetCarTex("P:\\SteamLibrary\\steamapps\\common\\Derail Valley\\Mods\\SkinManagerMod\\Exported");
-            //var settings = new JsonSerializerOptions()
-            //{
-            //    WriteIndented = true,
-            //};
-            //string result = JsonSerializer.Serialize(texes, settings);
-            //File.WriteAllText(Path.Combine(Environment.CurrentDirectory, "tex.json"), result);
+            var texes = GetCarTex("P:\\SteamLibrary\\steamapps\\common\\Derail Valley\\Mods\\SkinManagerMod\\Exported");
+            var settings = new JsonSerializerOptions()
+            {
+                WriteIndented = true,
+            };
+            string result = JsonSerializer.Serialize(texes, settings);
+            File.WriteAllText(Path.Combine(Environment.CurrentDirectory, "tex.json"), result);
         }
 
         IEnumerable<string> GetNames(string folder)
@@ -495,6 +496,47 @@ namespace SkinConfigurator
                 child = VisualTreeHelper.GetParent(child);
             }
             return false;
+        }
+
+        #endregion
+
+        #region Theme Config
+
+        private void AddThemeConfigButton_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender == SkinContextAddThemeButton) && (Model.SelectedSkin is PackComponentModel skin))
+            {
+                Model.AddThemeConfig(skin.Name);
+            }
+            else
+            {
+                Model.AddThemeConfig();
+            }
+        }
+
+        private void ImportThemeConfigButton_Click(object sender, RoutedEventArgs e)
+        {
+            var browser = new OpenFileDialog()
+            {
+                Title = "Select Theme Config File",
+                Filter = $"JSON Files|*.json|All Files|*.*",
+                InitialDirectory = Settings.DefaultSkinWorkFolder,
+                Multiselect = true,
+            };
+
+            bool? result = browser.ShowDialog();
+            if (result == true)
+            {
+                foreach (string filePath in browser.FileNames)
+                {
+                    Model.SkinPack.ImportThemeConfig(filePath);
+                }
+            }
+        }
+
+        private void RemoveThemeConfigButton_Click(object sender, RoutedEventArgs e)
+        {
+            Model.RemoveSelectedThemeConfig();
         }
 
         #endregion

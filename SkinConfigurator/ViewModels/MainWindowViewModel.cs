@@ -47,6 +47,17 @@ namespace SkinConfigurator.ViewModels
             DependencyProperty.Register("SelectedSkinFile", typeof(SkinFileModel), typeof(MainWindowViewModel), new PropertyMetadata(defaultValue: null));
 
 
+        public ThemeConfigModel? SelectedThemeConfig
+        {
+            get { return (ThemeConfigModel)GetValue(SelectedThemeConfigProperty); }
+            set { SetValue(SelectedThemeConfigProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for SelectedThemeConfig.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty SelectedThemeConfigProperty =
+            DependencyProperty.Register("SelectedThemeConfig", typeof(ThemeConfigModel), typeof(MainWindowViewModel), new PropertyMetadata(defaultValue: null));
+
+
         private static void OnSelectedSkinChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var selected = e.NewValue as PackComponentModel;
@@ -118,6 +129,19 @@ namespace SkinConfigurator.ViewModels
             }
         }
 
+        public void AddThemeConfig(string? themeName = null)
+        {
+            var newConfig = SkinPack.CreateThemeConfig(themeName);
+            SelectedThemeConfig = newConfig;
+        }
 
+        public void RemoveSelectedThemeConfig()
+        {
+            if (SelectedThemeConfig is not null)
+            {
+                SkinPack.RemoveThemeConfig(SelectedThemeConfig);
+                SelectedThemeConfig = null;
+            }
+        }
     }
 }
