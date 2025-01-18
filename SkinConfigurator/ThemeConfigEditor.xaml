@@ -45,11 +45,10 @@
                   SelectionChanged="ComboBox_SelectionChanged"/>
 
         <UniformGrid Grid.Row="1" Grid.Column="0" Rows="3">
-            <CheckBox Content="Use Custom Texture" IsChecked="{Binding UseCustomTexture}"/>
-            <Button Content="Set Texture..." Click="ClickSetTexture"
-                    Visibility="{Binding UseCustomTexture, Converter={StaticResource boolToHiddenConverter}}"/>
-            <Button Content="Remove Texture" Click="ClickRemoveTexture"
-                    IsEnabled="{Binding HasValidImage}" Visibility="{Binding UseCustomTexture, Converter={StaticResource boolToHiddenConverter}}"/>
+            <CheckBox Content="Hide From Stores" IsChecked="{Binding HideFromStores}" VerticalAlignment="Center"
+                      ToolTip="Whether or not to allow this theme to spawn as a paint can"/>
+            <Button Content="Set Texture..." Click="ClickSetTexture"/>
+            <Button Content="Remove Texture" Click="ClickRemoveTexture" IsEnabled="{Binding HasValidImage}"/>
         </UniformGrid>
 
         <UniformGrid Grid.Row="1" Grid.Column="1" Rows="3" Cursor="Hand" Margin="7,0,0,0">
@@ -68,7 +67,7 @@
         </UniformGrid>
         <Grid Panel.ZIndex="2" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="7,0,0,0"
                 Background="LightGray"
-                Visibility="{Binding UseCustomTexture, Converter={StaticResource boolToHiddenConverter}}">
+                Visibility="{Binding HasValidImage, Converter={StaticResource boolToHiddenConverter}}">
             <Label x:Name="PreviewDummy"/>
             <Image x:Name="PreviewDisplay" Width="{Binding ActualWidth, ElementName=PreviewDummy}"  Source="{Binding Preview}"/>
         </Grid>

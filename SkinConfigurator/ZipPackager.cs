@@ -67,7 +67,7 @@ namespace SkinConfigurator
             for (int i = 0; i < _model.ThemeConfigs.Count; i++)
             {
                 var config = _model.ThemeConfigs[i];
-                if (config.UseCustomTexture)
+                if (config.HasValidImage)
                 {
                     string destPath = config.PackagedLabelTexturePath;
                     _archive.CreateEntryFromFile(config.TempPath, destPath);

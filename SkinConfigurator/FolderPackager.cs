@@ -75,7 +75,7 @@ namespace SkinConfigurator
             for (int i = 0; i < _model.ThemeConfigs.Count; i++)
             {
                 var config = _model.ThemeConfigs[i];
-                if (config.UseCustomTexture)
+                if (config.HideFromStores)
                 {
                     string destPath = config.PackagedLabelTexturePath;
                     File.Copy(config.TempPath, destPath, true);

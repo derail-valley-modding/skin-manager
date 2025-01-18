@@ -73,19 +73,17 @@ namespace SkinConfigurator.ViewModels
             DependencyProperty.Register("LabelAccentColorB", typeof(Color), typeof(ThemeConfigModel), new PropertyMetadata(Colors.White));
 
 
-        public bool UseCustomTexture
+
+        public bool HideFromStores
         {
-            get { return (bool)GetValue(UseCustomTextureProperty); }
-            set
-            {
-                SetValue(UseCustomTextureProperty, value);
-                RaiseValidationChange();
-            }
+            get { return (bool)GetValue(HideFromStoresProperty); }
+            set { SetValue(HideFromStoresProperty, value); }
         }
 
-        // Using a DependencyProperty as the backing store for UseCustomTexture.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty UseCustomTextureProperty =
-            DependencyProperty.Register("UseCustomTexture", typeof(bool), typeof(ThemeConfigModel), new PropertyMetadata(false));
+        // Using a DependencyProperty as the backing store for HideFromStores.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty HideFromStoresProperty =
+            DependencyProperty.Register("HideFromStores", typeof(bool), typeof(ThemeConfigModel), new PropertyMetadata(false));
+
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -142,7 +140,6 @@ namespace SkinConfigurator.ViewModels
             {
                 string texturePath = Path.Combine(dirPath, json.LabelTextureFile);
                 UpdateImageFile(texturePath);
-                UseCustomTexture = true;
             }
 
             LabelBaseColor = TryParseColor(json.LabelBaseColor);
@@ -174,40 +171,28 @@ namespace SkinConfigurator.ViewModels
             }
         }
 
-        public bool IsValid =>
-            !string.IsNullOrWhiteSpace(ThemeName) &&
-            (!UseCustomTexture || HasValidImage);
+        public bool IsValid => !string.IsNullOrWhiteSpace(ThemeName);
 
         public ThemeConfigItem JsonModel()
         {
-            if (UseCustomTexture)
+            var result = new ThemeConfigItem()
             {
+                Name = ThemeName,
+                HideFromStores = HideFromStores,
+            };
 
-                return new ThemeConfigItem()
-                {
-                    Name = ThemeName,
-                    LabelTextureFile = PackagedLabelTexturePath,
-                };
+            if (HasValidImage)
+            {
+                result.LabelTextureFile = PackagedLabelTexturePath;
             }
             else
             {
-                return new ThemeConfigItem()
-                {
-                    Name = ThemeName,
-                    LabelBaseColor = ColorToHex(LabelBaseColor),
-                    LabelAccentColorA = ColorToHex(LabelAccentColorA),
-                    LabelAccentColorB = ColorToHex(LabelAccentColorB),
-                };
+                result.LabelBaseColor = ColorToHex(LabelBaseColor);
+                result.LabelAccentColorA = ColorToHex(LabelAccentColorA);
+                result.LabelAccentColorB = ColorToHex(LabelAccentColorB);
             }
-        }
 
-        protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)
-        {
-            base.OnPropertyChanged(e);
-            if (e.Property == HasValidImageProperty)
-            {
-                RaiseValidationChange();
-            }
+            return result;
         }
 
         protected void RaiseValidationChange()

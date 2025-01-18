@@ -19,6 +19,7 @@ namespace SMShared.Json
     public class ThemeConfigItem
     {
         public string Name;
+        public bool HideFromStores;
 
         public string LabelTextureFile;
         public string LabelBaseColor;

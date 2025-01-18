@@ -121,6 +121,7 @@ namespace SkinConfigurator
                 using (new WaitCursor())
                 {
                     Model.SkinPack = PackImporter.ImportFromArchive(dialog.FileName);
+                    MyResourceSelector.RefreshAvailableItems();
                 }
             }
         }
@@ -286,7 +287,7 @@ namespace SkinConfigurator
             var browser = new OpenFileDialog()
             {
                 Title = "Select Skin Files To Include",
-                Filter = $"Texture Files|{texExtensions}|All Files|*.*",
+                Filter = $"Texture Files|{texExtensions}|Numbering Config|numbering.xml|All Files|*.*",
                 InitialDirectory = Settings.DefaultSkinWorkFolder,
                 Multiselect = true,
             };

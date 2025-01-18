@@ -43,6 +43,7 @@ namespace SkinConfigurator.ViewModels
         public List<PackComponentModel> ResourceOptions => PackComponents.Where(c => c.Type == PackComponentType.Resource).ToList();
 
         public event EventHandler<SkinNameChangedEventArgs>? SkinNameChanged;
+        public event EventHandler? SkinTypeChanged;
 
         public PackComponentModel CreateSkinConfig(string? carId)
         {
@@ -86,6 +87,10 @@ namespace SkinConfigurator.ViewModels
             if (e.PropertyName == nameof(IValidated.IsValid))
             {
                 RaisePropertyChanged(nameof(IsValid));
+            }
+            else if (e.PropertyName == nameof(PackComponentModel.Type))
+            {
+                SkinTypeChanged?.Invoke(this, new EventArgs());
             }
         }
 
