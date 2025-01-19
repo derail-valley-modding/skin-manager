@@ -6,15 +6,19 @@ namespace SMShared
     {
         public const string MOD_ID = "SkinManagerMod";
         public const string MOD_NAME = "Skin Manager";
-        public const string MOD_VERSION = "3.4.0";
+        public const string MOD_VERSION = "4.0.0";
 
         public const string SKIN_FOLDER_NAME = "Skins";
         public const string EXPORT_FOLDER_NAME = "Exported";
         public const string CACHE_FOLDER_NAME = "Cache";
         
         public const string MOD_INFO_FILE = "Info.json";
+        public const string THEME_CONFIG_FILE = "theme_config.json";
         public const string SKIN_CONFIG_FILE = "skin.json";
         public const string SKIN_RESOURCE_FILE = "skin_resource.json";
+
+        public const string PAINT_CAN_LABEL_FILENAME = "can_label";
+        public const string CUSTOM_THEME_SAVEDATA_KEY = "SM_Custom_Theme";
 
         public static readonly string[] SupportedImageExtensions = { ".png", ".jpeg", ".jpg" };
 
@@ -38,41 +42,52 @@ namespace SMShared
             CUSTOM_TYPE,
             "LocoDE2",
             "LocoDE6",
+            "LocoDE6Slug",
             "LocoDH4",
+            "LocoDM1U",
             "LocoDM3",
             "LocoMicroshunter",
             "LocoS282A",
             "LocoS282B",
             "LocoS060",
-            "LocoDE6Slug",
+
+            "HandCar",
+            "CabooseRed",
+            "NuclearFlask",
+
             "AutorackBlue",
             "AutorackGreen",
             "AutorackRed",
             "AutorackYellow",
+
             "BoxcarBrown",
             "BoxcarGreen",
             "BoxcarPink",
             "BoxcarRed",
             "BoxcarMilitary",
-            "CabooseRed",
+            "RefrigeratorWhite",
+
             "FlatbedEmpty",
             "FlatbedMilitary",
             "FlatbedStakes",
+            "FlatbedShort",
+
             "GondolaGray",
             "GondolaGreen",
             "GondolaRed",
-            "HandCar",
+
             "HopperBrown",
             "HopperTeal",
             "HopperYellow",
-            "NuclearFlask",
+
             "PassengerBlue",
             "PassengerGreen",
             "PassengerRed",
-            "RefrigeratorWhite",
+
             "StockBrown",
             "StockGreen",
             "StockRed",
+
             "TankBlack",
             "TankBlue",
             "TankOrange",

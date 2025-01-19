@@ -1,9 +1,11 @@
-﻿using System;
+﻿using SMShared.Json;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Windows;
 
 namespace SkinConfigurator.ViewModels
@@ -36,8 +38,12 @@ namespace SkinConfigurator.ViewModels
 
         public ObservableCollection<PackComponentModel> PackComponents { get; private set; } = new();
 
+        public ObservableCollection<ThemeConfigModel> ThemeConfigs { get; private set; } = new();
+
         public List<PackComponentModel> ResourceOptions => PackComponents.Where(c => c.Type == PackComponentType.Resource).ToList();
-        
+
+        public event EventHandler<SkinNameChangedEventArgs>? SkinNameChanged;
+        public event EventHandler? SkinTypeChanged;
 
         public PackComponentModel CreateSkinConfig(string? carId)
         {
@@ -52,6 +58,8 @@ namespace SkinConfigurator.ViewModels
         public void AddSkinConfig(PackComponentModel skin)
         {
             skin.PropertyChanged += HandleChildPropertyChanged;
+            skin.NameChanged += OnSkinNameChanged;
+
             PackComponents.Add(skin);
             RaisePropertyChanged(nameof(IsValid));
         }
@@ -59,6 +67,8 @@ namespace SkinConfigurator.ViewModels
         public void RemoveSkin(PackComponentModel component)
         {
             component.PropertyChanged -= HandleChildPropertyChanged;
+            component.NameChanged -= OnSkinNameChanged;
+
             PackComponents.Remove(component);
             RaisePropertyChanged(nameof(IsValid));
         }
@@ -78,6 +88,56 @@ namespace SkinConfigurator.ViewModels
             {
                 RaisePropertyChanged(nameof(IsValid));
             }
+            else if (e.PropertyName == nameof(PackComponentModel.Type))
+            {
+                SkinTypeChanged?.Invoke(this, new EventArgs());
+            }
+        }
+
+        private void OnSkinNameChanged(object? sender, SkinNameChangedEventArgs e)
+        {
+            SkinNameChanged?.Invoke(sender, e);
+        }
+
+        public ThemeConfigModel CreateThemeConfig(string? themeName = null)
+        {
+            if (themeName is null)
+            {
+                PackComponentModel? toAdd = PackComponents.Where(comp => comp.Type == PackComponentType.Skin)
+                .FirstOrDefault(skin => !ThemeConfigs.Any(theme => theme.ThemeName == skin.Name));
+                themeName = toAdd?.Name;
+            }
+            
+            var config = new ThemeConfigModel(this, themeName);
+            ThemeConfigs.Add(config);
+            return config;
+        }
+
+        public void ImportThemeConfig(string jsonPath)
+        {
+            string folder = Path.GetDirectoryName(jsonPath)!;
+
+            using FileStream themeStream = File.OpenRead(jsonPath);
+            var themeJson = JsonSerializer.Deserialize<ThemeConfigJson>(themeStream, SkinPackager.JsonSettings);
+
+            if ((themeJson?.Themes is not null) && (themeJson.Themes.Length > 0))
+            {
+                foreach (var themeItem in themeJson.Themes)
+                {
+                    var themeModel = new ThemeConfigModel(this, themeItem, folder);
+                    ThemeConfigs.Add(themeModel);
+                }
+            }
+        }
+
+        public void AddThemeConfig(ThemeConfigModel theme)
+        {
+            ThemeConfigs.Add(theme);
+        }
+
+        public void RemoveThemeConfig(ThemeConfigModel toRemove)
+        {
+            ThemeConfigs.Remove(toRemove);
         }
     }
 }

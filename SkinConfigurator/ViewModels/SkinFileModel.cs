@@ -1,30 +1,12 @@
 ﻿using SMShared;
 using System;
 using System.IO;
-using System.IO.Compression;
 using System.Windows;
-using System.Windows.Media.Imaging;
 
 namespace SkinConfigurator.ViewModels
 {
-    public class SkinFileModel : DependencyObject
+    public class SkinFileModel : HasImageFileModel
     {
-        public readonly Guid FileId;
-        public string Extension { get; private set; }
-
-        public string TempPath => Path.Combine(Environment.CurrentDirectory, "Temp", "Staging", FileId.ToString());
-
-        public BitmapImage Preview
-        {
-            get { return (BitmapImage)GetValue(PreviewProperty); }
-            set { SetValue(PreviewProperty, value); }
-        }
-
-        // Using a DependencyProperty as the backing store for Preview.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty PreviewProperty =
-            DependencyProperty.Register(nameof(Preview), typeof(BitmapImage), typeof(SkinFileModel), new PropertyMetadata(null));
-
-
         public PackComponentModel Parent
         {
             get { return (PackComponentModel)GetValue(ParentProperty); }
@@ -66,42 +48,13 @@ namespace SkinConfigurator.ViewModels
 
 
 
-        public SkinFileModel(PackComponentModel parent, string path)
+        public SkinFileModel(PackComponentModel parent, string path) : base()
         {
-            FileId = Guid.NewGuid();
             Parent = parent;
             FileName = Path.GetFileName(path);
 
-            UpdateSourceFile(path);
+            UpdateImageFile(path);
             Extension ??= Path.GetExtension(path);
-        }
-
-        public void UpdateSourceFile(string path)
-        {
-            File.Copy(path, TempPath, true);
-
-            Extension = Path.GetExtension(path);
-            if (Constants.IsSupportedExtension(Extension))
-            {
-                var img = new BitmapImage();
-                img.BeginInit();
-                img.CacheOption = BitmapCacheOption.OnLoad;
-                img.UriSource = new Uri(TempPath);
-                img.EndInit();
-                Preview = img;
-            }
-            else
-            {
-                Preview = new BitmapImage();
-            }
-        }
-
-        public void Destroy()
-        {
-            if (File.Exists(TempPath))
-            {
-                File.Delete(TempPath);
-            }
         }
 
         public void UpgradeFileName()

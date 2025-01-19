@@ -8,7 +8,6 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace SkinConfigurator
 {
@@ -37,6 +36,25 @@ namespace SkinConfigurator
             var modInfo = JsonSerializer.Deserialize<ModInfoJson>(modInfoStream, SkinPackager.JsonSettings);
             model.ModInfoModel = new SkinModInfoModel(modInfo!);
 
+            path = Path.GetDirectoryName(modInfoPath)!;
+
+            // Parse theme config
+            string themeConfigPath = Path.Combine(path, Constants.THEME_CONFIG_FILE);
+            if (File.Exists(themeConfigPath))
+            {
+                using FileStream themeStream = File.OpenRead(themeConfigPath);
+                var themeJson = JsonSerializer.Deserialize<ThemeConfigJson>(themeStream, SkinPackager.JsonSettings);
+
+                if ((themeJson?.Themes is not null) && (themeJson.Themes.Length > 0))
+                {
+                    foreach (var themeItem in themeJson.Themes)
+                    {
+                        var themeModel = new ThemeConfigModel(model, themeItem, path);
+                        model.AddThemeConfig(themeModel);
+                    }
+                }
+            }
+
             // Parse resource configs
             var resources = new List<PackComponentModel>();
             foreach (string resourcePath in Directory.EnumerateFiles(path, Constants.SKIN_RESOURCE_FILE, SearchOption.AllDirectories))
@@ -48,10 +66,10 @@ namespace SkinConfigurator
                 resource.AddItemsFromFolder(Path.GetDirectoryName(resourcePath)!);
 
                 resources.Add(resource);
+                model.AddSkinConfig(resource);
             }
 
             // Parse skin configs
-            var skins = new List<PackComponentModel>();
             foreach (string skinPath in Directory.EnumerateFiles(path, Constants.SKIN_CONFIG_FILE, SearchOption.AllDirectories))
             {
                 using FileStream skinStream = File.OpenRead(skinPath);
@@ -63,11 +81,8 @@ namespace SkinConfigurator
                 };
                 skin.AddItemsFromFolder(Path.GetDirectoryName(skinPath)!);
 
-                skins.Add(skin);
+                model.AddSkinConfig(skin);
             }
-
-            foreach (var resource in resources) model.AddSkinConfig(resource);
-            foreach (var skin in skins) model.AddSkinConfig(skin);
 
             return model;
         }

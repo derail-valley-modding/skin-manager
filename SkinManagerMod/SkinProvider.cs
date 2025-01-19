@@ -1,21 +1,50 @@
 ﻿using DV;
+using DV.Customization.Paint;
 using DV.ThingTypes;
+using DVLangHelper.Data;
+using Newtonsoft.Json;
 using SMShared;
+using SMShared.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityModManagerNet;
-using static Oculus.Avatar.CAPI;
 
 namespace SkinManagerMod
 {
     public class SkinProvider
     {
-        public static Skin LastSteamerSkin { get; set; }
-        public static Skin LastDE6Skin { get; set; }
+        public static readonly string DefaultThemeName = "DVRT";
+        public static readonly string DefaultNewThemeName = "DVRT_New";
+        public static readonly string DemoThemeName = "Relic";
+        public static readonly string DemoRustyThemeName = "Relic_Rusty";
+
+        public static readonly string[] BuiltInThemeNames = { DefaultThemeName, DefaultNewThemeName, DemoThemeName, DemoRustyThemeName };
+
+        private static PaintTheme[] _builtInThemes = null;
+        public static PaintTheme[] BuiltInThemes
+        {
+            get
+            {
+                if (_builtInThemes == null)
+                {
+                    _builtInThemes = new PaintTheme[BuiltInThemeNames.Length];
+                    for (int i = 0; i < BuiltInThemeNames.Length; i++)
+                    {
+                        PaintTheme.TryLoad(BuiltInThemeNames[i], out var theme);
+                        _builtInThemes[i] = theme;
+                    }
+                }
+                return _builtInThemes;
+            }
+        }
+
+        public static bool IsBuiltInTheme(string themeName) => BuiltInThemeNames.Contains(themeName);
+
+        public static string LastSteamerSkin { get; set; }
+        public static string LastDE6Skin { get; set; }
 
         /// <summary>Emitted when skin(s) are reloaded from disk
         public static event Action SkinsLoaded;
@@ -29,20 +58,96 @@ namespace SkinManagerMod
         private static readonly Dictionary<string, SkinGroup> skinGroups = new Dictionary<string, SkinGroup>();
         public static IEnumerable<SkinGroup> AllSkinGroups => skinGroups.Values;
 
-        private static void UnloadSkin(string liveryId, string skinName)
-        {
-            var skinGroup = skinGroups[liveryId];
-            if (skinGroup.Skins.Find(s => s.Name == skinName) is Skin existingSkin)
-            {
-                skinGroup.Skins.Remove(existingSkin);
-            }
-        }
-
         /// <summary>Livery ID to default skin mapping</summary>
         private static readonly Dictionary<string, Skin> defaultSkins = new Dictionary<string, Skin>();
 
         private static readonly Dictionary<TrainCarLivery, Dictionary<string, string>> cachedCarTextures =
             new Dictionary<TrainCarLivery, Dictionary<string, string>>();
+
+
+        // Skin Name to Paint Theme (combined liveries)
+        private static PaintTheme[] _cachedThemeList = null;
+        private static readonly Dictionary<string, PaintTheme> _themeDict = new Dictionary<string, PaintTheme>();
+        private static readonly Dictionary<string, ThemeSettings> _themeSettings = new Dictionary<string, ThemeSettings>();
+        
+
+        private static readonly HashSet<string> _themeableLiveries = Globals.G.Types.Liveries
+            .Where(l => !CarTypes.IsRegularCar(l))
+            .Select(l => l.id)
+            .ToHashSet();
+
+        public static bool IsThemeable(TrainCarLivery livery) => _themeableLiveries.Contains(livery.id);
+        public static bool IsThemeable(string liveryId) => _themeableLiveries.Contains(liveryId);
+
+        public static IEnumerable<string> ThemeableLiveryIds => _themeableLiveries;
+        public static IEnumerable<SkinGroup> ThemeableSkinGroups => skinGroups.Where(g => _themeableLiveries.Contains(g.Key)).Select(g => g.Value);
+
+        public static PaintTheme[] PaintThemes
+        {
+            get
+            {
+                if (_cachedThemeList is null)
+                {
+                    _cachedThemeList = _themeDict.Values.ToArray();
+                }
+                return _cachedThemeList;
+            }
+        }
+
+        public static List<PaintTheme> GetRandomizedStoreThemes()
+        {
+            var arr = PaintThemes.Where(IsThemeAllowedInStore).ToList();
+
+            // Fisher Yates shuffle
+            for (int i = arr.Count - 1; i > 0; i--)
+            {
+                int j = UnityEngine.Random.Range(0, i);
+                (arr[i], arr[j]) = (arr[j], arr[i]);
+            }
+
+            return arr;
+        }
+
+        public static bool IsThemeAllowedInStore(PaintTheme theme)
+        {
+            if (TryGetThemeSettings(theme.name, out var settings))
+            {
+                return !settings.HideFromStores;
+            }
+            return true;
+        }
+
+        public static bool TryGetTheme(string themeName, out PaintTheme theme) => _themeDict.TryGetValue(themeName, out theme);
+
+        private static void RegisterNewTheme(PaintTheme theme)
+        {
+            string lowerName = theme.name.ToLower();
+            if (PaintTheme.loadedThemes.ContainsKey(lowerName))
+            {
+                Main.Error($"Skin \"{theme.name}\" conflicts with an existing or built-in paint theme");
+                return;
+            }
+
+            _themeDict.Add(theme.name, theme);
+            PaintTheme.loadedThemes.Add(lowerName, theme);
+
+            _cachedThemeList = null;
+        }
+
+        private static void UnregisterTheme(string themeName)
+        {
+            if (_themeDict.TryGetValue(themeName, out var theme))
+            {
+                UnityEngine.Object.Destroy(theme);
+            }
+            _themeDict.Remove(themeName);
+            PaintTheme.loadedThemes.Remove(themeName.ToLower());
+
+            _cachedThemeList = null;
+        }
+
+        public static bool TryGetThemeSettings(string themeName, out ThemeSettings themeSettings) =>
+            _themeSettings.TryGetValue(themeName, out themeSettings);
 
 
         #region Provider Methods
@@ -53,7 +158,7 @@ namespace SkinManagerMod
             {
                 return group;
             }
-
+            
             var newGroup = new SkinGroup(livery);
             skinGroups[livery.id] = newGroup;
             return newGroup;
@@ -75,61 +180,88 @@ namespace SkinManagerMod
 
         public static Skin FindSkinByName(string carId, string name)
         {
+            if (name == GetDefaultSkinName(carId))
+            {
+                return GetDefaultSkin(carId);
+            }
+
             if (skinGroups.TryGetValue(carId, out var group))
             {
                 return group.GetSkin(name);
             }
-            if ((GetDefaultSkin(carId) is Skin defSkin) && (defSkin.Name == name))
-            {
-                return defSkin;
-            }
             return null;
         }
 
-        public static List<Skin> GetSkinsForType(TrainCarLivery carType, bool includeDefault = true) => GetSkinsForType(carType.id, includeDefault);
+        public static List<string> GetSkinsForType(TrainCarLivery carType, bool includeDefault = true, bool sort = true) =>
+            GetSkinsForType(carType.id, includeDefault, sort);
 
-        public static List<Skin> GetSkinsForType(string carId, bool includeDefault = true)
+        public static List<string> GetSkinsForType(string carId, bool includeDefault = true, bool sort = true)
         {
-            var result = new List<Skin>();
+            var result = new List<string>();
 
             if (skinGroups.TryGetValue(carId, out var group))
             {
-                result.AddRange(group.Skins);
+                result.AddRange(group.Skins.Select(s => s.Name));
             }
 
             if (Main.Settings.allowDE6SkinsForSlug && (carId == Constants.SLUG_LIVERY_ID))
             {
                 if (skinGroups.TryGetValue(Constants.DE6_LIVERY_ID, out group))
                 {
-                    result.AddRange(group.Skins);
+                    result.AddRange(group.Skins.Select(s => s.Name));
                 }
             }
 
             if (includeDefault)
             {
-                result.Add(defaultSkins[carId]);
+                if (IsThemeable(carId))
+                {
+                    result.AddRange(BuiltInThemeNames);
+                }
+                else
+                {
+                    result.Add(GetDefaultSkinName(carId));
+                }
             }
 
+            if (sort)
+            {
+                result.Sort();
+            }
             return result;
         }
 
-        public static Skin GetNewSkin(TrainCarLivery carType)
+        private static int CompareSkins(Skin a, Skin b)
+        {
+            return a.Name.CompareTo(b.Name);
+        }
+
+        private static int CompareThemes(PaintTheme a, PaintTheme b)
+        {
+            string aName = a.LocalizedName;
+            if (string.IsNullOrEmpty(aName)) aName = a.AssetName;
+
+            string bName = b.LocalizedName;
+            if (string.IsNullOrEmpty(bName)) bName = b.AssetName;
+
+            return aName.CompareTo(bName);
+        }
+
+        private static PaintTheme GetThemeForSkin(Skin skin) => _themeDict[skin.Name];
+
+        public static string GetNewSkin(TrainCarLivery carType)
         {
             if (CarTypes.IsTender(carType) && (LastSteamerSkin != null))
             {
-                if (FindSkinByName(carType, LastSteamerSkin.Name) is Skin matchingTenderSkin)
+                if (FindSkinByName(carType, LastSteamerSkin) is Skin)
                 {
-                    return matchingTenderSkin;
+                    return LastSteamerSkin;
                 }
             }
 
             if ((carType.id == Constants.SLUG_LIVERY_ID) && (LastDE6Skin != null))
             {
-                if (FindSkinByName(carType, LastDE6Skin.Name) is Skin matchingSlugSkin)
-                {
-                    return matchingSlugSkin;
-                }
-                if (Main.Settings.allowDE6SkinsForSlug)
+                if (FindSkinByName(carType, LastDE6Skin) is Skin || Main.Settings.allowDE6SkinsForSlug)
                 {
                     return LastDE6Skin;
                 }
@@ -146,16 +278,12 @@ namespace SkinManagerMod
                 int choice = UnityEngine.Random.Range(0, nChoices);
                 if (choice < group.Skins.Count)
                 {
-                    return group.Skins[choice];
+                    return group.Skins[choice].Name;
                 }
             }
 
             // fall back to default skin
-            if (defaultSkins.TryGetValue(carType.id, out Skin skin))
-            {
-                return skin;
-            }
-            return null;
+            return DefaultThemeName;
         }
 
         #endregion
@@ -165,14 +293,7 @@ namespace SkinManagerMod
 
         public static bool Initialize()
         {
-            foreach (var livery in Globals.G.Types.Liveries)
-            {
-                var defaultSkin = CreateDefaultSkin(livery);
-                defaultSkins.Add(livery.id, defaultSkin);
-            }
-
             ReloadAllSkins();
-            LoadLegacySkins();
 
             UnityModManager.toggleModsListen += HandleSkinModToggle;
 
@@ -244,6 +365,25 @@ namespace SkinManagerMod
             }
         }
 
+        private static void UnloadSkin(string liveryId, string skinName)
+        {
+            var skinGroup = skinGroups[liveryId];
+            if (skinGroup.Skins.Find(s => s.Name == skinName) is Skin existingSkin)
+            {
+                skinGroup.Skins.Remove(existingSkin);
+
+                if (_themeDict.TryGetValue(skinName, out var theme))
+                {
+                    UnMergeSubstitutions(theme, existingSkin.GetSubstitutions());
+
+                    if (theme.substitutions.Length == 0)
+                    {
+                        UnregisterTheme(skinName);
+                    }
+                }
+            }
+        }
+
         private static void HandleSkinModToggle(UnityModManager.ModEntry mod, bool nowActive)
         {
             if ((mod.Info.Id == Constants.MOD_ID) || !string.IsNullOrWhiteSpace(mod.Info.EntryMethod)) return;
@@ -262,7 +402,7 @@ namespace SkinManagerMod
 
                     foreach (var config in currentConfig)
                     {
-                        skinGroups[config.CarId].Skins.Remove(config.Skin);
+                        UnloadSkin(config.CarId, config.Name);
                         SkinDisabled?.Invoke(config);
                     }
                 }
@@ -297,6 +437,12 @@ namespace SkinManagerMod
             if (mod.Active)
             {
                 var newConfig = new ModSkinCollection(mod);
+
+                string themeConfigPath = Path.Combine(mod.Path, Constants.THEME_CONFIG_FILE);
+                if (File.Exists(themeConfigPath))
+                {
+                    TryLoadThemeConfigFile(themeConfigPath);
+                }
 
                 // load common resources first
                 foreach (string file in Directory.EnumerateFiles(mod.Path, Constants.SKIN_RESOURCE_FILE, SearchOption.AllDirectories))
@@ -359,6 +505,51 @@ namespace SkinManagerMod
             return loadedCount;
         }
 
+        private static void TryLoadThemeConfigFile(string configPath)
+        {
+            try
+            {
+                string contents = File.ReadAllText(configPath);
+                var parsedConfig = JsonConvert.DeserializeObject<ThemeConfigJson>(contents);
+
+                if ((parsedConfig.Themes is null) || (parsedConfig.Themes.Length == 0))
+                {
+                    Main.Warning($"Found theme config file, but it is empty: {configPath}");
+                    return;
+                }
+
+                foreach (var configItem in parsedConfig.Themes)
+                {
+                    if (string.IsNullOrEmpty(configItem.Name))
+                    {
+                        Main.Warning($"Theme config contains an invalid theme name: {configPath}");
+                        continue;
+                    }
+
+                    if (string.IsNullOrEmpty(parsedConfig.Version) || !Version.TryParse(parsedConfig.Version, out var version))
+                    {
+                        Main.Warning($"Theme config contains a missing or invalid version: {configPath}");
+                        continue;
+                    }
+
+                    var newSettings = ThemeSettings.Create(configPath, configItem, version);
+
+                    if (TryGetThemeSettings(configItem.Name, out var settings))
+                    {
+                        settings.Merge(newSettings);
+                    }
+                    else
+                    {
+                        _themeSettings.Add(configItem.Name, newSettings);
+                    }
+                }
+            }
+            catch
+            {
+                Main.Error($"Failed to parse theme config, please check the syntax: {configPath}");
+            }
+        }
+
         private static Dictionary<string, string> GetCarTextureDictionary(TrainCarLivery carType)
         {
             if (!cachedCarTextures.TryGetValue(carType, out var textures))
@@ -384,7 +575,7 @@ namespace SkinManagerMod
             //    skinDir = CCLPatch.GetCarFolder(carType);
             //}
 
-            var defaultSkin = new Skin(carType.id, $"Default_{carType.id}", skinDir, isDefault: true);
+            var defaultSkin = new Skin(carType.id, GetDefaultSkinName(carType.id), skinDir, isDefault: true);
 
             foreach (var texture in TextureUtility.EnumerateTextures(carType))
             {
@@ -396,6 +587,8 @@ namespace SkinManagerMod
 
             return defaultSkin;
         }
+
+        public static string GetDefaultSkinName(string liveryId) => $"Default_{liveryId}";
 
         /// <summary>
         /// Try to find the car texture/material property that matches the given file
@@ -450,15 +643,7 @@ namespace SkinManagerMod
                 {
                     var linear = textureProp == "_BumpMap";
 
-                    if (!forceSync && Main.Settings.parallelLoading)
-                    {
-                        config.Textures.Add(new SkinTexture(fileName, TextureLoader.LoadAsync(config, texturePath, linear)));
-                    }
-                    else
-                    {
-                        TextureLoader.BustCache(config, texturePath);
-                        config.Textures.Add(new SkinTexture(fileName, TextureLoader.LoadSync(config, texturePath, linear)));
-                    }
+                    config.Textures.Add(BeginLoadTexture(fileName, config, texturePath, linear, forceSync));
                 }
             }
         }
@@ -506,15 +691,7 @@ namespace SkinManagerMod
                     var linear = textureProp == "_BumpMap";
                     loading.Add(fileName);
 
-                    if (!forceSync && Main.Settings.parallelLoading)
-                    {
-                        skin.SkinTextures.Add(new SkinTexture(fileName, TextureLoader.LoadAsync(config, texturePath, linear)));
-                    }
-                    else
-                    {
-                        TextureLoader.BustCache(config, texturePath);
-                        skin.SkinTextures.Add(new SkinTexture(fileName, TextureLoader.LoadSync(config, texturePath, linear)));
-                    }
+                    skin.SkinTextures.Add(BeginLoadTexture(fileName, config, texturePath, linear, forceSync));
                 }
             }
 
@@ -528,6 +705,100 @@ namespace SkinManagerMod
             }
 
             skinGroup.Skins.Add(skin);
+
+            if (skin.IsThemeable && !_themeDict.TryGetValue(skin.Name, out var theme))
+            {
+                Main.LogVerbose($"Create new theme {skin.Name}");
+                theme = ScriptableObject.CreateInstance<PaintTheme>();
+                UnityEngine.Object.DontDestroyOnLoad(theme);
+                theme.assetName = skin.Name;
+                theme.name = skin.Name;
+
+                theme.nameLocalizationKey = "mod/skins/" + skin.Name.Replace(' ', '_').ToLowerInvariant();
+                Main.TranslationInjector.AddTranslation(theme.nameLocalizationKey, DVLanguage.English, skin.Name.Replace('_', ' '));
+
+                RegisterNewTheme(theme);
+            }
+
+            skin.LoadingFinished += AddSkinTexturesToTheme;
+            skin.StartLoadFinishedListener();
+        }
+
+        private static SkinTexture BeginLoadTexture(string fileName, ResourceConfigJson config, string texturePath, bool linear, bool forceSync)
+        {
+            var fileInfo = new FileInfo(texturePath);
+            var modifiedTime = fileInfo.LastWriteTimeUtc;
+
+            if (!forceSync && Main.Settings.parallelLoading)
+            {
+                return new SkinTexture(fileName, TextureLoader.LoadAsync(config, texturePath, linear), modifiedTime);
+            }
+            else
+            {
+                TextureLoader.BustCache(config, texturePath);
+                return new SkinTexture(fileName, TextureLoader.LoadSync(config, texturePath, linear), modifiedTime);
+            }
+        }
+
+        private static void AddSkinTexturesToTheme(Skin skin)
+        {
+            if (!skin.IsThemeable) return;
+
+            var subs = skin.GetSubstitutions();
+
+            if (_themeDict.TryGetValue(skin.Name, out var theme))
+            {
+                Main.LogVerbose($"Merging into theme {skin.Name}");
+                MergeSubstitutions(theme, subs);
+            }
+            else
+            {
+                Main.Error($"Couldn't find theme for skin {skin.Name}");
+            }
+        }
+
+        private static void MergeSubstitutions(PaintTheme theme, PaintTheme.Substitution[] toMerge)
+        {
+            if (toMerge is null || toMerge.Length == 0) return;
+
+            toMerge = toMerge.Where(sub => !theme.substitutions.Any(existSub => SubstitutesSameMaterial(sub, existSub))).ToArray();
+
+            int currentLength = theme.substitutions.Length;
+            var newArray = new PaintTheme.Substitution[currentLength + toMerge.Length];
+
+            Array.Copy(theme.substitutions, newArray, currentLength);
+            Array.Copy(toMerge, 0, newArray, currentLength, toMerge.Length);
+
+            theme.substitutions = newArray;
+            theme.substitutionDictionary = null;
+        }
+
+        public static void UnMergeSubstitutions(PaintTheme theme, PaintTheme.Substitution[] toRemove)
+        {
+            if (toRemove is null || toRemove.Length == 0) return;
+
+            var result = new List<PaintTheme.Substitution>(theme.substitutions.Length - toRemove.Length);
+
+            foreach (var substitution in theme.substitutions)
+            {
+                if (!toRemove.Any(s => SubstitutionsMatch(s, substitution)))
+                {
+                    result.Add(substitution);
+                }
+            }
+
+            theme.substitutions = result.ToArray();
+            theme.substitutionDictionary = null;
+        }
+
+        private static bool SubstitutesSameMaterial(PaintTheme.Substitution a, PaintTheme.Substitution b)
+        {
+            return a.original == b.original;
+        }
+
+        private static bool SubstitutionsMatch(PaintTheme.Substitution a, PaintTheme.Substitution b)
+        {
+            return (a.original == b.original) && (a.substitute == b.substitute);
         }
 
         #endregion

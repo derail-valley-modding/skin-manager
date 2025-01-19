@@ -7,13 +7,9 @@
         xmlns:local="clr-namespace:SkinConfigurator"
         xmlns:model="clr-namespace:SkinConfigurator.ViewModels"
         mc:Ignorable="d"
-        Title="Skin Packager" Height="450" Width="800"
+        Title="Skin Packager" Height="600" Width="1000"
         d:DataContext="{d:DesignInstance {x:Type model:MainWindowViewModel}}">
     <Window.Resources>
-        <local:NullToVisibilityConverter x:Key="nullVisibilityConverter"/>
-        <local:BoolToVisibilityConverter x:Key="boolToCollapseConverter" FalseState="Collapsed"/>
-        <local:NullToBoolConverter x:Key="nullBoolConverter"/>
-
         <ObjectDataProvider x:Key="componentTypes" ObjectType="{x:Type sys:Enum}" MethodName="GetValues">
             <ObjectDataProvider.MethodParameters>
                 <x:Type TypeName="model:PackComponentType"/>
@@ -38,13 +34,9 @@
                 <ColumnDefinition Width="3*"/>
                 <ColumnDefinition Width="3*"/>
             </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <!--<RowDefinition Height="*"/>-->
-            </Grid.RowDefinitions>
 
             <!-- Main mod info -->
-            <DockPanel LastChildFill="False">
+            <DockPanel LastChildFill="False" Grid.RowSpan="2">
                 <StackPanel DataContext="{Binding SkinPack.ModInfoModel}" DockPanel.Dock="Top" FocusManager.IsFocusScope="True">
                     <Label Content="Pack Config:"/>
 
@@ -73,7 +65,7 @@
 
 
             <!-- Individual Skins -->
-            <DockPanel Grid.Column="1" LastChildFill="True" Margin="7,0,0,0">
+            <DockPanel Grid.Column="1" Grid.Row="0" LastChildFill="True" Margin="7,0,0,0">
                 <Grid DockPanel.Dock="Top">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -88,89 +80,139 @@
                     <Button Grid.Column="1" Content="Upgrade" Click="UpgradeSkinButton_Click" ToolTip="Upgrade all Overhauled filenames to the Simulator versions"
                             IsEnabled="{Binding SelectedSkin.CanUpgrade, FallbackValue=False}"/>
                     <Button Grid.Column="2" Content="Remove" Click="RemoveSkinButton_Click" ToolTip="Delete the selected skin/resource"
-                            IsEnabled="{Binding SelectedSkin, Converter={StaticResource nullBoolConverter}, FallbackValue=False}"/>
+                            IsEnabled="{Binding SelectedSkin, Mode=OneWay, Converter={StaticResource nullBoolConverter}, FallbackValue=False}"/>
                     <Button Grid.Row="1" Grid.Column="0" Content="New" Click="NewSkinButton_Click" ToolTip="Add a new empty skin/resource folder"/>
                     <Button Grid.Row="1" Grid.Column="1" Content="Import..." Click="AddSkinButton_Click" ToolTip="Import an existing skin folder"/>
                     <Button Grid.Row="1" Grid.Column="2" Content="Multi Import..." Click="AddManySkinButton_Click" ToolTip="Import several skin folders at once"/>
                 </Grid>
 
-                <!-- Skin Properties -->
-                <Grid DataContext="{Binding SelectedSkin, Mode=OneWay}"
-                  Visibility="{Binding ., Converter={StaticResource nullVisibilityConverter}, FallbackValue=Hidden}" d:Visibility="Visible"
-                  DockPanel.Dock="Bottom">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
+                <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
+                    
+                    <!-- Pack Component List -->
+                    <DataGrid ItemsSource="{Binding SkinPack.PackComponents}" d:ItemsSource="{d:SampleData}"
+                              AutoGenerateColumns="False" RowHeaderWidth="0"
+                              SelectionMode="Single" SelectionUnit="FullRow"
+                              CanUserAddRows="False" Background="White"
+                              SelectedItem="{Binding SelectedSkin}" FocusManager.IsFocusScope="True">
+                        <DataGrid.Resources>
+                            <local:PackComponentTypeVisibilityConverter x:Key="skinToThemeVisibility" VisibleValue="Skin"/>
+                        </DataGrid.Resources>
+                        <DataGrid.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Upgrade" Click="UpgradeSkinButton_Click" ToolTip="Rename the files in this folder to match the current game data"
+                                          Visibility="{Binding SelectedSkin.CanUpgrade, Converter={StaticResource boolToCollapseConverter}}"/>
+                                <MenuItem x:Name="SkinContextAddThemeButton" Header="Create Theme Config" Click="AddThemeConfigButton_Click"
+                                          ToolTip="Create a theme configuration for this skin"
+                                          Visibility="{Binding SelectedSkin.Type, Converter={StaticResource skinToThemeVisibility}}"/>
+                                <MenuItem Header="Remove" Click="RemoveSkinButton_Click" ToolTip="Remove this folder from the project"/>
+                            </ContextMenu>
+                        </DataGrid.ContextMenu>
+                        <DataGrid.CellStyle>
+                            <Style TargetType="DataGridCell">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding CanUpgrade}" Value="True">
+                                        <Setter Property="Foreground" Value="Red"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                                <Setter Property="AllowDrop" Value="True"/>
+                            </Style>
+                        </DataGrid.CellStyle>
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Folder Type" Binding="{Binding Type}" IsReadOnly="True"/>
+                            <DataGridTextColumn Header="Car ID" Binding="{Binding CarId}" IsReadOnly="True"/>
+                            <DataGridTextColumn Width="*" Header="Name" Binding="{Binding Name}" IsReadOnly="True"/>
+                            <DataGridTextColumn Header="Files" Binding="{Binding Items.Count, Mode=OneWay}" IsReadOnly="True"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
 
-                    <Label Content="Type" Grid.Column="0"/>
-                    <ComboBox SelectedValue="{Binding Type, UpdateSourceTrigger=PropertyChanged}" ItemsSource="{Binding Source={StaticResource componentTypes}}" Grid.Column="1"/>
+                    <GridSplitter Grid.Row="1" Height="7" VerticalAlignment="Top" HorizontalAlignment="Stretch" ResizeDirection="Rows"/>
 
-                    <Label Content="Name" Grid.Row="1" Grid.Column="0"/>
-                    <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Grid.Row="1" Grid.Column="1"/>
+                    <!-- Theme Config -->
+                    <DockPanel Grid.Row="1" LastChildFill="True" Margin="0,7,0,0">
+                        <UniformGrid Columns="4" DockPanel.Dock="Top">
+                            <Label Content="Theme Config:" DockPanel.Dock="Top"
+                                   ToolTip="Settings that are applied to all skins with the same name"/>
+                            <Button x:Name="AddThemeConfigButton" Content="New" Click="AddThemeConfigButton_Click"
+                                    ToolTip="Create an empty theme config"/>
+                            <Button x:Name="ImportThemeConfigButton" Content="Import..." Click="ImportThemeConfigButton_Click"
+                                    ToolTip="Import an existing theme_config.json file"/>
+                            <Button x:Name="RemoveThemeConfigButton" Content="Remove" Click="RemoveThemeConfigButton_Click"
+                                    ToolTip="Delete the selected theme config"
+                                    IsEnabled="{Binding SelectedThemeConfig, Converter={StaticResource nullBoolConverter}, FallbackValue=False}"/>
+                        </UniformGrid>
 
-                    <Label Content="Car ID" Grid.Row="2" Grid.Column="0"/>
-                    <TextBox Text="{Binding CarId, UpdateSourceTrigger=PropertyChanged}" Grid.Row="2" Grid.Column="1"/>
-                    <Button x:Name="SelectCarTypeButton" Content=" Defaults... " Click="SelectCarTypeButton_Click" Grid.Row="2" Grid.Column="2"/>
-
-                    <Label Content="Resources" Grid.Row="3" Grid.Column="0" Visibility="{Binding HasResources, Converter={StaticResource boolToCollapseConverter}}"/>
-                    <Label Content="{Binding Resources.Count, FallbackValue=0}" Grid.Row="3" Grid.Column="1" Visibility="{Binding HasResources, Converter={StaticResource boolToCollapseConverter}}"/>
-                    <Button x:Name="SelectResourcesButton" Content="Select..." Click="SelectResourcesButton_Click" 
-                            Grid.Row="3" Grid.Column="2" Visibility="{Binding HasResources, Converter={StaticResource boolToCollapseConverter}}"/>
+                        <ListView x:Name="ThemeConfigList" ItemsSource="{Binding SkinPack.ThemeConfigs}" d:ItemsSource="{d:SampleData}"
+                                  SelectedItem="{Binding SelectedThemeConfig}" HorizontalContentAlignment="Stretch" FocusManager.IsFocusScope="True"
+                                  ScrollViewer.CanContentScroll="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListView.ItemTemplate>
+                                <ItemContainerTemplate DataType="model:ThemeConfigModel">
+                                    <local:ThemeConfigEditor HorizontalAlignment="Stretch" RemoveClicked="RemoveThemeConfigButton_Click"/>
+                                </ItemContainerTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </DockPanel>
                 </Grid>
-
-                <DataGrid ItemsSource="{Binding SkinPack.PackComponents}" d:ItemsSource="{d:SampleData}"
-                          AutoGenerateColumns="False" RowHeaderWidth="0"
-                          SelectionMode="Single" SelectionUnit="FullRow"
-                          CanUserAddRows="False"
-                          SelectedItem="{Binding SelectedSkin}" FocusManager.IsFocusScope="True">
-                    <DataGrid.ContextMenu>
-                        <ContextMenu>
-                            <MenuItem Header="Upgrade" Click="UpgradeSkinButton_Click"
-                                      Visibility="{Binding SelectedSkin.CanUpgrade, Converter={StaticResource boolToCollapseConverter}}"/>
-                            <MenuItem Header="Remove" Click="RemoveSkinButton_Click"/>
-                        </ContextMenu>
-                    </DataGrid.ContextMenu>
-                    <DataGrid.CellStyle>
-                        <Style TargetType="DataGridCell">
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding CanUpgrade}" Value="True">
-                                    <Setter Property="Foreground" Value="Red"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                            <Setter Property="AllowDrop" Value="True"/>
-                        </Style>
-                    </DataGrid.CellStyle>
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Folder Type" Binding="{Binding Type}" IsReadOnly="True"/>
-                        <DataGridTextColumn Header="Car ID" Binding="{Binding CarId}" IsReadOnly="True"/>
-                        <DataGridTextColumn Width="*" Header="Name" Binding="{Binding Name}" IsReadOnly="True"/>
-                        <DataGridTextColumn Header="Files" Binding="{Binding Items.Count, Mode=OneWay}" IsReadOnly="True"/>
-                    </DataGrid.Columns>
-                </DataGrid>
             </DockPanel>
 
             <GridSplitter Grid.Column="2" Width="7" HorizontalAlignment="Left"/>
+            
+            <!--<DockPanel LastChildFill="True" Grid.Row="0" Grid.Column="2" IsEnabled="{Binding SelectedSkin, Converter={StaticResource nullBoolConverter}, FallbackValue=False}" Margin="7,0,0,0">-->
+            <Grid Grid.Row="0" Grid.Column="2" Margin="7,0,0,0"
+                  IsEnabled="{Binding SelectedSkin, Mode=OneWay, Converter={StaticResource nullBoolConverter}, FallbackValue=False}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                
+                <!-- Skin Properties -->
+                <Label Content="Type" Grid.Column="0"/>
+                <ComboBox SelectedValue="{Binding SelectedSkin.Type, UpdateSourceTrigger=PropertyChanged}" ItemsSource="{Binding Source={StaticResource componentTypes}}" Grid.Column="1"
+                          ToolTip="Skins can be applied directly to vehicles. Resources allow sharing files between multiple skins"/>
 
-            <!-- Skin Items -->
-            <DockPanel LastChildFill="True" Grid.Column="2" Visibility="{Binding SelectedSkin, Converter={StaticResource nullVisibilityConverter}}" Margin="7,0,0,0">
-                <UniformGrid Columns="4" DockPanel.Dock="Top">
-                    <Label Content="Files:"/>
+                <Label Content="Name" Grid.Row="2" Grid.Column="0"/>
+                <TextBox Text="{Binding SelectedSkin.Name, UpdateSourceTrigger=PropertyChanged}" Grid.Row="2" Grid.Column="1"/>
+
+                <Label Content="Car ID" Grid.Row="1" Grid.Column="0"/>
+                <Grid Grid.Row="1" Grid.Column="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox Text="{Binding SelectedSkin.CarId, UpdateSourceTrigger=PropertyChanged}" />
+                    <Button x:Name="SelectCarTypeButton" Content=" Defaults... " Click="SelectCarTypeButton_Click" Grid.Column="2"/>
+                </Grid>
+
+                <Label Content="Resources" Grid.Row="3" Grid.Column="0" Visibility="{Binding SelectedSkin.HasResources, Converter={StaticResource boolToCollapseConverter}}"/>
+                <local:ResourceSelector x:Name="MyResourceSelector" Grid.Row="3" Grid.Column="2"
+                                        Visibility="{Binding SelectedSkin.HasResources, Converter={StaticResource boolToCollapseConverter}}"
+                                        SkinPack="{Binding SkinPack}" Skin="{Binding SelectedSkin}"
+                                        ToolTip="Select common files to be used by this skin"/>
+
+                <!-- Skin Items -->
+                <Label Content="Skin Files:" Grid.Row="4" Grid.Column="0" Margin="0,7,0,0"/>
+                <UniformGrid Columns="3" Grid.Row="4" Grid.Column="1" Margin="0,7,0,0">
                     <Button x:Name="AddFileButton" Content="Add..." Click="AddFileButton_Click"/>
                     <Button x:Name="ReplaceFileButton" Content="Replace..." Click="ReplaceFileButton_Click"
                             IsEnabled="{Binding SelectedSkinFile, Converter={StaticResource nullBoolConverter}, FallbackValue=False}"/>
                     <Button x:Name="RemoveFileButton" Content="Remove" Click="RemoveFileButton_Click"
                             IsEnabled="{Binding SelectedSkinFile, Converter={StaticResource nullBoolConverter}, FallbackValue=False}"/>
                 </UniformGrid>
+                
                 <ListView x:Name="SkinFileList" DockPanel.Dock="Bottom" ItemsSource="{Binding SelectedSkin.Items}" d:ItemsSource="{d:SampleData}"
-                          SelectedItem="{Binding SelectedSkinFile}" FocusManager.IsFocusScope="True" AllowDrop="True">
+                          SelectedItem="{Binding SelectedSkinFile}" FocusManager.IsFocusScope="True" AllowDrop="True"
+                          Grid.Row="5" Grid.ColumnSpan="2">
                     <ListView.Resources>
                         <ContextMenu x:Key="SkinFileContextMenu">
                             <MenuItem Header="Replace..." Click="ReplaceFileButton_Click"/>
@@ -202,7 +244,11 @@
                         </ItemContainerTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
-            </DockPanel>
+            </Grid>
+
+            <GridSplitter Grid.Column="3" Width="7" HorizontalAlignment="Left"/>
+            
+            
         </Grid>
     </DockPanel>
 </Window>

@@ -1,15 +1,8 @@
 ﻿using SkinConfigurator.ViewModels;
-using SMShared;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace SkinConfigurator
 {
@@ -53,11 +46,15 @@ namespace SkinConfigurator
             {
                 WriteSkin(skin);
             }
+
+            WriteThemeConfig();
         }
 
         protected abstract void WriteModInfo();
 
         protected abstract void WriteSkin(PackComponentModel skin);
+
+        protected abstract void WriteThemeConfig();
 
         protected string GetSkinFolderName(string skinName, string liveryId)
         {

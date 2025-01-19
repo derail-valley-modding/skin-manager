@@ -5,6 +5,12 @@
              StartupUri="MainWindow.xaml"
              Exit="Application_Exit">
     <Application.Resources>
-         
+        <local:NullToVisibilityConverter x:Key="nullVisibilityConverter"/>
+        <local:BoolToVisibilityConverter x:Key="boolToCollapseConverter" VisibleValue="True" FalseState="Collapsed"/>
+        <local:BoolToVisibilityConverter x:Key="boolToHiddenConverter" VisibleValue="True" FalseState="Hidden"/>
+        <local:NullToBoolConverter x:Key="nullBoolConverter"/>
+        
+        <local:ColorToBrushConverter x:Key="colorBrushConverter"/>
+        <local:ContrastingTextConverter x:Key="textColorConverter"/>
     </Application.Resources>
 </Application>

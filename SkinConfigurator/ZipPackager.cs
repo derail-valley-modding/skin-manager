@@ -1,13 +1,9 @@
-﻿using SMShared;
-using System;
-using System.Collections.Generic;
-using System.IO.Compression;
+﻿using SkinConfigurator.ViewModels;
+using SMShared;
+using SMShared.Json;
 using System.IO;
-using System.Linq;
-using System.Text;
+using System.IO.Compression;
 using System.Text.Json;
-using System.Threading.Tasks;
-using SkinConfigurator.ViewModels;
 
 namespace SkinConfigurator
 {
@@ -57,6 +53,32 @@ namespace SkinConfigurator
                 string entryPath = $"{folderName}/{sourceFile.FileName}";
                 _archive.CreateEntryFromFile(sourceFile.TempPath, entryPath);
             }
+        }
+
+        protected override void WriteThemeConfig()
+        {
+            var json = new ThemeConfigJson()
+            {
+                Version = _model.ModInfoModel.Version,
+                Themes = new ThemeConfigItem[_model.ThemeConfigs.Count],
+            };
+
+            // label texture files
+            for (int i = 0; i < _model.ThemeConfigs.Count; i++)
+            {
+                var config = _model.ThemeConfigs[i];
+                if (config.HasValidImage)
+                {
+                    string destPath = config.PackagedLabelTexturePath;
+                    _archive.CreateEntryFromFile(config.TempPath, destPath);
+                }
+                json.Themes[i] = config.JsonModel();
+            }
+
+            var jsonEntry = _archive.CreateEntry(Constants.THEME_CONFIG_FILE);
+            using var stream = jsonEntry.Open();
+
+            JsonSerializer.Serialize(stream, json, json.GetType(), JsonSettings);
         }
     }
 }

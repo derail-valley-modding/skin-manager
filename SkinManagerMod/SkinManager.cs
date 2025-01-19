@@ -1,7 +1,9 @@
-﻿using DV.JObjectExtstensions;
+﻿using DV.Customization.Paint;
+using DV.JObjectExtstensions;
 using DV.ThingTypes;
 using Newtonsoft.Json.Linq;
 using SMShared;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -10,8 +12,6 @@ namespace SkinManagerMod
 {
     public static class SkinManager
     {
-        //private static Dictionary<TrainCarType, string> CustomCarTypes;
-
         private static readonly Dictionary<string, string> carGuidToAppliedSkinMap = new Dictionary<string, string>();
 
         public static void Initialize()
@@ -27,7 +27,7 @@ namespace SkinManagerMod
             {
                 var toApply = GetCurrentCarSkin(car, false);
 
-                if ((toApply != null) && (toApply.Name == skinConfig.Name))
+                if ((toApply != null) && (toApply == skinConfig.Name))
                 {
                     ApplySkin(car, toApply);
                 }
@@ -35,19 +35,15 @@ namespace SkinManagerMod
         }
 
         /// <summary>Get the currently assigned skin for given car, or a new one if none is assigned</summary>
-        public static Skin GetCurrentCarSkin(TrainCar car, bool returnNewSkin = true)
+        public static string GetCurrentCarSkin(TrainCar car, bool returnNewSkin = true)
         {
             if (carGuidToAppliedSkinMap.TryGetValue(car.CarGUID, out var skinName))
             {
-                var defaultSkin = SkinProvider.GetDefaultSkin(car.carLivery.id);
-                if (skinName == defaultSkin.Name)
-                {
-                    return defaultSkin;
-                }
+                if (string.IsNullOrWhiteSpace(skinName)) return null;
 
                 if (SkinProvider.FindSkinByName(car.carLivery, skinName) is Skin result)
                 {
-                    return result;
+                    return result.Name;
                 }
             }
 
@@ -55,50 +51,76 @@ namespace SkinManagerMod
         }
 
         /// <summary>Save the specified skin to the given car</summary>
-        private static void SetAppliedCarSkin(TrainCar car, Skin skin)
+        public static void SetAppliedCarSkin(TrainCar car, string skinName)
         {
-            carGuidToAppliedSkinMap[car.CarGUID] = skin.Name;
+            Main.LogVerbose($"Setting saved skin for car {car.ID} to \"{skinName}\"");
+            carGuidToAppliedSkinMap[car.CarGUID] = skinName;
 
             // TODO: support for CCL steam locos (this method only checks if == locosteamheavy)
             if (CarTypes.IsMUSteamLocomotive(car.carType))
             {
-                SkinProvider.LastSteamerSkin = skin;
+                SkinProvider.LastSteamerSkin = skinName;
             }
             else
             {
                 SkinProvider.LastSteamerSkin = null;
             }
 
-            SkinProvider.LastDE6Skin = (car.carLivery.id == Constants.DE6_LIVERY_ID) ? skin : null;
+            SkinProvider.LastDE6Skin = (car.carLivery.id == Constants.DE6_LIVERY_ID) ? skinName : null;
         }
 
 
         //====================================================================================================
         #region Skin Manipulation
 
-        public static void ApplySkin(TrainCar trainCar, Skin skin)
+        public static void ApplySkin(TrainCar trainCar, string skinName, PaintArea area = PaintArea.All)
         {
-            if (skin == null) return;
-
-            //Main.ModEntry.Logger.Log($"Applying skin {skin.Name} to car {trainCar.ID}");
-
-            ApplySkin(trainCar.gameObject.transform, skin, SkinProvider.GetDefaultSkin(trainCar.carLivery.id));
-            if (trainCar.interior)
+            if (!SkinProvider.IsThemeable(trainCar.carLivery.id))
             {
-                ApplySkinToInterior(trainCar, skin);
+                ApplyNonThemeSkin(trainCar, skinName);
+                return;
             }
 
-            SetAppliedCarSkin(trainCar, skin);
+            if (PaintTheme.TryLoad(skinName, out PaintTheme newTheme))
+            {
+                if (area.HasFlag(PaintArea.Interior) && trainCar.PaintInterior)
+                {
+                    if (trainCar.PaintInterior.IsSupported(newTheme))
+                    {
+                        trainCar.PaintInterior.CurrentTheme = newTheme;
+                    }
+                }
+
+                if (area.HasFlag(PaintArea.Exterior) && trainCar.PaintExterior)
+                {
+                    if (trainCar.PaintExterior.IsSupported(newTheme))
+                    {
+                        trainCar.PaintExterior.CurrentTheme = newTheme;
+                    }
+                }
+            }
+            else
+            {
+                Main.Log($"Couldn't find paint theme {skinName} for car {trainCar.ID}");
+            }
         }
 
-        public static void ApplySkinToInterior(TrainCar trainCar, Skin skin)
+        private static void ApplyNonThemeSkin(TrainCar trainCar, string skinName)
         {
+            var skin = SkinProvider.FindSkinByName(trainCar.carLivery.id, skinName);
             if (skin == null) return;
 
-            ApplySkin(trainCar.interior, skin, SkinProvider.GetDefaultSkin(trainCar.carLivery.id));
+            var defaultSkin = SkinProvider.GetDefaultSkin(trainCar.carLivery.id);
+            ApplyNonThemeSkinToTransform(trainCar.gameObject.transform, skin, defaultSkin);
+            if (trainCar.interior)
+            {
+                ApplyNonThemeSkinToTransform(trainCar.gameObject.transform, skin, defaultSkin);
+            }
+
+            SetAppliedCarSkin(trainCar, skinName);
         }
 
-        private static void ApplySkin(Transform objectRoot, Skin skin, Skin defaultSkin)
+        private static void ApplyNonThemeSkinToTransform(Transform objectRoot, Skin skin, Skin defaultSkin)
         {
             foreach (var renderer in objectRoot.GetComponentsInChildren<MeshRenderer>(true))
             {
@@ -161,5 +183,13 @@ namespace SkinManagerMod
         }
 
         #endregion
+    }
+
+    [Flags]
+    public enum PaintArea
+    {
+        Exterior = 1,
+        Interior = 2,
+        All = Exterior | Interior,
     }
 }

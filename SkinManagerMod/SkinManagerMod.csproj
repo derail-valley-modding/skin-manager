@@ -33,7 +33,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="0Harmony, Version=2.2.2.0, Culture=neutral, processorArchitecture=MSIL" />
+    <Reference Include="0Harmony, Version=2.3.1.1, Culture=neutral, processorArchitecture=MSIL" />
     <Reference Include="Assembly-CSharp">
       <HintPath>D:\Games\SteamLibrary\steamapps\common\Derail Valley\DerailValley_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
@@ -42,6 +42,12 @@
     <Reference Include="DV.Utils, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>D:\Games\SteamLibrary\steamapps\common\Derail Valley\DerailValley_Data\Managed\DV.Utils.dll</HintPath>
+    </Reference>
+    <Reference Include="DVLangHelper.Data, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="DVLangHelper.Runtime, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -71,11 +77,26 @@
       <HintPath>D:\Games\SteamLibrary\steamapps\common\Derail Valley\DerailValley_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.PhysicsModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL" />
+    <Reference Include="UnityEngine.UI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" />
+    <Reference Include="UnityEngine.UIModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL" />
     <Reference Include="UnityModManager" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CarMaterialData.cs" />
     <Compile Include="CarPatches.cs" />
-    <None Include="CCLPatch.cs" />
+    <Compile Include="Items\CustomPaintInventorySpec.cs" />
+    <Compile Include="Items\InventoryPatches.cs" />
+    <Compile Include="Items\PaintCanPatches.cs" />
+    <Compile Include="Items\PaintCanThemeNameProvider.cs" />
+    <Compile Include="Items\PaintFactory.cs" />
+    <Compile Include="Items\ShopPaintCanStocker.cs" />
+    <Compile Include="Items\ShopPatches.cs" />
+    <Compile Include="Palette\ColorCutQuantizer.cs" />
+    <Compile Include="Palette\ColorHistogram.cs" />
+    <Compile Include="Palette\ColorUtils.cs" />
+    <Compile Include="Palette\Palette.cs" />
+    <Compile Include="ThemeSettings.cs" />
+    <Compile Include="ThreadHelper.cs" />
     <Compile Include="CommsRadioSkinSwitcher.cs" />
     <Compile Include="ResourcePack.cs" />
     <Compile Include="SkinConfig.cs" />
@@ -88,11 +109,21 @@
     <Compile Include="StbImage.cs" />
     <Compile Include="TextureLoader.cs" />
     <Compile Include="TextureUtility.cs" />
+    <Compile Include="Translations.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Krafs.Publicizer">
+      <Version>2.3.0</Version>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Publicize Include="Assembly-CSharp" IncludeCompilerGeneratedMembers="false" />
   </ItemGroup>
   <Import Project="..\SMShared\SMShared.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>
-    </PostBuildEvent>
+    <PostBuildEvent>curl.exe "https://docs.google.com/spreadsheets/d/1TrI4RuUgCijOuCjxM_WsOO9AV0BO4noTIZIzal3HbnY/export?format=csv&amp;gid=1691364666" -L "https://docs.google.com" -o "$(TargetDir)\translations.csv"</PostBuildEvent>
   </PropertyGroup>
 </Project>
