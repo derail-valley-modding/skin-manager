@@ -31,8 +31,8 @@ namespace SkinManagerMod.Items
 
         public void OnEnable()
         {
-            var themes = SkinProvider.PaintThemes;
-            int nToStock = Math.Min(themes.Length, NUM_THEMES_TO_STOCK);
+            var themes = SkinProvider.GetRandomizedStoreThemes();
+            int nToStock = Math.Min(themes.Count, NUM_THEMES_TO_STOCK);
 
             if (nToStock == 0) return;
 
@@ -54,8 +54,6 @@ namespace SkinManagerMod.Items
 
             Shop.scanItemResourceModules = postInjectionModules;
             CashRegister.registerModules = postInjectionModules;
-
-            SkinProvider.ShuffleThemes();
         }
 
         public void OnDisable()

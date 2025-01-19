@@ -86,6 +86,7 @@
     <Compile Include="CarPatches.cs" />
     <Compile Include="Items\CustomPaintInventorySpec.cs" />
     <Compile Include="Items\InventoryPatches.cs" />
+    <Compile Include="Items\PaintCanPatches.cs" />
     <Compile Include="Items\PaintCanThemeNameProvider.cs" />
     <Compile Include="Items\PaintFactory.cs" />
     <Compile Include="Items\ShopPaintCanStocker.cs" />
@@ -123,7 +124,6 @@
   <Import Project="..\SMShared\SMShared.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>
-    </PostBuildEvent>
+    <PostBuildEvent>curl.exe "https://docs.google.com/spreadsheets/d/1TrI4RuUgCijOuCjxM_WsOO9AV0BO4noTIZIzal3HbnY/export?format=csv&amp;gid=1691364666" -L "https://docs.google.com" -o "$(TargetDir)\translations.csv"</PostBuildEvent>
   </PropertyGroup>
 </Project>

@@ -256,7 +256,7 @@ namespace SkinManagerMod
                         }
                         else
                         {
-                            display.SetAction(Translations.SelectAction); ;
+                            display.SetAction(Translations.SelectAction);
                         }
                     }
                     else

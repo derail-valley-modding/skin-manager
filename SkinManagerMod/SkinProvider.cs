@@ -89,21 +89,32 @@ namespace SkinManagerMod
                 if (_cachedThemeList is null)
                 {
                     _cachedThemeList = _themeDict.Values.ToArray();
-                    ShuffleThemes();
                 }
                 return _cachedThemeList;
             }
         }
 
-        public static void ShuffleThemes()
+        public static List<PaintTheme> GetRandomizedStoreThemes()
         {
+            var arr = PaintThemes.Where(IsThemeAllowedInStore).ToList();
+
             // Fisher Yates shuffle
-            var arr = PaintThemes;
-            for (int i = arr.Length - 1; i > 0; i--)
+            for (int i = arr.Count - 1; i > 0; i--)
             {
                 int j = UnityEngine.Random.Range(0, i);
                 (arr[i], arr[j]) = (arr[j], arr[i]);
             }
+
+            return arr;
+        }
+
+        public static bool IsThemeAllowedInStore(PaintTheme theme)
+        {
+            if (TryGetThemeSettings(theme.name, out var settings))
+            {
+                return !settings.HideFromStores;
+            }
+            return true;
         }
 
         public static bool TryGetTheme(string themeName, out PaintTheme theme) => _themeDict.TryGetValue(themeName, out theme);
@@ -704,7 +715,7 @@ namespace SkinManagerMod
                 theme.name = skin.Name;
 
                 theme.nameLocalizationKey = "mod/skins/" + skin.Name.Replace(' ', '_').ToLowerInvariant();
-                Main.Translations.AddTranslation(theme.nameLocalizationKey, DVLanguage.English, skin.Name.Replace('_', ' '));
+                Main.TranslationInjector.AddTranslation(theme.nameLocalizationKey, DVLanguage.English, skin.Name.Replace('_', ' '));
 
                 RegisterNewTheme(theme);
             }

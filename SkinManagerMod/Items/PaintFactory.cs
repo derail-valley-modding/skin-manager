@@ -434,7 +434,7 @@ namespace SkinManagerMod.Items
 
             _dummyItemSpecHolder = new GameObject("[SM] Dummy Item Holder");
 
-            foreach (var theme in SkinProvider.PaintThemes)
+            foreach (var theme in SkinProvider.PaintThemes.Where(SkinProvider.IsThemeAllowedInStore))
             {
                 var subHolder = new GameObject($"[SM] Dummy Item Spec {theme.name}");
                 subHolder.transform.SetParent(_dummyItemSpecHolder.transform, false);

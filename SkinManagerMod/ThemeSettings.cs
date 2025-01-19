@@ -9,6 +9,7 @@ namespace SkinManagerMod
     {
         public readonly string ThemeName;
         public Version HighestVersion;
+        public bool HideFromStores;
 
         public SkinTexture CanLabel;
         public Color? LabelBaseColor;
@@ -25,6 +26,7 @@ namespace SkinManagerMod
         {
             bool otherIsNewer = other.HighestVersion > HighestVersion;
 
+            ReplaceIfNewer(ref HideFromStores, other.HideFromStores, otherIsNewer);
             ReplaceIfNewer(ref CanLabel, other.CanLabel, otherIsNewer);
 
             ReplaceIfNewer(ref LabelBaseColor, other.LabelBaseColor, otherIsNewer);
@@ -44,7 +46,10 @@ namespace SkinManagerMod
 
         public static ThemeSettings Create(string basePath, ThemeConfigItem data, Version version)
         {
-            var result = new ThemeSettings(data.Name, version);
+            var result = new ThemeSettings(data.Name, version)
+            {
+                HideFromStores = data.HideFromStores,
+            };
 
             TryParseColor(data.LabelBaseColor, basePath, ref result.LabelBaseColor);
             TryParseColor(data.LabelAccentColorA, basePath, ref result.LabelAccentColorA);

@@ -17,7 +17,7 @@ namespace SkinManagerMod
     {
         public static UnityModManager.ModEntry Instance { get; private set; }
         public static SkinManagerSettings Settings { get; private set; }
-        public static TranslationInjector Translations { get; private set; }
+        public static TranslationInjector TranslationInjector { get; private set; }
 
         public static string ExportFolderPath => Path.Combine(Instance.Path, Constants.EXPORT_FOLDER_NAME);
         public static string GetExportFolderForCar(string carId)
@@ -32,8 +32,9 @@ namespace SkinManagerMod
             Instance = modEntry;
             Settings = UnityModManager.ModSettings.Load<SkinManagerSettings>(modEntry);
 
-            Translations = new TranslationInjector(Constants.MOD_ID);
-            Translations.AddTranslationsFromWebCsv("https://docs.google.com/spreadsheets/d/1TrI4RuUgCijOuCjxM_WsOO9AV0BO4noTIZIzal3HbnY/export?format=csv&gid=1691364666");
+            TranslationInjector = new TranslationInjector(Constants.MOD_ID);
+            TranslationInjector.AddTranslationsFromCsv(Path.Combine(Instance.Path, "translations.csv"));
+            TranslationInjector.AddTranslationsFromWebCsv("https://docs.google.com/spreadsheets/d/1TrI4RuUgCijOuCjxM_WsOO9AV0BO4noTIZIzal3HbnY/export?format=csv&gid=1691364666");
 
             CarMaterialData.Initialize();
             if (!SkinProvider.Initialize())
@@ -60,39 +61,41 @@ namespace SkinManagerMod
         static TrainCarLivery trainCarSelected = null;
         static bool showDropdown = false;
 
-        private static readonly string[] defaultSkinModeTexts = new[]
-        {
-            "Prefer Reskins",
-            "Random For Custom Cars",
-            "Random For All Cars"
-        };
-
         private static string _guiMessage;
 
         static void OnGUI(UnityModManager.ModEntry modEntry)
         {
             GUILayout.BeginVertical();
 
-            bool newAniso = GUILayout.Toggle(Settings.aniso5, "Increase Anisotropic Filtering (Requires Manual Game Restart)");
+            bool newAniso = GUILayout.Toggle(Settings.aniso5, Translations.Settings.IncreaseAniso);
             if (newAniso != Settings.aniso5)
             {
                 Settings.aniso5 = newAniso;
             }
-            Settings.parallelLoading = GUILayout.Toggle(Settings.parallelLoading, "Multi-threaded texture loading");
-            Settings.allowDE6SkinsForSlug = GUILayout.Toggle(Settings.allowDE6SkinsForSlug, "Allow DE6 skins to be applied to slug");
-            Settings.verboseLogging = GUILayout.Toggle(Settings.verboseLogging, "Log extra skin loading information");
+            Settings.parallelLoading = GUILayout.Toggle(Settings.parallelLoading, Translations.Settings.ParallelLoading);
+            Settings.allowDE6SkinsForSlug = GUILayout.Toggle(Settings.allowDE6SkinsForSlug, Translations.Settings.AllowSlugDE6Skins);
+            Settings.allowPaintingUnowned = GUILayout.Toggle(Settings.allowPaintingUnowned, Translations.Settings.AllowPaintingUnowned);
+            Settings.verboseLogging = GUILayout.Toggle(Settings.verboseLogging, Translations.Settings.VerboseLogging);
 
-            GUILayout.Label("Default skin usage:");
+            GUILayout.Label(Translations.Settings.DefaultSkinMode);
+
+            string[] defaultSkinModeTexts = new string[]
+            {
+                Translations.DefaultSkinMode.PreferReskins,
+                Translations.DefaultSkinMode.AllowForCustomCars,
+                Translations.DefaultSkinMode.AllowForAllCars,
+            };
+
             Settings.defaultSkinsMode = (DefaultSkinsMode)GUILayout.SelectionGrid((int)Settings.defaultSkinsMode, defaultSkinModeTexts, 1, "toggle");
             GUILayout.Space(5);
 
-            GUILayout.Label("Texture Utility");
+            GUILayout.Label(Translations.Settings.TextureTools);
 
             GUILayout.BeginHorizontal(GUILayout.Width(250));
 
             GUILayout.BeginVertical();
 
-            string typeLabel = (trainCarSelected != null) ? LocalizationAPI.L(trainCarSelected.localizationKey) : "Select Train Car";
+            string typeLabel = (trainCarSelected != null) ? LocalizationAPI.L(trainCarSelected.localizationKey) : Translations.Settings.SelectCarType;
             if (GUILayout.Button(typeLabel, GUILayout.Width(220)))
             {
                 showDropdown = !showDropdown;
@@ -120,20 +123,20 @@ namespace SkinManagerMod
 
             if (trainCarSelected != null)
             {
-                if (GUILayout.Button("Export Textures", GUILayout.Width(300)))
+                if (GUILayout.Button(Translations.Settings.ExportTextures, GUILayout.Width(300)))
                 {
                     TextureUtility.DumpTextures(trainCarSelected);
                 }
 
-                if (GUILayout.Button("Reload Skins for Selected Type", GUILayout.Width(300)))
+                if (GUILayout.Button(Translations.Settings.ReloadTextures, GUILayout.Width(300)))
                 {
                     int reloadedCount = SkinProvider.ReloadSkinsForType(trainCarSelected);
-                    _guiMessage = $"Reloaded {reloadedCount} skins for car {trainCarSelected.id}";
+                    _guiMessage = Translations.Settings.ReloadedCarType(reloadedCount, trainCarSelected.localizationKey);
                 }
             }
 
             GUILayout.Space(5);
-            if (GUILayout.Button("Export All Textures (Warning: Slow!)", GUILayout.Width(300)))
+            if (GUILayout.Button(Translations.Settings.ExportAll, GUILayout.Width(300)))
             {
                 foreach (var livery in Globals.G.Types.Liveries)
                 {
@@ -141,10 +144,10 @@ namespace SkinManagerMod
                 }
             }
 
-            if (GUILayout.Button("Reload All Skins (Warning: Slow!)", GUILayout.Width(300)))
+            if (GUILayout.Button(Translations.Settings.ReloadAll, GUILayout.Width(300)))
             {
                 int reloadedCount = SkinProvider.ReloadAllSkins(true);
-                _guiMessage = $"Reloaded {reloadedCount} skins";
+                _guiMessage = Translations.Settings.ReloadedAll(reloadedCount);
             }
 
             if (!string.IsNullOrEmpty(_guiMessage))
@@ -192,13 +195,8 @@ namespace SkinManagerMod
 
     public enum DefaultSkinsMode
     {
-        [Description("Prefer Reskins")]
         PreferReplacements,
-
-        [Description("Random For Custom Cars")]
         AllowForCustomCars,
-
-        [Description("Random For All Cars")]
         AllowForAllCars
     }
 
@@ -207,6 +205,7 @@ namespace SkinManagerMod
         public bool aniso5 = true;
         public bool parallelLoading = true;
         public DefaultSkinsMode defaultSkinsMode = DefaultSkinsMode.AllowForCustomCars;
+        public bool allowPaintingUnowned = true;
         public bool allowDE6SkinsForSlug = true;
         public bool verboseLogging = false;
 
