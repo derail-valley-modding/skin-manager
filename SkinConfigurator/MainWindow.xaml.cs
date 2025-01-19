@@ -37,6 +37,7 @@ namespace SkinConfigurator
             Model = new MainWindowViewModel();
             Settings = ConfiguratorSettings.LoadConfig();
 
+#if DEBUG
             var texes = GetCarTex("P:\\SteamLibrary\\steamapps\\common\\Derail Valley\\Mods\\SkinManagerMod\\Exported");
             var settings = new JsonSerializerOptions()
             {
@@ -44,6 +45,7 @@ namespace SkinConfigurator
             };
             string result = JsonSerializer.Serialize(texes, settings);
             File.WriteAllText(Path.Combine(Environment.CurrentDirectory, "tex.json"), result);
+#endif
         }
 
         IEnumerable<string> GetNames(string folder)
