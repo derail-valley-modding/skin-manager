@@ -6,7 +6,8 @@ namespace SkinManagerMod
     public static class Translations
     {
         // Comms Radio
-        public static string SelectCarPrompt => L("radio/select_car");
+        public static string ReskinMode => L("skinman/radio/repaint_mode");
+        public static string SelectCarPrompt => L("skinman/radio/select_car");
         public static string ReloadAction => L("skinman/radio/reload");
         public static string SelectAreasPrompt => L("skinman/radio/select_areas");
         public static string SelectPaintPrompt => L("skinman/radio/select_paint");

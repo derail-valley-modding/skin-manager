@@ -124,7 +124,7 @@ namespace SkinManagerMod
 
         public void SetStartingDisplay()
         {
-            display.SetDisplay(CommsRadioLocalization.MODE_PAINTJOB, Translations.SelectCarPrompt, string.Empty);
+            display.SetDisplay(Translations.ReskinMode, Translations.SelectCarPrompt, string.Empty);
         }
 
         #endregion
