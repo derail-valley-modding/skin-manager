@@ -124,6 +124,6 @@
   <Import Project="..\SMShared\SMShared.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>curl.exe "https://docs.google.com/spreadsheets/d/1TrI4RuUgCijOuCjxM_WsOO9AV0BO4noTIZIzal3HbnY/export?format=csv&amp;gid=1691364666" -L "https://docs.google.com" -o "$(TargetDir)\translations.csv" &gt; $null</PostBuildEvent>
+    <PostBuildEvent>curl.exe "https://docs.google.com/spreadsheets/d/1TrI4RuUgCijOuCjxM_WsOO9AV0BO4noTIZIzal3HbnY/export?format=csv&amp;gid=1691364666" -L "https://docs.google.com" -o "$(TargetDir)\translations.csv" &gt;NUL</PostBuildEvent>
   </PropertyGroup>
 </Project>
