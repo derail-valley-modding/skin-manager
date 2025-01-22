@@ -148,13 +148,13 @@ namespace SkinManagerMod
             {
                 _exportAllCoro = CoroutineManager.Instance.StartCoroutine(PerformMassExport());
             }
-            GUI.enabled = true;
 
             if (GUILayout.Button(Translations.Settings.ReloadAll, GUILayout.Width(400)))
             {
                 int reloadedCount = SkinProvider.ReloadAllSkins(true);
                 _guiMessage = Translations.Settings.ReloadedAll(reloadedCount);
             }
+            GUI.enabled = true;
 
             if (!string.IsNullOrEmpty(_guiMessage))
             {

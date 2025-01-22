@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:SkinConfigurator"
         xmlns:shared="clr-namespace:SMShared"
         mc:Ignorable="d"
-        Title="Select Car Type" Height="130" Width="500"
+        Title="Settings" Height="130" Width="500"
         d:DataContext="{d:DesignInstance Type=local:SettingsModel}">
     <DockPanel LastChildFill="False">
         <Grid DockPanel.Dock="Top">

@@ -133,33 +133,7 @@ namespace SkinManagerMod
 
         private static Material GetBaseMaterial(Material defaultMaterial, BaseTheme themeType)
         {
-            PaintTheme result;
-
-            switch (themeType)
-            {
-                case BaseTheme.DVRT:
-                case BaseTheme.DVRT_NoDetails:
-                    PaintTheme.TryLoad(SkinProvider.DefaultThemeName, out result);
-                    break;
-
-                case BaseTheme.Pristine:
-                case BaseTheme.Pristine_NoDetails:
-                    PaintTheme.TryLoad(SkinProvider.DefaultNewThemeName, out result);
-                    break;
-
-                case BaseTheme.Demonstrator:
-                case BaseTheme.Demonstrator_NoDetails:
-                    PaintTheme.TryLoad(SkinProvider.DemoThemeName, out result);
-                    break;
-
-                case BaseTheme.Relic:
-                case BaseTheme.Relic_NoDetails:
-                    PaintTheme.TryLoad(SkinProvider.DemoRustyThemeName, out result);
-                    break;
-
-                default:
-                    throw new NotImplementedException();
-            }
+            var result = SkinProvider.GetBuiltinTheme(themeType);
 
             if (result && result.TryGetSubstitute(defaultMaterial, out var substitution))
             {

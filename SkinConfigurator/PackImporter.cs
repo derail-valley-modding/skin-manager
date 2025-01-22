@@ -8,20 +8,29 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Windows;
 
 namespace SkinConfigurator
 {
     internal static class PackImporter
     {
-        public static SkinPackModel ImportFromFolder(string path)
+        public static SkinPackModel? ImportFromFolder(string path)
         {
-            if (Directory.EnumerateFiles(path, "Info.json", SearchOption.AllDirectories).Any())
+            try
             {
-                return ImportSimulatorProject(path);
+                if (Directory.EnumerateFiles(path, "Info.json", SearchOption.AllDirectories).Any())
+                {
+                    return ImportSimulatorProject(path);
+                }
+                else
+                {
+                    return ImportGenericFolder(path);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                return ImportGenericFolder(path);
+                MessageBox.Show("Failed to import skins from the folder:\n" + ex.Message);
+                return null;
             }
         }
 
@@ -157,15 +166,23 @@ namespace SkinConfigurator
 
         #endregion
 
-        public static SkinPackModel ImportFromArchive(string archivePath)
+        public static SkinPackModel? ImportFromArchive(string archivePath)
         {
-            using var stream = File.OpenRead(archivePath);
-            using var archive = new ZipArchive(stream, ZipArchiveMode.Read);
+            try
+            {
+                using var stream = File.OpenRead(archivePath);
+                using var archive = new ZipArchive(stream, ZipArchiveMode.Read);
 
-            string tempFolder = ExtractArchiveToTemp(archive, Path.GetFileNameWithoutExtension(archivePath));
-            var pack = ImportFromFolder(tempFolder);
-            Directory.Delete(tempFolder, true);
-            return pack;
+                string tempFolder = ExtractArchiveToTemp(archive, Path.GetFileNameWithoutExtension(archivePath));
+                var pack = ImportFromFolder(tempFolder);
+                Directory.Delete(tempFolder, true);
+                return pack;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Failed to import the zipped skin pack:\n" + ex.Message);
+                return null;
+            }
         }
 
         private static string ExtractArchiveToTemp(ZipArchive archive, string archiveName)
@@ -181,5 +198,12 @@ namespace SkinConfigurator
 
             return destFolder;
         }
+    }
+
+    public class SkinImportException : Exception
+    {
+        public SkinImportException(string message) : base(message) { }
+
+        public SkinImportException(string message, Exception inner) : base(message, inner) { }
     }
 }

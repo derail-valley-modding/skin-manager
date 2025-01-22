@@ -25,13 +25,17 @@
 
     <DockPanel LastChildFill="True" Background="{x:Static SystemColors.ControlBrush}" >
         <Menu DockPanel.Dock="Top">
-            <MenuItem Header="File">
-                <MenuItem x:Name="CreatePackButton" Header="New Project" Click="CreatePackButton_Click" ToolTip="Clear all fields and start anew"/>
-                <MenuItem x:Name="ImportPackButton" Header="Open Folder..." Click="ImportPackButton_Click" ToolTip="Import multiple skins from a folder"/>
-                <MenuItem x:Name="ImportZipButton" Header="Open Zip..." Click="ImportZipButton_Click" ToolTip="Import skins from a zipped skin pack"/>
+            <MenuItem Header="_File">
+                <MenuItem x:Name="CreatePackButton" Header="_New Project" Click="CreatePackButton_Click" ToolTip="Clear all fields and start anew"/>
+                <MenuItem x:Name="ImportPackButton" Header="_Open Folder..." Click="ImportPackButton_Click" ToolTip="Import multiple skins from a folder"/>
+                <MenuItem x:Name="ImportZipButton" Header="Open _Zip..." Click="ImportZipButton_Click" ToolTip="Import skins from a zipped skin pack"/>
+
+                <local:RecentFileList x:Name="RecentFileSelector" MenuClick="RecentFileSelector_MenuClick"/>
+
+                <MenuItem x:Name="ExitButton" Header="E_xit" Click="ExitButton_Click"/>
             </MenuItem>
             
-            <MenuItem x:Name="SettingsButton" Header="Settings..." Click="SettingsButton_Click"/>
+            <MenuItem x:Name="SettingsButton" Header="_Settings..." Click="SettingsButton_Click"/>
         </Menu>
 
         <Grid Margin="5">
@@ -121,7 +125,7 @@
                             <Style TargetType="DataGridCell">
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding CanUpgrade}" Value="True">
-                                        <Setter Property="Background" Value="#FFFFFF80"/>
+                                        <Setter Property="Foreground" Value="Red"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                                 <Setter Property="AllowDrop" Value="True"/>
@@ -246,7 +250,8 @@
                                 <Image Width="64px" Height="64px" Source="{Binding Preview}"/>
                                 <UniformGrid Rows="2" Grid.Column="1">
                                     <local:SpecialCombo IsEditable="True" Text="{Binding FileName, UpdateSourceTrigger=LostFocus}" 
-                                              ItemsSource="{Binding Path=DataContext.DefaultTextureNames, RelativeSource={RelativeSource AncestorType=ListView}, Mode=OneWay}"/>
+                                              ItemsSource="{Binding Path=DataContext.DefaultTextureNames, RelativeSource={RelativeSource AncestorType=ListView}, Mode=OneWay}"
+                                                        ScrollViewer.VerticalScrollBarVisibility="Visible" ScrollViewer.CanContentScroll="True"/>
                                     <Button Grid.Row="1" Content="Upgrade Filename" Click="UpgradeFileNameButton_Click" 
                                             Visibility="{Binding CanUpgradeFileName, Mode=OneWay, Converter={StaticResource boolToCollapseConverter}}"
                                             Background="PaleGoldenrod"/>

@@ -41,6 +41,39 @@ namespace SkinManagerMod
             }
         }
 
+        public static PaintTheme GetBuiltinTheme(BaseTheme themeType)
+        {
+            PaintTheme result;
+
+            switch (themeType)
+            {
+                case BaseTheme.DVRT:
+                case BaseTheme.DVRT_NoDetails:
+                    PaintTheme.TryLoad(DefaultThemeName, out result);
+                    break;
+
+                case BaseTheme.Pristine:
+                case BaseTheme.Pristine_NoDetails:
+                    PaintTheme.TryLoad(DefaultNewThemeName, out result);
+                    break;
+
+                case BaseTheme.Demonstrator:
+                case BaseTheme.Demonstrator_NoDetails:
+                    PaintTheme.TryLoad(DemoThemeName, out result);
+                    break;
+
+                case BaseTheme.Relic:
+                case BaseTheme.Relic_NoDetails:
+                    PaintTheme.TryLoad(DemoRustyThemeName, out result);
+                    break;
+
+                default:
+                    throw new NotImplementedException();
+            }
+
+            return result;
+        }
+
         public static bool IsBuiltInTheme(string themeName) => BuiltInThemeNames.Contains(themeName);
 
         public static string LastSteamerSkin { get; set; }

@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -48,16 +49,16 @@ namespace SkinConfigurator
 #endif
         }
 
-        IEnumerable<string> GetNames(string folder)
+        private static IEnumerable<string> GetNames(string folder)
         {
             string[] ext = { ".png", ".jpeg", ".jpg" };
-            return Directory.GetFiles(folder)
+            return Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories)
                 .Where(s => ext.Contains(Path.GetExtension(s)))
                 .Select(s => Path.GetFileName(s))
                 .OrderBy(s => s);
         }
 
-        Dictionary<string, string[]> GetCarTex(string baseFolder)
+        private static Dictionary<string, string[]> GetCarTex(string baseFolder)
         {
             var result = new Dictionary<string, string[]>();
             foreach (string subDir in Directory.EnumerateDirectories(baseFolder))
@@ -93,9 +94,22 @@ namespace SkinConfigurator
                     return;
                 }
 
-                using (new WaitCursor())
+                DoFolderImport(folderDialog.SelectedPath);
+            }
+        }
+
+        private void DoFolderImport(string path)
+        {
+            using (new WaitCursor())
+            {
+                var imported = PackImporter.ImportFromFolder(path);
+
+                if (imported is not null)
                 {
-                    Model.SkinPack = PackImporter.ImportFromFolder(folderDialog.SelectedPath);
+                    Model.SkinPack = imported;
+                    MyResourceSelector.RefreshAvailableItems();
+
+                    RecentFileSelector.InsertFile(path);
                 }
             }
         }
@@ -120,12 +134,43 @@ namespace SkinConfigurator
                     return;
                 }
 
-                using (new WaitCursor())
+                DoZipImport(dialog.FileName);
+            }
+        }
+
+        private void DoZipImport(string path)
+        {
+            using (new WaitCursor())
+            {
+                var imported = PackImporter.ImportFromArchive(path);
+
+                if (imported is not null)
                 {
-                    Model.SkinPack = PackImporter.ImportFromArchive(dialog.FileName);
+                    Model.SkinPack = imported;
                     MyResourceSelector.RefreshAvailableItems();
+
+                    RecentFileSelector.InsertFile(path);
                 }
             }
+        }
+
+        private void RecentFileSelector_MenuClick(object sender, RecentFileList.MenuClickEventArgs e)
+        {
+            var pathAttr = File.GetAttributes(e.Filepath);
+
+            if (pathAttr.HasFlag(FileAttributes.Directory))
+            {
+                DoFolderImport(e.Filepath);
+            }
+            else
+            {
+                DoZipImport(e.Filepath);
+            }
+        }
+
+        private void ExitButton_Click(object sender, RoutedEventArgs e)
+        {
+            Application.Current.Shutdown();
         }
 
         #endregion
@@ -438,8 +483,9 @@ namespace SkinConfigurator
         protected override void OnPreviewMouseMove(MouseEventArgs e)
         {
             base.OnPreviewMouseMove(e);
-            if (e.LeftButton == MouseButtonState.Pressed && (e.OriginalSource is FrameworkElement source) && (source.DataContext is SkinFileModel file))
+            if (e.LeftButton == MouseButtonState.Pressed && (e.OriginalSource is FrameworkElement source) && !IsChildOf<ScrollBar>(source) && (source.DataContext is SkinFileModel file))
             {
+                Trace.WriteLine(source.GetType());
                 var newPos = e.GetPosition(null);
 
                 if (Math.Abs(newPos.X - _mouseStartPoint.X) > SystemParameters.MinimumHorizontalDragDistance ||
@@ -495,6 +541,17 @@ namespace SkinConfigurator
             while (child != null)
             {
                 if (child == parent) return true;
+
+                child = VisualTreeHelper.GetParent(child);
+            }
+            return false;
+        }
+
+        private static bool IsChildOf<TParent>(DependencyObject? child)
+        {
+            while (child != null)
+            {
+                if (child is TParent) return true;
 
                 child = VisualTreeHelper.GetParent(child);
             }
