@@ -6,6 +6,7 @@
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:local="clr-namespace:SkinConfigurator"
         xmlns:model="clr-namespace:SkinConfigurator.ViewModels"
+        xmlns:json="clr-namespace:SMShared.Json"
         mc:Ignorable="d"
         Title="Skin Packager" Height="600" Width="1000"
         d:DataContext="{d:DesignInstance {x:Type model:MainWindowViewModel}}">
@@ -13,6 +14,11 @@
         <ObjectDataProvider x:Key="componentTypes" ObjectType="{x:Type sys:Enum}" MethodName="GetValues">
             <ObjectDataProvider.MethodParameters>
                 <x:Type TypeName="model:PackComponentType"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+        <ObjectDataProvider x:Key="defaultThemeTypes" ObjectType="{x:Type sys:Enum}" MethodName="GetValues">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="json:BaseTheme"/>
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
     </Window.Resources>
@@ -115,7 +121,7 @@
                             <Style TargetType="DataGridCell">
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding CanUpgrade}" Value="True">
-                                        <Setter Property="Foreground" Value="Red"/>
+                                        <Setter Property="Background" Value="#FFFFFF80"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                                 <Setter Property="AllowDrop" Value="True"/>
@@ -173,6 +179,7 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 
@@ -194,15 +201,19 @@
                     <Button x:Name="SelectCarTypeButton" Content=" Defaults... " Click="SelectCarTypeButton_Click" Grid.Column="2"/>
                 </Grid>
 
-                <Label Content="Resources" Grid.Row="3" Grid.Column="0" Visibility="{Binding SelectedSkin.HasResources, Converter={StaticResource boolToCollapseConverter}}"/>
-                <local:ResourceSelector x:Name="MyResourceSelector" Grid.Row="3" Grid.Column="2"
+                <Label Content="Base Theme" Grid.Row="3" Grid.Column="0" Visibility="{Binding SelectedSkin.HasResources, Converter={StaticResource boolToCollapseConverter}}"/>
+                <ComboBox Grid.Row="3" Grid.Column="1" IsEditable="False" ItemsSource="{Binding Source={StaticResource defaultThemeTypes}}" SelectedItem="{Binding SelectedSkin.BaseTheme}"
+                          Visibility="{Binding SelectedSkin.HasResources, Converter={StaticResource boolToCollapseConverter}}"/>
+
+                <Label Content="Resources" Grid.Row="4" Grid.Column="0" Visibility="{Binding SelectedSkin.HasResources, Converter={StaticResource boolToCollapseConverter}}"/>
+                <local:ResourceSelector x:Name="MyResourceSelector" Grid.Row="4" Grid.Column="2"
                                         Visibility="{Binding SelectedSkin.HasResources, Converter={StaticResource boolToCollapseConverter}}"
                                         SkinPack="{Binding SkinPack}" Skin="{Binding SelectedSkin}"
                                         ToolTip="Select common files to be used by this skin"/>
 
                 <!-- Skin Items -->
-                <Label Content="Skin Files:" Grid.Row="4" Grid.Column="0" Margin="0,7,0,0"/>
-                <UniformGrid Columns="3" Grid.Row="4" Grid.Column="1" Margin="0,7,0,0">
+                <Label Content="Skin Files:" Grid.Row="5" Grid.Column="0" Margin="0,7,0,0"/>
+                <UniformGrid Columns="3" Grid.Row="5" Grid.Column="1" Margin="0,7,0,0">
                     <Button x:Name="AddFileButton" Content="Add..." Click="AddFileButton_Click"/>
                     <Button x:Name="ReplaceFileButton" Content="Replace..." Click="ReplaceFileButton_Click"
                             IsEnabled="{Binding SelectedSkinFile, Converter={StaticResource nullBoolConverter}, FallbackValue=False}"/>
@@ -212,7 +223,7 @@
                 
                 <ListView x:Name="SkinFileList" DockPanel.Dock="Bottom" ItemsSource="{Binding SelectedSkin.Items}" d:ItemsSource="{d:SampleData}"
                           SelectedItem="{Binding SelectedSkinFile}" FocusManager.IsFocusScope="True" AllowDrop="True"
-                          Grid.Row="5" Grid.ColumnSpan="2">
+                          Grid.Row="6" Grid.ColumnSpan="2">
                     <ListView.Resources>
                         <ContextMenu x:Key="SkinFileContextMenu">
                             <MenuItem Header="Replace..." Click="ReplaceFileButton_Click"/>

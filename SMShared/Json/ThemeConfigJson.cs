@@ -20,6 +20,7 @@ namespace SMShared.Json
     {
         public string Name;
         public bool HideFromStores;
+        public bool PreventRandomSpawning;
 
         public string LabelTextureFile;
         public string LabelBaseColor;

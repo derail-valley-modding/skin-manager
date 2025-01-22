@@ -16,6 +16,9 @@ namespace SkinManagerMod
             public static readonly string EmissionMap = "_EmissionMap";
             public static readonly string OcclusionMap = "_OcclusionMap";
 
+            public static readonly string DetailAlbedo = "_DetailAlbedoMap";
+            public static readonly string DetailNormal = "_DetailNormalMap";
+
             public static readonly string[] UniqueTextures =
             {
                 Main, BumpMap, MetalGlossMap, EmissionMap,
@@ -24,6 +27,11 @@ namespace SkinManagerMod
             public static readonly string[] AllTextures =
             {
                 Main, BumpMap, MetalGlossMap, EmissionMap, OcclusionMap,
+            };
+
+            public static readonly string[] DetailTextures =
+            {
+                DetailAlbedo, DetailNormal,
             };
         }
 

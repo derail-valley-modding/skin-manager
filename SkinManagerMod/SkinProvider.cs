@@ -72,7 +72,7 @@ namespace SkinManagerMod
         
 
         private static readonly HashSet<string> _themeableLiveries = Globals.G.Types.Liveries
-            .Where(l => !CarTypes.IsRegularCar(l))
+            .Where(l => l.prefab.GetComponentInChildren<TrainCarPaint>(true))
             .Select(l => l.id)
             .ToHashSet();
 
@@ -180,7 +180,7 @@ namespace SkinManagerMod
 
         public static Skin FindSkinByName(string carId, string name)
         {
-            if (name == GetDefaultSkinName(carId))
+            if (name == Skin.GetDefaultSkinName(carId))
             {
                 return GetDefaultSkin(carId);
             }
@@ -220,7 +220,7 @@ namespace SkinManagerMod
                 }
                 else
                 {
-                    result.Add(GetDefaultSkinName(carId));
+                    result.Add(Skin.GetDefaultSkinName(carId));
                 }
             }
 
@@ -302,14 +302,20 @@ namespace SkinManagerMod
             return true;
         }
 
+        private static bool IsPotentialSkinMod(UnityModManager.ModEntry mod)
+        {
+            return (mod.Info.Id != Constants.MOD_ID) && string.IsNullOrWhiteSpace(mod.Info.EntryMethod);
+        }
+
         /// <summary>
         /// Synchronously reload all skins for all car types
         /// </summary>
         /// <returns>Number of skins reloaded</returns>
         public static int ReloadAllSkins(bool forceSync = false)
         {
+            Main.LogVerbose("Reloading all skins");
             int loadedCount = 0;
-            foreach (var mod in UnityModManager.modEntries.Where(m => m.Info.Id != Constants.MOD_ID))
+            foreach (var mod in UnityModManager.modEntries.Where(IsPotentialSkinMod))
             {
                 loadedCount += ReloadSkinMod(mod, forceSync);
             }
@@ -326,7 +332,7 @@ namespace SkinManagerMod
         {
             int reloadedCount = 0;
 
-            foreach (var mod in UnityModManager.modEntries.Where(m => m.Info.Id != Constants.MOD_ID))
+            foreach (var mod in UnityModManager.modEntries.Where(IsPotentialSkinMod))
             {
                 var currentConfig = skinConfigs.FirstOrDefault(m => m.modEntry.Info == mod.Info);
                 if ((currentConfig != null) && currentConfig.Any(c => c.CarId == livery.id))
@@ -386,8 +392,9 @@ namespace SkinManagerMod
 
         private static void HandleSkinModToggle(UnityModManager.ModEntry mod, bool nowActive)
         {
-            if ((mod.Info.Id == Constants.MOD_ID) || !string.IsNullOrWhiteSpace(mod.Info.EntryMethod)) return;
+            if (!IsPotentialSkinMod(mod)) return;
 
+            Main.LogVerbose($"Detected mod enabled toggle: {mod.Info.Id} -> {nowActive}");
             if (nowActive)
             {
                 ReloadSkinMod(mod, WorldStreamingInit.IsStreamingDone); // force synchronous if in-game
@@ -569,13 +576,7 @@ namespace SkinManagerMod
             GameObject carPrefab = carType.prefab;
             if (carPrefab == null) return null;
 
-            string skinDir = null;
-            //if (CCLPatch.IsCustomCarType(carType))
-            //{
-            //    skinDir = CCLPatch.GetCarFolder(carType);
-            //}
-
-            var defaultSkin = new Skin(carType.id, GetDefaultSkinName(carType.id), skinDir, isDefault: true);
+            var defaultSkin = Skin.Default(carType.id);
 
             foreach (var texture in TextureUtility.EnumerateTextures(carType))
             {
@@ -587,8 +588,6 @@ namespace SkinManagerMod
 
             return defaultSkin;
         }
-
-        public static string GetDefaultSkinName(string liveryId) => $"Default_{liveryId}";
 
         /// <summary>
         /// Try to find the car texture/material property that matches the given file
@@ -663,7 +662,7 @@ namespace SkinManagerMod
                 Main.LogVerbose($"Async loading {config.Name} @ {config.FolderPath}");
             }
 
-            var skin = new Skin(config.CarId, config.Name, config.FolderPath, resourcePaths: config.ResourcePaths);
+            var skin = Skin.Custom(config);
             config.Skin = skin;
 
             // find correct group, remove existing skin

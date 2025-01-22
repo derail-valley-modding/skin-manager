@@ -18,6 +18,11 @@ namespace SkinConfigurator.ViewModels
             Type = type;
             Name = json.Name;
             CarId = json.CarId;
+            
+            if (json is SkinConfigJson skin)
+            {
+                BaseTheme = skin.BaseTheme;
+            }
         }
 
         public ResourceConfigJson JsonModel()
@@ -29,6 +34,7 @@ namespace SkinConfigurator.ViewModels
                     Name = Name,
                     CarId = CarId,
                     ResourceNames = Resources?.Select(r => r.Name).ToArray(),
+                    BaseTheme = BaseTheme,
                 };
             }
             else
@@ -91,6 +97,16 @@ namespace SkinConfigurator.ViewModels
             set
             {
                 SetValue(nameof(Resources), ref _resources, value);
+            }
+        }
+
+        private BaseTheme _baseTheme;
+        public BaseTheme BaseTheme
+        {
+            get => _baseTheme;
+            set
+            {
+                SetValue(nameof(BaseTheme), ref _baseTheme, value);
             }
         }
 

@@ -22,13 +22,15 @@ namespace SkinManagerMod
         // Settings
         public static class Settings
         {
+            public static string AlwaysAllowRadioReskin => L("skinman/ui/allow_career_reskin");
+            public static string AllowPaintingUnowned => L("skinman/ui/paint_unowned");
+            public static string AllowSlugDE6Skins => L("skinman/ui/de6_for_slug");
+
             public static string IncreaseAniso => L("skinman/ui/increase_aniso");
             public static string ParallelLoading => L("skinman/ui/parallel_load");
-            public static string AllowSlugDE6Skins => L("skinman/ui/de6_for_slug");
             public static string VerboseLogging => L("skinman/ui/verbose_logging");
             public static string DefaultSkinMode => L("skinman/ui/default_skin_mode");
             public static string TextureTools => L("skinman/ui/texture_tools");
-            public static string AllowPaintingUnowned => L("skinman/ui/paint_unowned");
             
             // Per-car texture tools
             public static string SelectCarType => L("skinman/ui/select_car");
@@ -40,6 +42,7 @@ namespace SkinManagerMod
             public static string ExportAll => L("skinman/ui/export_all");
             public static string ReloadAll => L("skinman/ui/reload_all");
             public static string ReloadedAll(int skinCount) => L("skinman/ui/reloaded_all", skinCount.ToString());
+            public static string ExportedAll(int nDone, int nTotal) => L("skinman/ui/exported_all", nDone.ToString(), nTotal.ToString());
         }
 
         public static class DefaultSkinMode

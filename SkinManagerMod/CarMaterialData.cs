@@ -1,5 +1,7 @@
 ﻿using DV;
+using DV.Customization.Paint;
 using DV.ThingTypes;
+using SMShared.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -72,23 +74,32 @@ namespace SkinManagerMod
 
             foreach (var renderer in areaRoot.GetComponentsInChildren<MeshRenderer>(true))
             {
-                if (MaterialTextureData.TryCreate(renderer, out var data))
-                {
-                    _materialData.Add(data);
+                if (!renderer.sharedMaterial) continue;
 
-                    RegisterTextureName(data.DiffuseName, data.Material, TextureUtility.PropNames.Main);
-                    if (data.BumpMapName != null)
-                    {
-                        RegisterTextureName(data.BumpMapName, data.Material, TextureUtility.PropNames.BumpMap);
-                    }
-                    if (data.SpecularOcclusionName != null)
-                    {
-                        RegisterTextureName(data.SpecularOcclusionName, data.Material, TextureUtility.PropNames.MetalGlossMap);
-                    }
-                    if (data.EmissionMapName != null)
-                    {
-                        RegisterTextureName(data.EmissionMapName, data.Material, TextureUtility.PropNames.EmissionMap);
-                    }
+                var data = new MaterialTextureData(renderer.sharedMaterial);
+                _materialData.Add(data);
+
+                RegisterTextureName(data.DiffuseName, data.Material, TextureUtility.PropNames.Main);
+                if (data.BumpMapName != null)
+                {
+                    RegisterTextureName(data.BumpMapName, data.Material, TextureUtility.PropNames.BumpMap);
+                }
+                if (data.SpecularOcclusionName != null)
+                {
+                    RegisterTextureName(data.SpecularOcclusionName, data.Material, TextureUtility.PropNames.MetalGlossMap);
+                }
+                if (data.EmissionMapName != null)
+                {
+                    RegisterTextureName(data.EmissionMapName, data.Material, TextureUtility.PropNames.EmissionMap);
+                }
+
+                if (data.DetailAlbedoName != null)
+                {
+                    RegisterTextureName(data.DetailAlbedoName, data.Material, TextureUtility.PropNames.DetailAlbedo);
+                }
+                if (data.DetailNormalName != null)
+                {
+                    RegisterTextureName(data.DetailNormalName, data.Material, TextureUtility.PropNames.DetailNormal);
                 }
             }
         }
@@ -109,10 +120,15 @@ namespace SkinManagerMod
         public class MaterialTextureData
         {
             public readonly Material Material;
+            public readonly Material SubstitutedMaterial;
+
             public string DiffuseName;
             public string BumpMapName;
             public string SpecularOcclusionName;
             public string EmissionMapName;
+
+            public string DetailAlbedoName;
+            public string DetailNormalName;
 
             public MaterialTextureData(Material material)
             {
@@ -121,19 +137,15 @@ namespace SkinManagerMod
                 BumpMapName = GetTexName(material, TextureUtility.PropNames.BumpMap);
                 SpecularOcclusionName = GetTexName(material, TextureUtility.PropNames.MetalGlossMap);
                 EmissionMapName = GetTexName(material, TextureUtility.PropNames.EmissionMap);
+
+                DetailAlbedoName = GetTexName(material, TextureUtility.PropNames.DetailAlbedo);
+                DetailNormalName = GetTexName(material, TextureUtility.PropNames.DetailNormal);
             }
 
             private static string GetTexName(Material material, string property)
             {
                 if (!material.HasProperty(property) || !(material.GetTexture(property) is Texture tex)) return null;
                 return tex.name;
-            }
-
-            public static bool TryCreate(MeshRenderer renderer, out MaterialTextureData data)
-            {
-                data = renderer.sharedMaterial ? new MaterialTextureData(renderer.sharedMaterial) : null;
-
-                return data != null;
             }
         }
     }
