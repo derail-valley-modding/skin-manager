@@ -53,7 +53,10 @@ namespace SkinConfigurator
                 WriteSkin(skin);
             }
 
-            WriteThemeConfig();
+            if ((_model.ThemeConfigs is not null) && _model.ThemeConfigs.Any())
+            {
+                WriteThemeConfig();
+            }
         }
 
         protected abstract void WriteModInfo();

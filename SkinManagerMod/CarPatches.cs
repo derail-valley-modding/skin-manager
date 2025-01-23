@@ -26,6 +26,28 @@ namespace SkinManagerMod
         }
     }
 
+    [HarmonyPatch]
+    class TrainCar_LoadInterior_Patch
+    {
+        static IEnumerable<MethodBase> TargetMethods()
+        {
+            yield return AccessTools.Method(typeof(TrainCar), nameof(TrainCar.LoadInterior));
+            yield return AccessTools.Method(typeof(TrainCar), nameof(TrainCar.LoadExternalInteractables));
+            yield return AccessTools.Method(typeof(TrainCar), nameof(TrainCar.LoadDummyExternalInteractables));
+        }
+
+        static void Postfix(TrainCar __instance)
+        {
+            if (SkinProvider.IsThemeable(__instance.carLivery)) return;
+
+            var skinName = SkinManager.GetCurrentCarSkin(__instance);
+            if (!string.IsNullOrEmpty(skinName))
+            {
+                SkinManager.ApplyNonThemeSkinToInterior(__instance, skinName);
+            }
+        }
+    }
+
     [HarmonyPatch(typeof(TrainCarPaint))]
     internal static class TrainCarPaintPatch
     {

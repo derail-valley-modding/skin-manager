@@ -135,7 +135,7 @@ namespace SkinManagerMod
         {
             var result = SkinProvider.GetBuiltinTheme(themeType);
 
-            if (result && result.TryGetSubstitute(defaultMaterial, out var substitution))
+            if (result && result.TryGetSubstitute(defaultMaterial, out var substitution) && substitution.substitute)
             {
                 return substitution.substitute;
             }
@@ -149,7 +149,7 @@ namespace SkinManagerMod
                 if (!substitutions.TryGetValue(use.Material, out Material newMaterial))
                 {
                     var baseMaterial = GetBaseMaterial(use.Material, BaseTheme);
-                    newMaterial = new Material(use.Material);
+                    newMaterial = new Material(baseMaterial);
 
                     if (BaseTheme.HasFlag(BaseTheme.DVRT_NoDetails))
                     {

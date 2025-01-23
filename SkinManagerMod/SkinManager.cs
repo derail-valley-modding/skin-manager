@@ -105,22 +105,51 @@ namespace SkinManagerMod
             }
         }
 
+        public static void ApplyNonThemeSkinToInterior(TrainCar trainCar, string skinName)
+        {
+            var skin = SkinProvider.FindSkinByName(trainCar.carLivery.id, skinName);
+            if (skin == null) return;
+
+            var defaultSkin = SkinProvider.GetDefaultSkin(trainCar.carLivery.id);
+
+            if (trainCar.loadedInterior)
+            {
+                ApplyNonThemeSkinToTransform(trainCar.loadedInterior, skin, defaultSkin);
+            }
+            if (trainCar.loadedExternalInteractables)
+            {
+                ApplyNonThemeSkinToTransform(trainCar.loadedExternalInteractables, skin, defaultSkin);
+            }
+            if (trainCar.loadedDummyExternalInteractables)
+            {
+                ApplyNonThemeSkinToTransform(trainCar.loadedDummyExternalInteractables, skin, defaultSkin);
+            }
+        }
+
         private static void ApplyNonThemeSkin(TrainCar trainCar, string skinName)
         {
             var skin = SkinProvider.FindSkinByName(trainCar.carLivery.id, skinName);
             if (skin == null) return;
 
             var defaultSkin = SkinProvider.GetDefaultSkin(trainCar.carLivery.id);
-            ApplyNonThemeSkinToTransform(trainCar.gameObject.transform, skin, defaultSkin);
-            if (trainCar.interior)
+            ApplyNonThemeSkinToTransform(trainCar.gameObject, skin, defaultSkin);
+            if (trainCar.loadedInterior)
             {
-                ApplyNonThemeSkinToTransform(trainCar.gameObject.transform, skin, defaultSkin);
+                ApplyNonThemeSkinToTransform(trainCar.loadedInterior, skin, defaultSkin);
+            }
+            if (trainCar.loadedExternalInteractables)
+            {
+                ApplyNonThemeSkinToTransform(trainCar.loadedExternalInteractables, skin, defaultSkin);
+            }
+            if (trainCar.loadedDummyExternalInteractables)
+            {
+                ApplyNonThemeSkinToTransform(trainCar.loadedDummyExternalInteractables, skin, defaultSkin);
             }
 
             SetAppliedCarSkin(trainCar, skinName);
         }
 
-        private static void ApplyNonThemeSkinToTransform(Transform objectRoot, Skin skin, Skin defaultSkin)
+        private static void ApplyNonThemeSkinToTransform(GameObject objectRoot, Skin skin, Skin defaultSkin)
         {
             foreach (var renderer in objectRoot.GetComponentsInChildren<MeshRenderer>(true))
             {
