@@ -161,7 +161,7 @@ namespace SkinManagerMod.Items
                     }
                     else
                     {
-
+                        GenerateDefaultLabelMaterial(material, themeName, settings);
                     }
                 }
                 else
