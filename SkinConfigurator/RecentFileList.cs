@@ -14,6 +14,8 @@ using System.Reflection;
  * https://www.codeproject.com/KB/WPF/RecentFileList.aspx
  */
 
+#nullable disable
+
 namespace SkinConfigurator
 {
 	public class RecentFileList : Separator
