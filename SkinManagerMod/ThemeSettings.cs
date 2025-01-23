@@ -10,6 +10,7 @@ namespace SkinManagerMod
         public readonly string ThemeName;
         public Version HighestVersion;
         public bool HideFromStores;
+        public bool PreventRandomSpawning;
 
         public SkinTexture CanLabel;
         public Color? LabelBaseColor;
@@ -49,6 +50,7 @@ namespace SkinManagerMod
             var result = new ThemeSettings(data.Name, version)
             {
                 HideFromStores = data.HideFromStores,
+                PreventRandomSpawning = data.PreventRandomSpawning,
             };
 
             TryParseColor(data.LabelBaseColor, basePath, ref result.LabelBaseColor);

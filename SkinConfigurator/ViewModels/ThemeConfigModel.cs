@@ -191,6 +191,7 @@ namespace SkinConfigurator.ViewModels
             {
                 Name = ThemeName,
                 HideFromStores = HideFromStores,
+                PreventRandomSpawning = PreventRandomSpawning,
             };
 
             if (HasValidImage)

@@ -307,16 +307,27 @@ namespace SkinManagerMod
                     (Main.Settings.defaultSkinsMode == DefaultSkinsMode.AllowForAllCars);
                 // || (CustomCarTypes.ContainsKey(carType) && (Main.Settings.defaultSkinsMode == SkinManagerSettings.DefaultSkinsMode.AllowForCustomCars));
 
-                int nChoices = allowRandomDefault ? group.Skins.Count + 1 : group.Skins.Count;
+                var allowedRandom = group.Skins.Where(AllowRandomSpawning).ToList();
+                int nChoices = allowRandomDefault ? allowedRandom.Count + 1 : allowedRandom.Count;
+
                 int choice = UnityEngine.Random.Range(0, nChoices);
-                if (choice < group.Skins.Count)
+                if (choice < allowedRandom.Count)
                 {
-                    return group.Skins[choice].Name;
+                    return allowedRandom[choice].Name;
                 }
             }
 
             // fall back to default skin
             return DefaultThemeName;
+        }
+
+        private static bool AllowRandomSpawning(Skin skin)
+        {
+            if (TryGetThemeSettings(skin.Name, out var settings))
+            {
+                return !settings.PreventRandomSpawning;
+            }
+            return true;
         }
 
         #endregion
