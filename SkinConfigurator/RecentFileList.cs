@@ -9,6 +9,11 @@ using System.Diagnostics;
 using System.Text;
 using System.Reflection;
 
+/*
+ * Credit: Nick Butler (2008)
+ * https://www.codeproject.com/KB/WPF/RecentFileList.aspx
+ */
+
 namespace SkinConfigurator
 {
 	public class RecentFileList : Separator
