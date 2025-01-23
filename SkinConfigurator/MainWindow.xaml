@@ -6,6 +6,7 @@
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:local="clr-namespace:SkinConfigurator"
         xmlns:model="clr-namespace:SkinConfigurator.ViewModels"
+        xmlns:json="clr-namespace:SMShared.Json"
         mc:Ignorable="d"
         Title="Skin Packager" Height="600" Width="1000"
         d:DataContext="{d:DesignInstance {x:Type model:MainWindowViewModel}}">
@@ -15,17 +16,26 @@
                 <x:Type TypeName="model:PackComponentType"/>
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
+        <ObjectDataProvider x:Key="defaultThemeTypes" ObjectType="{x:Type sys:Enum}" MethodName="GetValues">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="json:BaseTheme"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
     </Window.Resources>
 
     <DockPanel LastChildFill="True" Background="{x:Static SystemColors.ControlBrush}" >
         <Menu DockPanel.Dock="Top">
-            <MenuItem Header="File">
-                <MenuItem x:Name="CreatePackButton" Header="New Project" Click="CreatePackButton_Click" ToolTip="Clear all fields and start anew"/>
-                <MenuItem x:Name="ImportPackButton" Header="Open Folder..." Click="ImportPackButton_Click" ToolTip="Import multiple skins from a folder"/>
-                <MenuItem x:Name="ImportZipButton" Header="Open Zip..." Click="ImportZipButton_Click" ToolTip="Import skins from a zipped skin pack"/>
+            <MenuItem Header="_File">
+                <MenuItem x:Name="CreatePackButton" Header="_New Project" Click="CreatePackButton_Click" ToolTip="Clear all fields and start anew"/>
+                <MenuItem x:Name="ImportPackButton" Header="_Open Folder..." Click="ImportPackButton_Click" ToolTip="Import multiple skins from a folder"/>
+                <MenuItem x:Name="ImportZipButton" Header="Open _Zip..." Click="ImportZipButton_Click" ToolTip="Import skins from a zipped skin pack"/>
+
+                <local:RecentFileList x:Name="RecentFileSelector" MenuClick="RecentFileSelector_MenuClick"/>
+
+                <MenuItem x:Name="ExitButton" Header="E_xit" Click="ExitButton_Click"/>
             </MenuItem>
             
-            <MenuItem x:Name="SettingsButton" Header="Settings..." Click="SettingsButton_Click"/>
+            <MenuItem x:Name="SettingsButton" Header="_Settings..." Click="SettingsButton_Click"/>
         </Menu>
 
         <Grid Margin="5">
@@ -173,6 +183,7 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 
@@ -194,15 +205,19 @@
                     <Button x:Name="SelectCarTypeButton" Content=" Defaults... " Click="SelectCarTypeButton_Click" Grid.Column="2"/>
                 </Grid>
 
-                <Label Content="Resources" Grid.Row="3" Grid.Column="0" Visibility="{Binding SelectedSkin.HasResources, Converter={StaticResource boolToCollapseConverter}}"/>
-                <local:ResourceSelector x:Name="MyResourceSelector" Grid.Row="3" Grid.Column="2"
+                <Label Content="Base Theme" Grid.Row="3" Grid.Column="0" Visibility="{Binding SelectedSkin.HasResources, Converter={StaticResource boolToCollapseConverter}}"/>
+                <ComboBox Grid.Row="3" Grid.Column="1" IsEditable="False" ItemsSource="{Binding Source={StaticResource defaultThemeTypes}}" SelectedItem="{Binding SelectedSkin.BaseTheme}"
+                          Visibility="{Binding SelectedSkin.HasResources, Converter={StaticResource boolToCollapseConverter}}"/>
+
+                <Label Content="Resources" Grid.Row="4" Grid.Column="0" Visibility="{Binding SelectedSkin.HasResources, Converter={StaticResource boolToCollapseConverter}}"/>
+                <local:ResourceSelector x:Name="MyResourceSelector" Grid.Row="4" Grid.Column="2"
                                         Visibility="{Binding SelectedSkin.HasResources, Converter={StaticResource boolToCollapseConverter}}"
                                         SkinPack="{Binding SkinPack}" Skin="{Binding SelectedSkin}"
                                         ToolTip="Select common files to be used by this skin"/>
 
                 <!-- Skin Items -->
-                <Label Content="Skin Files:" Grid.Row="4" Grid.Column="0" Margin="0,7,0,0"/>
-                <UniformGrid Columns="3" Grid.Row="4" Grid.Column="1" Margin="0,7,0,0">
+                <Label Content="Skin Files:" Grid.Row="5" Grid.Column="0" Margin="0,7,0,0"/>
+                <UniformGrid Columns="3" Grid.Row="5" Grid.Column="1" Margin="0,7,0,0">
                     <Button x:Name="AddFileButton" Content="Add..." Click="AddFileButton_Click"/>
                     <Button x:Name="ReplaceFileButton" Content="Replace..." Click="ReplaceFileButton_Click"
                             IsEnabled="{Binding SelectedSkinFile, Converter={StaticResource nullBoolConverter}, FallbackValue=False}"/>
@@ -212,7 +227,7 @@
                 
                 <ListView x:Name="SkinFileList" DockPanel.Dock="Bottom" ItemsSource="{Binding SelectedSkin.Items}" d:ItemsSource="{d:SampleData}"
                           SelectedItem="{Binding SelectedSkinFile}" FocusManager.IsFocusScope="True" AllowDrop="True"
-                          Grid.Row="5" Grid.ColumnSpan="2">
+                          Grid.Row="6" Grid.ColumnSpan="2">
                     <ListView.Resources>
                         <ContextMenu x:Key="SkinFileContextMenu">
                             <MenuItem Header="Replace..." Click="ReplaceFileButton_Click"/>
@@ -235,7 +250,8 @@
                                 <Image Width="64px" Height="64px" Source="{Binding Preview}"/>
                                 <UniformGrid Rows="2" Grid.Column="1">
                                     <local:SpecialCombo IsEditable="True" Text="{Binding FileName, UpdateSourceTrigger=LostFocus}" 
-                                              ItemsSource="{Binding Path=DataContext.DefaultTextureNames, RelativeSource={RelativeSource AncestorType=ListView}, Mode=OneWay}"/>
+                                              ItemsSource="{Binding Path=DataContext.DefaultTextureNames, RelativeSource={RelativeSource AncestorType=ListView}, Mode=OneWay}"
+                                                        ScrollViewer.VerticalScrollBarVisibility="Visible" ScrollViewer.CanContentScroll="True"/>
                                     <Button Grid.Row="1" Content="Upgrade Filename" Click="UpgradeFileNameButton_Click" 
                                             Visibility="{Binding CanUpgradeFileName, Mode=OneWay, Converter={StaticResource boolToCollapseConverter}}"
                                             Background="PaleGoldenrod"/>

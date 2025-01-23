@@ -11,12 +11,18 @@ namespace SkinConfigurator
         protected readonly string _destPath;
         protected readonly SkinPackModel _model;
 
-        public static readonly JsonSerializerOptions JsonSettings = new()
+        public static readonly JsonSerializerOptions JsonSettings;
+
+        static SkinPackager()
         {
-            WriteIndented = true,
-            IncludeFields = true,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        };
+            JsonSettings = new()
+            {
+                WriteIndented = true,
+                IncludeFields = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            };
+            JsonSettings.Converters.Add(new JsonStringEnumConverter());
+        }
 
         /// <exception cref="SkinPackageException"></exception>
         public static void Package<T>(string path, SkinPackModel model) where T : SkinPackager

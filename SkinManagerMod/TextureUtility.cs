@@ -1,4 +1,6 @@
-﻿using DV.ThingTypes;
+﻿using DV.Customization.Paint;
+using DV.ThingTypes;
+using SMShared.Json;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -16,6 +18,9 @@ namespace SkinManagerMod
             public static readonly string EmissionMap = "_EmissionMap";
             public static readonly string OcclusionMap = "_OcclusionMap";
 
+            public static readonly string DetailAlbedo = "_DetailAlbedoMap";
+            public static readonly string DetailNormal = "_DetailNormalMap";
+
             public static readonly string[] UniqueTextures =
             {
                 Main, BumpMap, MetalGlossMap, EmissionMap,
@@ -24,6 +29,11 @@ namespace SkinManagerMod
             public static readonly string[] AllTextures =
             {
                 Main, BumpMap, MetalGlossMap, EmissionMap, OcclusionMap,
+            };
+
+            public static readonly string[] DetailTextures =
+            {
+                DetailAlbedo, DetailNormal,
             };
         }
 
@@ -40,25 +50,57 @@ namespace SkinManagerMod
             }
 
             var renderers = GetAllCarRenderers(trainCarType);
-            var textureList = new Dictionary<string, Texture>();
+            var alreadyExported = new Dictionary<string, Texture>();
+            var materialNames = new HashSet<string>();
 
             foreach (var renderer in renderers)
             {
-                if (!renderer.material)
+                if (!renderer.sharedMaterial)
                 {
                     continue;
                 }
 
-                var diffuse = GetMaterialTexture(renderer, "_MainTex");
-                var normal = GetMaterialTexture(renderer, "_BumpMap");
-                var specular = GetMaterialTexture(renderer, "_MetallicGlossMap");
-                var emission = GetMaterialTexture(renderer, "_EmissionMap");
+                ExportTexturesForMaterial(path, renderer.sharedMaterial, alreadyExported);
 
-                ExportTexture(path, diffuse, textureList);
-                ExportTexture(path, normal, textureList, true);
-                ExportTexture(path, specular, textureList);
-                ExportTexture(path, emission, textureList);
+                string cleanName = renderer.sharedMaterial.name.Replace(" (Instance)", string.Empty);
+                materialNames.Add(cleanName);
+                Main.LogVerbose($"{renderer.name}: {cleanName}");
             }
+
+            foreach (var theme in SkinProvider.BuiltInThemes)
+            {
+                if (theme.name == SkinProvider.DefaultThemeName) continue;
+
+                string subPath = Path.Combine(path, theme.name);
+                if (!Directory.Exists(subPath))
+                {
+                    Directory.CreateDirectory(subPath);
+                }
+
+                foreach (var substitution in theme.substitutions.Where(s => s.substitute && materialNames.Contains(s.original.name)))
+                {
+                    ExportTexturesForMaterial(subPath, substitution.substitute, alreadyExported);
+                }
+            }
+        }
+
+        private static void ExportTexturesForMaterial(string path, Material material, Dictionary<string, Texture> alreadyExported)
+        {
+            var diffuse = GetMaterialTexture(material, PropNames.Main);
+            var normal = GetMaterialTexture(material, PropNames.BumpMap);
+            var specular = GetMaterialTexture(material, PropNames.MetalGlossMap);
+            var emission = GetMaterialTexture(material, PropNames.OcclusionMap);
+
+            ExportTexture(path, diffuse, alreadyExported);
+            ExportTexture(path, normal, alreadyExported, true);
+            ExportTexture(path, specular, alreadyExported);
+            ExportTexture(path, emission, alreadyExported);
+
+            var detailAlbedo = GetMaterialTexture(material, PropNames.DetailAlbedo);
+            var detailBump = GetMaterialTexture(material, PropNames.DetailNormal);
+
+            ExportTexture(path, detailAlbedo, alreadyExported);
+            ExportTexture(path, detailBump, alreadyExported, true);
         }
 
         private static void ExportTexture(string path, Texture2D texture, Dictionary<string, Texture> alreadyExported, bool isNormal = false)
@@ -147,14 +189,14 @@ namespace SkinManagerMod
         /// <summary>
         /// Get the named 2D texture property from a material
         /// </summary>
-        public static Texture2D GetMaterialTexture(MeshRenderer cmp, string materialName)
+        public static Texture2D GetMaterialTexture(Material material, string propName)
         {
-            if (cmp.material == null || !cmp.material.HasProperty(materialName))
+            if (!material || !material.HasProperty(propName))
             {
                 return null;
             }
 
-            return cmp.material.GetTexture(materialName) as Texture2D;
+            return material.GetTexture(propName) as Texture2D;
         }
 
         public static IEnumerable<Texture2D> EnumerateTextures(IEnumerable<MeshRenderer> renderers)
@@ -165,7 +207,7 @@ namespace SkinManagerMod
 
                 foreach (string textureName in PropNames.UniqueTextures)
                 {
-                    if (GetMaterialTexture(renderer, textureName) is Texture2D texture)
+                    if (GetMaterialTexture(renderer.sharedMaterial, textureName) is Texture2D texture)
                     {
                         yield return texture;
                     }
@@ -214,7 +256,7 @@ namespace SkinManagerMod
 
                 foreach (string textureProperty in PropNames.UniqueTextures)
                 {
-                    if (GetMaterialTexture(renderer, textureProperty) is Texture2D texture)
+                    if (GetMaterialTexture(renderer.sharedMaterial, textureProperty) is Texture2D texture)
                     {
                         dict[texture.name] = textureProperty;
                     }
@@ -240,7 +282,7 @@ namespace SkinManagerMod
         {
             foreach (string textureID in PropNames.AllTextures)
             {
-                var currentTexture = GetMaterialTexture(renderer, textureID);
+                var currentTexture = GetMaterialTexture(renderer.sharedMaterial, textureID);
 
                 if (currentTexture != null)
                 {
@@ -251,7 +293,7 @@ namespace SkinManagerMod
 
                         if (textureID == PropNames.MetalGlossMap)
                         {
-                            if (!GetMaterialTexture(renderer, PropNames.OcclusionMap))
+                            if (!GetMaterialTexture(renderer.sharedMaterial, PropNames.OcclusionMap))
                             {
                                 renderer.material.SetTexture(PropNames.OcclusionMap, skinTexture.TextureData);
                             }
@@ -264,7 +306,7 @@ namespace SkinManagerMod
 
                         if (textureID == PropNames.MetalGlossMap)
                         {
-                            if (!GetMaterialTexture(renderer, PropNames.OcclusionMap))
+                            if (!GetMaterialTexture(renderer.sharedMaterial, PropNames.OcclusionMap))
                             {
                                 renderer.material.SetTexture(PropNames.OcclusionMap, skinTexture.TextureData);
                             }

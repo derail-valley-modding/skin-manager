@@ -1,5 +1,6 @@
 using SMShared;
 using System.Reflection;
+using System.Runtime.Versioning;
 using System.Windows;
 
 [assembly: ThemeInfo(
@@ -13,6 +14,9 @@ using System.Windows;
 
 [assembly: AssemblyTitle("SkinConfigurator")]
 [assembly: AssemblyProduct("SkinConfigurator")]
+[assembly: AssemblyCompany("Derail Valley Modding")]
 
 [assembly: AssemblyVersion(Constants.MOD_VERSION)]
 [assembly: AssemblyFileVersion(Constants.MOD_VERSION)]
+
+[assembly: SupportedOSPlatform("windows")]

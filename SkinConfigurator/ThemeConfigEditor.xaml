@@ -44,9 +44,11 @@
                   ItemsSource="{Binding AvailableSkinNames}"
                   SelectionChanged="ComboBox_SelectionChanged"/>
 
-        <UniformGrid Grid.Row="1" Grid.Column="0" Rows="3">
+        <UniformGrid Grid.Row="1" Grid.Column="0" Rows="4">
             <CheckBox Content="Hide From Stores" IsChecked="{Binding HideFromStores}" VerticalAlignment="Center"
                       ToolTip="Whether or not to allow this theme to spawn as a paint can"/>
+            <CheckBox Content="Don't Auto-Apply" IsChecked="{Binding PreventRandomSpawning}" VerticalAlignment="Center"
+                      ToolTip="Whether or not to allow auto-spawned locos to use this theme"/>
             <Button Content="Set Texture..." Click="ClickSetTexture"/>
             <Button Content="Remove Texture" Click="ClickRemoveTexture" IsEnabled="{Binding HasValidImage}"/>
         </UniformGrid>

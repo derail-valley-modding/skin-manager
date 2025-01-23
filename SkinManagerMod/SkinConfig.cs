@@ -1,6 +1,7 @@
 ﻿using DV;
 using DV.ThingTypes;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using SMShared.Json;
 using System;
 using System.Collections;
@@ -38,12 +39,20 @@ namespace SkinManagerMod
             CarId = livery.id;
         }
 
+        private static readonly JsonSerializerSettings _jsonSettings;
+
+        static SkinConfig()
+        {
+            _jsonSettings = new JsonSerializerSettings();
+            _jsonSettings.Converters.Add(new StringEnumConverter());
+        }
+
         public static SkinConfig LoadFromFile(string filePath)
         {
             try
             {
                 string contents = File.ReadAllText(filePath);
-                var result = JsonConvert.DeserializeObject<SkinConfig>(contents);
+                var result = JsonConvert.DeserializeObject<SkinConfig>(contents, _jsonSettings);
 
                 result.FolderPath = Path.GetDirectoryName(filePath);
                 result.Livery = Globals.G.Types.Liveries

@@ -5,8 +5,10 @@ using System.Reflection.Emit;
 using DV;
 using DV.Customization.Paint;
 using DV.ThingTypes;
+using DV.UserManagement;
 using HarmonyLib;
 using UnityEngine;
+using static DV.Common.GameFeatureFlags;
 
 namespace SkinManagerMod
 {
@@ -466,7 +468,7 @@ namespace SkinManagerMod
             {
                 SelectedSkin = skinName;
 
-                if (skinName == SkinProvider.GetDefaultSkinName(SelectedCar.carLivery.id))
+                if (skinName == Skin.GetDefaultSkinName(SelectedCar.carLivery.id))
                 {
                     skinName = SkinProvider.DefaultThemeName;
                 }
@@ -503,20 +505,25 @@ namespace SkinManagerMod
         }
 
         [HarmonyPatch(nameof(CommsRadioController.UpdateModesAvailability))]
-        [HarmonyTranspiler]
-        private static IEnumerable<CodeInstruction> UpdateModesAvailability(IEnumerable<CodeInstruction> instructions)
+        [HarmonyPostfix]
+        private static void AfterUpdateModesAvailability(CommsRadioController __instance)
         {
-            foreach (var instruction in instructions)
+            var gameParams = Globals.G.GameParams;
+            int skinModeIdx = __instance.allModes.IndexOf(SkinSwitcher);
+
+            bool isSandbox = UserManager.Instance.CurrentUser.CurrentSession.GameMode.Equals("FreeRoam");
+            bool paintingAllowed = (gameParams.CommsRadioSandboxCheatMode && isSandbox) || gameParams.CommsRadioCheatMode;
+
+            if (paintingAllowed || Main.Settings.alwaysAllowRadioReskin)
             {
-                if ((instruction.opcode == OpCodes.Ldfld) && (instruction.operand is FieldInfo field) && (field.Name == nameof(CommsRadioController.carPaintjobControl)))
+                __instance.disabledModeIndices.Remove(skinModeIdx);
+            }
+            else
+            {
+                __instance.disabledModeIndices.Add(skinModeIdx);
+                if (__instance.activeModeIndex == skinModeIdx)
                 {
-                    var skinSwitcherField = AccessTools.Field(typeof(CommsRadio_Awake_Patch), nameof(SkinSwitcher));
-                    yield return new CodeInstruction(OpCodes.Pop); // get out of here, 'this' reference
-                    yield return new CodeInstruction(OpCodes.Ldsfld, skinSwitcherField);
-                }
-                else
-                {
-                    yield return instruction;
+                    __instance.SetNextMode();
                 }
             }
         }

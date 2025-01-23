@@ -85,6 +85,18 @@ namespace SkinConfigurator.ViewModels
             DependencyProperty.Register("HideFromStores", typeof(bool), typeof(ThemeConfigModel), new PropertyMetadata(false));
 
 
+        public bool PreventRandomSpawning
+        {
+            get { return (bool)GetValue(PreventRandomSpawningProperty); }
+            set { SetValue(PreventRandomSpawningProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for PreventRandomSpawning.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty PreventRandomSpawningProperty =
+            DependencyProperty.Register("PreventRandomSpawning", typeof(bool), typeof(ThemeConfigModel), new PropertyMetadata(false));
+
+
+
         public event PropertyChangedEventHandler? PropertyChanged;
 
         public ThemeConfigModel() : base()

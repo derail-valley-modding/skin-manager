@@ -74,6 +74,9 @@ namespace SkinManagerMod.Items
         private static readonly Texture2D _labelAccentCenter;
         private static readonly Texture2D _labelAccentTop;
 
+        private static readonly Sprite _inventoryIcon;
+        private static readonly Sprite _droppedIcon;
+
         private static Material _blittingMaterial;
 
         private static string TexPath(string filename) => Path.Combine(Main.Instance.Path, "Resources", filename);
@@ -92,6 +95,22 @@ namespace SkinManagerMod.Items
             _labelAccentTop = new Texture2D(0, 0, TextureFormat.RGBA32, mipChain: true, linear: false);
             _labelAccentTop.LoadImage(File.ReadAllBytes(TexPath("label_accent_top.png")));
 
+
+            // Inventory Icons
+            var iconTex = new Texture2D(0, 0, TextureFormat.RGBA32, false, false);
+            iconTex.LoadImage(File.ReadAllBytes(TexPath("can_icon.png")));
+
+            var spriteSize = new Rect(0, 0, iconTex.width, iconTex.height);
+            var spritePivot = new Vector2(0.5f, 0.5f);
+            _inventoryIcon = Sprite.Create(iconTex, spriteSize, spritePivot);
+
+            var droppedTex = new Texture2D(0, 0, TextureFormat.RGBA32, false, false);
+            droppedTex.LoadImage(File.ReadAllBytes(TexPath("can_dropped.png")));
+
+            spriteSize = new Rect(0, 0, droppedTex.width, droppedTex.height);
+            _droppedIcon = Sprite.Create(droppedTex, spriteSize, spritePivot);
+
+
             _blittingMaterial = new Material(Shader.Find("UI/Unlit/Transparent"))
             {
                 renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest
@@ -104,6 +123,8 @@ namespace SkinManagerMod.Items
 
             var itemSpec = newCan.GetComponent<InventoryItemSpec>();
             itemSpec.localizationKeyName = Translations.PaintCanNameKey;
+            itemSpec.ItemIconSprite = _inventoryIcon;
+            itemSpec.ItemIconSpriteDropped = _droppedIcon;
 
             var item = newCan.GetComponent<ItemBase>();
             item.InventorySpecs = itemSpec;

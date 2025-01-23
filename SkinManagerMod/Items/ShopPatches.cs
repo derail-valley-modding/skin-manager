@@ -79,7 +79,7 @@ namespace SkinManagerMod.Items
         {
             if (!(itemSpec is CustomPaintInventorySpec customSpec))
             {
-                var prefab = Resources.Load<GameObject>(itemSpec.ItemPrefabName);
+                var prefab = Resources.Load(itemSpec.ItemPrefabName) as GameObject;
                 return UnityEngine.Object.Instantiate(prefab, position, Quaternion.identity);
             }
 

@@ -10,6 +10,7 @@ using UnityEngine;
 using SMShared;
 using DVLangHelper.Runtime;
 using SkinManagerMod.Items;
+using System.Collections;
 
 namespace SkinManagerMod
 {
@@ -57,6 +58,8 @@ namespace SkinManagerMod
             return true;
         }
 
+        #region Settings
+
         static Vector2 scrollViewVector = Vector2.zero;
         static TrainCarLivery trainCarSelected = null;
         static bool showDropdown = false;
@@ -67,14 +70,17 @@ namespace SkinManagerMod
         {
             GUILayout.BeginVertical();
 
+            Settings.alwaysAllowRadioReskin = GUILayout.Toggle(Settings.alwaysAllowRadioReskin, Translations.Settings.AlwaysAllowRadioReskin);
+            Settings.allowPaintingUnowned = GUILayout.Toggle(Settings.allowPaintingUnowned, Translations.Settings.AllowPaintingUnowned);
+            Settings.allowDE6SkinsForSlug = GUILayout.Toggle(Settings.allowDE6SkinsForSlug, Translations.Settings.AllowSlugDE6Skins);
+            GUILayout.Space(5);
+
             bool newAniso = GUILayout.Toggle(Settings.aniso5, Translations.Settings.IncreaseAniso);
             if (newAniso != Settings.aniso5)
             {
                 Settings.aniso5 = newAniso;
             }
             Settings.parallelLoading = GUILayout.Toggle(Settings.parallelLoading, Translations.Settings.ParallelLoading);
-            Settings.allowDE6SkinsForSlug = GUILayout.Toggle(Settings.allowDE6SkinsForSlug, Translations.Settings.AllowSlugDE6Skins);
-            Settings.allowPaintingUnowned = GUILayout.Toggle(Settings.allowPaintingUnowned, Translations.Settings.AllowPaintingUnowned);
             Settings.verboseLogging = GUILayout.Toggle(Settings.verboseLogging, Translations.Settings.VerboseLogging);
 
             GUILayout.Label(Translations.Settings.DefaultSkinMode);
@@ -89,14 +95,18 @@ namespace SkinManagerMod
             Settings.defaultSkinsMode = (DefaultSkinsMode)GUILayout.SelectionGrid((int)Settings.defaultSkinsMode, defaultSkinModeTexts, 1, "toggle");
             GUILayout.Space(5);
 
-            GUILayout.Label(Translations.Settings.TextureTools);
+            // disable texture tools while exporting
+            if (_exportAllCoro != null)
+            {
+                GUI.enabled = false;
+            }
 
-            GUILayout.BeginHorizontal(GUILayout.Width(250));
+            GUILayout.Label(Translations.Settings.TextureTools);
 
             GUILayout.BeginVertical();
 
             string typeLabel = (trainCarSelected != null) ? LocalizationAPI.L(trainCarSelected.localizationKey) : Translations.Settings.SelectCarType;
-            if (GUILayout.Button(typeLabel, GUILayout.Width(220)))
+            if (GUILayout.Button(typeLabel, GUILayout.Width(320)))
             {
                 showDropdown = !showDropdown;
             }
@@ -107,7 +117,7 @@ namespace SkinManagerMod
 
                 foreach (var livery in Globals.G.Types.Liveries)
                 {
-                    if (GUILayout.Button(LocalizationAPI.L(livery.localizationKey), GUILayout.Width(220)))
+                    if (GUILayout.Button(LocalizationAPI.L(livery.localizationKey), GUILayout.Width(320)))
                     {
                         showDropdown = false;
                         trainCarSelected = livery;
@@ -119,16 +129,14 @@ namespace SkinManagerMod
 
             GUILayout.EndVertical();
 
-            GUILayout.EndHorizontal();
-
             if (trainCarSelected != null)
             {
-                if (GUILayout.Button(Translations.Settings.ExportTextures, GUILayout.Width(300)))
+                if (GUILayout.Button(Translations.Settings.ExportTextures, GUILayout.Width(400)))
                 {
                     TextureUtility.DumpTextures(trainCarSelected);
                 }
 
-                if (GUILayout.Button(Translations.Settings.ReloadTextures, GUILayout.Width(300)))
+                if (GUILayout.Button(Translations.Settings.ReloadTextures, GUILayout.Width(400)))
                 {
                     int reloadedCount = SkinProvider.ReloadSkinsForType(trainCarSelected);
                     _guiMessage = Translations.Settings.ReloadedCarType(reloadedCount, trainCarSelected.localizationKey);
@@ -136,19 +144,17 @@ namespace SkinManagerMod
             }
 
             GUILayout.Space(5);
-            if (GUILayout.Button(Translations.Settings.ExportAll, GUILayout.Width(300)))
+            if (GUILayout.Button(Translations.Settings.ExportAll, GUILayout.Width(400)))
             {
-                foreach (var livery in Globals.G.Types.Liveries)
-                {
-                    TextureUtility.DumpTextures(livery);
-                }
+                _exportAllCoro = CoroutineManager.Instance.StartCoroutine(PerformMassExport());
             }
 
-            if (GUILayout.Button(Translations.Settings.ReloadAll, GUILayout.Width(300)))
+            if (GUILayout.Button(Translations.Settings.ReloadAll, GUILayout.Width(400)))
             {
                 int reloadedCount = SkinProvider.ReloadAllSkins(true);
                 _guiMessage = Translations.Settings.ReloadedAll(reloadedCount);
             }
+            GUI.enabled = true;
 
             if (!string.IsNullOrEmpty(_guiMessage))
             {
@@ -157,6 +163,27 @@ namespace SkinManagerMod
             }
 
             GUILayout.EndVertical();
+        }
+
+        private static Coroutine _exportAllCoro = null;
+        private static int _completedLiveryCount = 0;
+        private static int _totalLiveryCount = 0;
+
+        private static IEnumerator PerformMassExport()
+        {
+            _completedLiveryCount = 0;
+            _totalLiveryCount = Globals.G.Types.Liveries.Count;
+
+            foreach (var livery in Globals.G.Types.Liveries)
+            {
+                yield return null;
+                TextureUtility.DumpTextures(livery);
+
+                _completedLiveryCount++;
+                _guiMessage = Translations.Settings.ExportedAll(_completedLiveryCount, _totalLiveryCount);
+            }
+
+            _exportAllCoro = null;
         }
 
         static void OnSaveGUI(UnityModManager.ModEntry modEntry)
@@ -168,6 +195,11 @@ namespace SkinManagerMod
         {
             _guiMessage = null;
         }
+
+        #endregion
+
+
+        #region Logging
 
         public static void Log(string message)
         {
@@ -191,6 +223,8 @@ namespace SkinManagerMod
         {
             Instance.Logger.Error(message);
         }
+
+        #endregion
     }
 
     public enum DefaultSkinsMode
@@ -202,11 +236,13 @@ namespace SkinManagerMod
 
     public class SkinManagerSettings : UnityModManager.ModSettings
     {
+        public bool alwaysAllowRadioReskin = true;
+        public bool allowPaintingUnowned = true;
+        public bool allowDE6SkinsForSlug = true;
+
         public bool aniso5 = true;
         public bool parallelLoading = true;
         public DefaultSkinsMode defaultSkinsMode = DefaultSkinsMode.AllowForCustomCars;
-        public bool allowPaintingUnowned = true;
-        public bool allowDE6SkinsForSlug = true;
         public bool verboseLogging = false;
 
         public override void Save(UnityModManager.ModEntry modEntry)

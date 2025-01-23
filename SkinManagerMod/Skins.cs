@@ -1,5 +1,6 @@
 ﻿using DV.Customization.Paint;
 using DV.ThingTypes;
+using SMShared.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -17,6 +18,7 @@ namespace SkinManagerMod
         public readonly bool IsDefault;
         public readonly List<SkinTexture> SkinTextures = new List<SkinTexture>();
         public readonly string[] ResourcePaths;
+        public readonly BaseTheme BaseTheme;
 
         public readonly bool IsThemeable;
 
@@ -46,15 +48,31 @@ namespace SkinManagerMod
             ThreadHelper.Instance.EnqueueAction(() => LoadingFinished?.Invoke(this));
         }
 
-        public Skin(string liveryId, string name, string directory, bool isDefault = false, string[] resourcePaths = null)
+        private Skin(string liveryId, string name, string directory, bool isDefault, string[] resourcePaths, BaseTheme baseTheme)
         {
             LiveryId = liveryId;
             Name = name;
             Path = directory;
             IsDefault = isDefault;
             ResourcePaths = resourcePaths;
+            BaseTheme = baseTheme;
 
             IsThemeable = SkinProvider.IsThemeable(liveryId);
+        }
+
+        public static Skin Custom(string liveryId, string name, string directory, BaseTheme baseTheme, string[] resourcePaths = null)
+        {
+            return new Skin(liveryId, name, directory, false, resourcePaths, baseTheme);
+        }
+
+        public static Skin Custom(SkinConfig config)
+        {
+            return new Skin(config.CarId, config.Name, config.FolderPath, false, config.ResourcePaths, config.BaseTheme);
+        }
+
+        public static Skin Default(string liveryId)
+        {
+            return new Skin(liveryId, GetDefaultSkinName(liveryId), null, true, null, BaseTheme.DVRT);
         }
 
         public bool ContainsTexture(string name)
@@ -113,19 +131,42 @@ namespace SkinManagerMod
             return subs;
         }
 
-        private static void MapTextureUsesToNewMaterial(SkinTexture texture, Dictionary<Material, Material> substitutions, IEnumerable<MaterialTexTypePair> uses)
+        private static Material GetBaseMaterial(Material defaultMaterial, BaseTheme themeType)
+        {
+            var result = SkinProvider.GetBuiltinTheme(themeType);
+
+            if (result && result.TryGetSubstitute(defaultMaterial, out var substitution))
+            {
+                return substitution.substitute;
+            }
+            return defaultMaterial;
+        }
+
+        private void MapTextureUsesToNewMaterial(SkinTexture texture, Dictionary<Material, Material> substitutions, IEnumerable<MaterialTexTypePair> uses)
         {
             foreach (var use in uses)
             {
                 if (!substitutions.TryGetValue(use.Material, out Material newMaterial))
                 {
+                    var baseMaterial = GetBaseMaterial(use.Material, BaseTheme);
                     newMaterial = new Material(use.Material);
+
+                    if (BaseTheme.HasFlag(BaseTheme.DVRT_NoDetails))
+                    {
+                        foreach (string propName in TextureUtility.PropNames.DetailTextures)
+                        {
+                            newMaterial.SetTexture(propName, null);
+                        }
+                    }
+
                     substitutions.Add(use.Material, newMaterial);
                 }
 
                 texture.RunOnLoadingComplete(t => newMaterial.SetTexture(use.PropertyName, t.TextureData));
             }
         }
+
+        public static string GetDefaultSkinName(string liveryId) => $"Default_{liveryId}";
     }
 
     public class SkinTexture
