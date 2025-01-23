@@ -91,6 +91,7 @@ namespace SkinConfigurator
                 if (!Directory.Exists(folderDialog.SelectedPath))
                 {
                     MessageBox.Show(this, "Selected path is not a valid directory", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Error);
+                    RecentFileSelector.RemoveFile(folderDialog.SelectedPath);
                     return;
                 }
 
@@ -131,6 +132,7 @@ namespace SkinConfigurator
                 if (!File.Exists(dialog.FileName))
                 {
                     MessageBox.Show(this, "Selected path is not a valid Zip Archive", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Error);
+                    RecentFileSelector.RemoveFile(dialog.FileName);
                     return;
                 }
 
