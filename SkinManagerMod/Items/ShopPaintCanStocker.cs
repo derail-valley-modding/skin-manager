@@ -10,7 +10,7 @@ namespace SkinManagerMod.Items
 {
     public class ShopPaintCanStocker : MonoBehaviour
     {
-        private const int NUM_THEMES_TO_STOCK = 10;
+        private const int NUM_THEMES_TO_STOCK = 15;
 
         public Shop Shop;
         public CashRegisterWithModules CashRegister;
@@ -44,12 +44,20 @@ namespace SkinManagerMod.Items
 
             for (int i = 0; i < nToStock; i++)
             {
-                var module = CreateModuleForTheme(themes[i]);
-                _injectedModules.Add(module);
+                try
+                {
+                    var module = CreateModuleForTheme(themes[i]);
+                    _injectedModules.Add(module);
 
-                postInjectionModules[originalModuleCount + i] = module;
+                    postInjectionModules[originalModuleCount + i] = module;
 
-                Main.LogVerbose($"Add shop module for theme {themes[i].name} to {gameObject.name}");
+                    Main.LogVerbose($"Add shop module for theme {themes[i].name} to {gameObject.name}");
+                }
+                catch (Exception e)
+                {
+                    Main.Error($"Failed to create shop module for theme {themes[i].name}: {e.Message}\n{e.StackTrace}");
+                    return;
+                }
             }
 
             Shop.scanItemResourceModules = postInjectionModules;
@@ -64,7 +72,7 @@ namespace SkinManagerMod.Items
 
             foreach (var module in _injectedModules)
             {
-                Destroy(module.gameObject);
+                if (module) Destroy(module.gameObject);
             }
         }
 

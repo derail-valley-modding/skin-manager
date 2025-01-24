@@ -8,14 +8,13 @@ namespace OokiiTsuki.Palette
 {
     public class ColorCutQuantizer
     {
-        private static float[] mTempHsl = new float[3];
         private const float BLACK_MAX_LIGHTNESS = 0.05f;
         private const float WHITE_MIN_LIGHTNESS = 0.95f;
         private const int COMPONENT_RED = -3;
         private const int COMPONENT_GREEN = -2;
         private const int COMPONENT_BLUE = -1;
-        private static int[] colors;
-        private static Dictionary<int, int> mColorPopulations;
+        private int[] colors;
+        private Dictionary<int, int> mColorPopulations;
         public List<Swatch> QuantizedColors { get; private set; }
 
         
@@ -85,9 +84,11 @@ namespace OokiiTsuki.Palette
         {
             // Create the sorted set which is sorted by volume descending. This means we always
             // split the largest box in the queue
-            SortedSet<Vbox> vboxes = new SortedSet<Vbox>();
-            // To start, add a box which contains all of the colors
-            vboxes.Add(new Vbox(0, maxColorIndex));
+            SortedSet<Vbox> vboxes = new SortedSet<Vbox>
+            {
+                // To start, add a box which contains all of the colors
+                new Vbox(colors, mColorPopulations, 0, maxColorIndex)
+            };
             // Now go through the boxes, splitting them until we have reached maxColors or there are no
             // more boxes to split
             vboxes = SplitBoxes(vboxes, maxColors);
@@ -140,13 +141,19 @@ namespace OokiiTsuki.Palette
         /// <summary>Represents a tightly fitting box around a color space.</summary>
         private class Vbox : IComparable<Vbox>
         {
+            private readonly int[] _colors;
+            private readonly Dictionary<int, int> _populations;
+
             private int lowerIndex;
             private int upperIndex;
             private int minRed, maxRed;
             private int minGreen, maxGreen;
             private int minBlue, maxBlue;
-            public Vbox(int lowerIndex, int upperIndex)
+            public Vbox(int[] colors, Dictionary<int, int> populations, int lowerIndex, int upperIndex)
             {
+                _colors = colors;
+                _populations = populations;
+
                 this.lowerIndex = lowerIndex;
                 this.upperIndex = upperIndex;
                 FitBox();
@@ -176,7 +183,7 @@ namespace OokiiTsuki.Palette
                 maxRed = maxGreen = maxBlue = 0x0;
                 for (int i = lowerIndex; i <= upperIndex; i++)
                 {
-                    int color = colors[i];
+                    int color = _colors[i];
                     int r = color.Red();
                     int g = color.Green();
                     int b = color.Blue();
@@ -217,7 +224,7 @@ namespace OokiiTsuki.Palette
                 }
                 // find median along the longest dimension
                 int splitPoint = FindSplitPoint();
-                Vbox newBox = new Vbox(splitPoint + 1, upperIndex);
+                Vbox newBox = new Vbox(_colors, _populations, splitPoint + 1, upperIndex);
                 // Now change this box's upperIndex and recompute the color boundaries
                 upperIndex = splitPoint;
                 FitBox();
@@ -256,15 +263,15 @@ namespace OokiiTsuki.Palette
                 // We need to sort the colors in this box based on the longest color dimension.
                 // As we can't use a Comparator to define the sort logic, we modify each color so that
                 // it's most significant is the desired dimension
-                ModifySignificantOctet(longestDimension, lowerIndex, upperIndex);
+                ModifySignificantOctet(_colors, longestDimension, lowerIndex, upperIndex);
                 // Now sort...
-                Array.Sort(colors, lowerIndex, upperIndex + 1 - lowerIndex);
+                Array.Sort(_colors, lowerIndex, upperIndex + 1 - lowerIndex);
                 // Now revert all of the colors so that they are packed as RGB again
-                ModifySignificantOctet(longestDimension, lowerIndex, upperIndex);
+                ModifySignificantOctet(_colors, longestDimension, lowerIndex, upperIndex);
                 int dimensionMidPoint = MidPoint(longestDimension);
                 for (int i = lowerIndex; i < upperIndex; i++)
                 {
-                    int color = colors[i];
+                    int color = _colors[i];
                     switch (longestDimension)
                     {
                         case COMPONENT_RED:
@@ -299,8 +306,8 @@ namespace OokiiTsuki.Palette
                 int totalPopulation = 0;
                 for (int i = lowerIndex; i <= upperIndex; i++)
                 {
-                    int color = colors[i];
-                    int colorPopulation = mColorPopulations[color];
+                    int color = _colors[i];
+                    int colorPopulation = _populations[color];
                     totalPopulation += colorPopulation;
                     redSum += colorPopulation * color.Red();
                     greenSum += colorPopulation * color.Green();
@@ -333,7 +340,7 @@ namespace OokiiTsuki.Palette
         ///single color component.
         ///See <see cref="Vbox.FindSplitPoint()"/>
         /// </summary>
-        private static void ModifySignificantOctet(int dimension, int lowIndex, int highIndex)
+        private static void ModifySignificantOctet(int[] colors, int dimension, int lowIndex, int highIndex)
         {
             switch (dimension)
             {
@@ -360,7 +367,7 @@ namespace OokiiTsuki.Palette
         }
         private static bool ShouldIgnoreColor(int color)
         {
-            mTempHsl = ColorUtils.RGBtoHSL(color.Red(), color.Green(), color.Blue());
+            float[] mTempHsl = ColorUtils.RGBtoHSL(color.Red(), color.Green(), color.Blue());
             return ShouldIgnoreColor(mTempHsl);
         }
         private static bool ShouldIgnoreColor(Swatch color)
