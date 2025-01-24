@@ -3,9 +3,11 @@ using SkinConfigurator.ViewModels;
 using SMShared;
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -102,6 +104,57 @@ namespace SkinConfigurator
         private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             Model.ThemeName = (string?)ThemeNameCombo.SelectedItem;
+        }
+
+        private void PriceInput_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (float.TryParse(PriceInput.Text, out float value))
+            {
+                
+            }
+        }
+    }
+
+    public class FloatStringRule : ValidationRule
+    {
+        public override ValidationResult Validate(object value, CultureInfo cultureInfo)
+        {
+            string strVal = (string)value;
+
+            if (string.IsNullOrWhiteSpace(strVal)) return ValidationResult.ValidResult;
+
+            if (float.TryParse(strVal, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.CurrentCulture, out _))
+            {
+                return ValidationResult.ValidResult;
+            }
+            return new ValidationResult(false, "Not a valid decimal number");
+        }
+    }
+
+    public class FloatStringConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is float f)
+            {
+                return f.ToString("F0", CultureInfo.CurrentCulture);
+            }
+            return string.Empty;
+        }
+
+        public object? ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            string strVal = (string)value;
+            if (string.IsNullOrWhiteSpace(strVal))
+            {
+                return null;
+            }
+
+            if (float.TryParse(strVal, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.CurrentCulture, out float result))
+            {
+                return (float)Math.Round(Math.Abs(result));
+            }
+            return null;
         }
     }
 }

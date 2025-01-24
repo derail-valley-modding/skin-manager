@@ -470,13 +470,18 @@ namespace SkinManagerMod.Items
                 // global shop data
                 Main.LogVerbose($"Injecting shop data for theme {theme.name}");
 
+                if (!SkinProvider.TryGetThemeSettings(theme.name, out var settings))
+                {
+                    settings = null;
+                }
+
                 var newShopData = new ShopItemData()
                 {
                     item = newItemSpec,
                     shelfItem = DefaultCanShopData.shelfItem,
 
-                    amount = 20,
-                    basePrice = DefaultCanShopData.basePrice,
+                    amount = 50,
+                    basePrice = settings?.CanPrice ?? DefaultCanShopData.basePrice,
 
                     isGlobal = true,
                     careerOnly = false,

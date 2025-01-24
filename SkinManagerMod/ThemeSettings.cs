@@ -11,6 +11,7 @@ namespace SkinManagerMod
         public Version HighestVersion;
         public bool HideFromStores;
         public bool PreventRandomSpawning;
+        public float? CanPrice;
 
         public SkinTexture CanLabel;
         public Color? LabelBaseColor;
@@ -28,6 +29,8 @@ namespace SkinManagerMod
             bool otherIsNewer = other.HighestVersion > HighestVersion;
 
             ReplaceIfNewer(ref HideFromStores, other.HideFromStores, otherIsNewer);
+            ReplaceIfNewer(ref PreventRandomSpawning, other.PreventRandomSpawning, otherIsNewer);
+            ReplaceIfNewer(ref CanPrice, other.CanPrice, otherIsNewer);
             ReplaceIfNewer(ref CanLabel, other.CanLabel, otherIsNewer);
 
             ReplaceIfNewer(ref LabelBaseColor, other.LabelBaseColor, otherIsNewer);
@@ -51,6 +54,7 @@ namespace SkinManagerMod
             {
                 HideFromStores = data.HideFromStores,
                 PreventRandomSpawning = data.PreventRandomSpawning,
+                CanPrice = data.CanPrice,
             };
 
             TryParseColor(data.LabelBaseColor, basePath, ref result.LabelBaseColor);

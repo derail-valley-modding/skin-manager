@@ -32,6 +32,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
@@ -44,7 +45,31 @@
                   ItemsSource="{Binding AvailableSkinNames}"
                   SelectionChanged="ComboBox_SelectionChanged"/>
 
-        <UniformGrid Grid.Row="1" Grid.Column="0" Rows="4">
+        <Label Grid.Row="1" Grid.Column="0" Content="Can Price:" ToolTip="Leave blank to use default of $15000"/>
+        <TextBox Grid.Row="1" Grid.Column="1" Margin="7,0,0,0" x:Name="PriceInput">
+            <TextBox.Resources>
+                <local:FloatStringConverter x:Key="floatStringConverter"/>
+            </TextBox.Resources>
+            <TextBox.Text>
+                <Binding Path="CanPrice" UpdateSourceTrigger="LostFocus" Converter="{StaticResource floatStringConverter}">
+                    <Binding.ValidationRules>
+                        <local:FloatStringRule/>
+                    </Binding.ValidationRules>
+                </Binding>
+            </TextBox.Text>
+
+            <TextBox.Style>
+                <Style TargetType="TextBox">
+                    <Style.Triggers>
+                        <Trigger Property="Validation.HasError" Value="True">
+                            <Setter Property="Foreground" Value="Red"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBox.Style>
+        </TextBox>
+
+        <UniformGrid Grid.Row="2" Grid.Column="0" Rows="4">
             <CheckBox Content="Hide From Stores" IsChecked="{Binding HideFromStores}" VerticalAlignment="Center"
                       ToolTip="Whether or not to allow this theme to spawn as a paint can"/>
             <CheckBox Content="Don't Auto-Apply" IsChecked="{Binding PreventRandomSpawning}" VerticalAlignment="Center"
@@ -53,7 +78,7 @@
             <Button Content="Remove Texture" Click="ClickRemoveTexture" IsEnabled="{Binding HasValidImage}"/>
         </UniformGrid>
 
-        <UniformGrid Grid.Row="1" Grid.Column="1" Rows="3" Cursor="Hand" Margin="7,0,0,0">
+        <UniformGrid Grid.Row="2" Grid.Column="1" Rows="3" Cursor="Hand" Margin="7,0,0,0">
             <Border Style="{StaticResource LabelColorStyle}" x:Name="SelectAccentB" MouseDown="ClickAccentB"
                     Background="{Binding LabelAccentColorB, Converter={StaticResource colorBrushConverter}}" d:Background="DarkRed">
                 <Label Content="Top Band" Foreground="{Binding LabelAccentColorB, Converter={StaticResource textColorConverter}}" HorizontalAlignment="Center"/>

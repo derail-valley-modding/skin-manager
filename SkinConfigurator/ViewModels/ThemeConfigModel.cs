@@ -96,6 +96,16 @@ namespace SkinConfigurator.ViewModels
             DependencyProperty.Register("PreventRandomSpawning", typeof(bool), typeof(ThemeConfigModel), new PropertyMetadata(false));
 
 
+        public float? CanPrice
+        {
+            get { return (float?)GetValue(CanPriceProperty); }
+            set { SetValue(CanPriceProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for CanPrice.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty CanPriceProperty =
+            DependencyProperty.Register("CanPrice", typeof(float?), typeof(ThemeConfigModel), new PropertyMetadata(defaultValue: null));
+
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -192,6 +202,7 @@ namespace SkinConfigurator.ViewModels
                 Name = ThemeName,
                 HideFromStores = HideFromStores,
                 PreventRandomSpawning = PreventRandomSpawning,
+                CanPrice = CanPrice,
             };
 
             if (HasValidImage)
