@@ -12,7 +12,8 @@ namespace SkinManagerMod
 {
     public static class SkinManager
     {
-        private static readonly Dictionary<string, string> carGuidToAppliedSkinMap = new Dictionary<string, string>();
+        private static readonly Dictionary<string, string> carGuidToAppliedSkinMap = new();
+        private static readonly Dictionary<string, string> interiorSkinMap = new();
 
         public static void Initialize()
         {
@@ -27,34 +28,54 @@ namespace SkinManagerMod
             {
                 var toApply = GetCurrentCarSkin(car, false);
 
-                if ((toApply != null) && (toApply == skinConfig.Name))
-                {
-                    ApplySkin(car, toApply);
-                }
+                //if ((toApply != null) && (toApply == skinConfig.Name))
+                //{
+                //    ApplySkin(car, toApply);
+                //}
             }
         }
 
         /// <summary>Get the currently assigned skin for given car, or a new one if none is assigned</summary>
-        public static string GetCurrentCarSkin(TrainCar car, bool returnNewSkin = true)
+        public static (string? exterior, string? interior) GetCurrentCarSkin(TrainCar car, bool returnNewSkin = true)
         {
-            if (carGuidToAppliedSkinMap.TryGetValue(car.CarGUID, out var skinName))
+            if (!carGuidToAppliedSkinMap.TryGetValue(car.CarGUID, out string? exterior) ||
+                string.IsNullOrWhiteSpace(exterior) ||
+                !SkinProvider.TryGetTheme(exterior, out _))
             {
-                if (string.IsNullOrWhiteSpace(skinName)) return null;
-
-                if (SkinProvider.FindSkinByName(car.carLivery, skinName) is Skin result)
+                if (returnNewSkin)
                 {
-                    return result.Name;
+                    exterior = SkinProvider.GetNewSkin(car.carLivery);
+                }
+                else
+                {
+                    exterior = null;
                 }
             }
 
-            return returnNewSkin ? SkinProvider.GetNewSkin(car.carLivery) : null;
+            if (!interiorSkinMap.TryGetValue(car.CarGUID, out string? interior) ||
+                string.IsNullOrWhiteSpace(interior) ||
+                !SkinProvider.TryGetTheme(interior, out _))
+            {
+                interior = exterior;
+
+            }
+
+            return (exterior, interior);
         }
 
         /// <summary>Save the specified skin to the given car</summary>
-        public static void SetAppliedCarSkin(TrainCar car, string skinName)
+        public static void SetAppliedCarSkin(TrainCar car, string skinName, PaintArea area)
         {
-            Main.LogVerbose($"Setting saved skin for car {car.ID} to \"{skinName}\"");
-            carGuidToAppliedSkinMap[car.CarGUID] = skinName;
+            Main.LogVerbose($"Setting saved skin for car {car.ID} {area} to \"{skinName}\"");
+
+            if (area.HasFlag(PaintArea.Exterior))
+            {
+                carGuidToAppliedSkinMap[car.CarGUID] = skinName;
+            }
+            if (area.HasFlag(PaintArea.Interior))
+            {
+                interiorSkinMap[car.CarGUID] = skinName;
+            }
 
             // TODO: support for CCL steam locos (this method only checks if == locosteamheavy)
             if (CarTypes.IsMUSteamLocomotive(car.carType))
@@ -75,29 +96,9 @@ namespace SkinManagerMod
 
         public static void ApplySkin(TrainCar trainCar, string skinName, PaintArea area = PaintArea.All)
         {
-            if (!SkinProvider.IsThemeable(trainCar.carLivery.id))
+            if (SkinProvider.TryGetTheme(skinName, out CustomPaintTheme newTheme))
             {
-                ApplyNonThemeSkin(trainCar, skinName);
-                return;
-            }
-
-            if (PaintTheme.TryLoad(skinName, out PaintTheme newTheme))
-            {
-                if (area.HasFlag(PaintArea.Interior) && trainCar.PaintInterior)
-                {
-                    if (trainCar.PaintInterior.IsSupported(newTheme))
-                    {
-                        trainCar.PaintInterior.CurrentTheme = newTheme;
-                    }
-                }
-
-                if (area.HasFlag(PaintArea.Exterior) && trainCar.PaintExterior)
-                {
-                    if (trainCar.PaintExterior.IsSupported(newTheme))
-                    {
-                        trainCar.PaintExterior.CurrentTheme = newTheme;
-                    }
-                }
+                ApplySkin(trainCar, newTheme, area);
             }
             else
             {
@@ -105,62 +106,76 @@ namespace SkinManagerMod
             }
         }
 
-        public static void ApplyNonThemeSkinToInterior(TrainCar trainCar, string skinName)
+        public static void ApplySkin(TrainCar trainCar, CustomPaintTheme newTheme, PaintArea area = PaintArea.All)
         {
-            var skin = SkinProvider.FindSkinByName(trainCar.carLivery.id, skinName);
-            if (skin == null) return;
-
-            var defaultSkin = SkinProvider.GetDefaultSkin(trainCar.carLivery.id);
-
-            if (trainCar.loadedInterior)
+            if (newTheme.SupportsVehicle(trainCar.carLivery))
             {
-                ApplyNonThemeSkinToTransform(trainCar.loadedInterior, skin, defaultSkin);
-            }
-            if (trainCar.loadedExternalInteractables)
-            {
-                ApplyNonThemeSkinToTransform(trainCar.loadedExternalInteractables, skin, defaultSkin);
-            }
-            if (trainCar.loadedDummyExternalInteractables)
-            {
-                ApplyNonThemeSkinToTransform(trainCar.loadedDummyExternalInteractables, skin, defaultSkin);
-            }
-        }
-
-        private static void ApplyNonThemeSkin(TrainCar trainCar, string skinName)
-        {
-            var skin = SkinProvider.FindSkinByName(trainCar.carLivery.id, skinName);
-            if (skin == null) return;
-
-            var defaultSkin = SkinProvider.GetDefaultSkin(trainCar.carLivery.id);
-            ApplyNonThemeSkinToTransform(trainCar.gameObject, skin, defaultSkin);
-            if (trainCar.loadedInterior)
-            {
-                ApplyNonThemeSkinToTransform(trainCar.loadedInterior, skin, defaultSkin);
-            }
-            if (trainCar.loadedExternalInteractables)
-            {
-                ApplyNonThemeSkinToTransform(trainCar.loadedExternalInteractables, skin, defaultSkin);
-            }
-            if (trainCar.loadedDummyExternalInteractables)
-            {
-                ApplyNonThemeSkinToTransform(trainCar.loadedDummyExternalInteractables, skin, defaultSkin);
-            }
-
-            SetAppliedCarSkin(trainCar, skinName);
-        }
-
-        private static void ApplyNonThemeSkinToTransform(GameObject objectRoot, Skin skin, Skin defaultSkin)
-        {
-            foreach (var renderer in objectRoot.GetComponentsInChildren<MeshRenderer>(true))
-            {
-                if (!renderer.material)
+                if (area.HasFlag(PaintArea.Interior) && trainCar.PaintInterior)
                 {
-                    continue;
+                    trainCar.PaintInterior.CurrentTheme = newTheme;
                 }
 
-                TextureUtility.ApplyTextures(renderer, skin, defaultSkin);
+                if (area.HasFlag(PaintArea.Exterior) && trainCar.PaintExterior)
+                {
+                    trainCar.PaintExterior.CurrentTheme = newTheme;
+                }
+
+                //SetAppliedCarSkin(trainCar, newTheme.name, area);
             }
         }
+
+        //public static void ApplyNonThemeSkinToInterior(TrainCar trainCar, string skinName)
+        //{
+        //    var skin = SkinProvider.FindSkinByName(trainCar.carLivery.id, skinName);
+        //    if (skin == null) return;
+
+        //    var defaultSkin = CarMaterialData.GetDataForCar(trainCar.carLivery.id);
+
+        //    if (trainCar.loadedInterior)
+        //    {
+        //        ApplyNonThemeSkinToTransform(trainCar.loadedInterior, skin, defaultSkin);
+        //    }
+        //    if (trainCar.loadedExternalInteractables)
+        //    {
+        //        ApplyNonThemeSkinToTransform(trainCar.loadedExternalInteractables, skin, defaultSkin);
+        //    }
+        //    if (trainCar.loadedDummyExternalInteractables)
+        //    {
+        //        ApplyNonThemeSkinToTransform(trainCar.loadedDummyExternalInteractables, skin, defaultSkin);
+        //    }
+        //}
+
+        //public static void ApplySkin(TrainCar trainCar, Skin skin, PaintArea area)
+        //{
+        //    if (skin == null) return;
+
+        //    var defaultSkin = CarMaterialData.GetDataForCar(trainCar.carLivery.id);
+
+        //    if (area.HasFlag(PaintArea.Exterior))
+        //    {
+        //        ApplyNonThemeSkinToTransform(trainCar.gameObject, skin, defaultSkin);
+        //    }
+
+        //    if (area.HasFlag(PaintArea.Interior) && trainCar.loadedInterior)
+        //    {
+        //        ApplyNonThemeSkinToTransform(trainCar.loadedInterior, skin, defaultSkin);
+        //    }
+
+        //    SetAppliedCarSkin(trainCar, skin.Name, area);
+        //}
+
+        //private static void ApplyNonThemeSkinToTransform(GameObject objectRoot, Skin skin, CarMaterialData defaults)
+        //{
+        //    foreach (var renderer in objectRoot.GetComponentsInChildren<MeshRenderer>(true))
+        //    {
+        //        if (!renderer.material)
+        //        {
+        //            continue;
+        //        }
+
+        //        TextureUtility.ApplyTextures(renderer, skin, defaults);
+        //    }
+        //}
 
         #endregion
 
@@ -212,6 +227,11 @@ namespace SkinManagerMod
         }
 
         #endregion
+
+        public static PaintArea ToPaintArea(this TrainCarPaint.Target target)
+        {
+            return (target == TrainCarPaint.Target.Interior) ? PaintArea.Interior : PaintArea.Exterior;
+        }
     }
 
     [Flags]

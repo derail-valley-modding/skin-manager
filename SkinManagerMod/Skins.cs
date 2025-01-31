@@ -14,17 +14,17 @@ namespace SkinManagerMod
     {
         public readonly string LiveryId;
         public readonly string Name;
-        public readonly string Path;
+        public readonly string? Path;
         public readonly bool IsDefault;
-        public readonly List<SkinTexture> SkinTextures = new List<SkinTexture>();
-        public readonly string[] ResourcePaths;
+        public readonly List<SkinTexture> SkinTextures = new();
+        public readonly string[]? ResourcePaths;
         public readonly BaseTheme BaseTheme;
 
         public readonly bool IsThemeable;
 
-        public event Action<Skin> LoadingFinished;
+        public event Action<Skin>? LoadingFinished;
 
-        private PaintTheme.Substitution[] _cachedSubstitutions = null;
+        private PaintTheme.Substitution[]? _cachedSubstitutions = null;
 
         public void StartLoadFinishedListener()
         {
@@ -43,12 +43,12 @@ namespace SkinManagerMod
             }
         }
 
-        private void OnLoadFinished(Task _ = null)
+        private void OnLoadFinished(Task? _ = null)
         {
             ThreadHelper.Instance.EnqueueAction(() => LoadingFinished?.Invoke(this));
         }
 
-        private Skin(string liveryId, string name, string directory, bool isDefault, string[] resourcePaths, BaseTheme baseTheme)
+        private Skin(string liveryId, string name, string? directory, bool isDefault, string[]? resourcePaths, BaseTheme baseTheme)
         {
             LiveryId = liveryId;
             Name = name;
@@ -60,7 +60,7 @@ namespace SkinManagerMod
             IsThemeable = SkinProvider.IsThemeable(liveryId);
         }
 
-        public static Skin Custom(string liveryId, string name, string directory, BaseTheme baseTheme, string[] resourcePaths = null)
+        public static Skin Custom(string liveryId, string name, string directory, BaseTheme baseTheme, string[]? resourcePaths = null)
         {
             return new Skin(liveryId, name, directory, false, resourcePaths, baseTheme);
         }
@@ -70,9 +70,9 @@ namespace SkinManagerMod
             return new Skin(config.CarId, config.Name, config.FolderPath, false, config.ResourcePaths, config.BaseTheme);
         }
 
-        public static Skin Default(string liveryId)
+        public static Skin Default(string liveryId, BaseTheme baseTheme)
         {
-            return new Skin(liveryId, GetDefaultSkinName(liveryId), null, true, null, BaseTheme.DVRT);
+            return new Skin(liveryId, GetDefaultSkinName(liveryId), null, true, null, baseTheme);
         }
 
         public bool ContainsTexture(string name)
@@ -80,7 +80,7 @@ namespace SkinManagerMod
             return GetTexture(name) != null;
         }
 
-        public SkinTexture GetTexture(string name)
+        public SkinTexture? GetTexture(string name)
         {
             return SkinTextures.Find(tex => tex.Name == name);
         }
@@ -116,11 +116,8 @@ namespace SkinManagerMod
 
             foreach (var texture in SkinTextures)
             {
-                var exteriorUses = carData.Exterior.GetTextureAssignments(texture.Name);
+                var exteriorUses = carData.GetTextureAssignments(texture.Name);
                 MapTextureUsesToNewMaterial(texture, subMap, exteriorUses);
-
-                var interiorUses = carData.Interior.GetTextureAssignments(texture.Name);
-                MapTextureUsesToNewMaterial(texture, subMap, interiorUses);
             }
 
             var subs = subMap
@@ -133,7 +130,7 @@ namespace SkinManagerMod
 
         private static Material GetBaseMaterial(Material defaultMaterial, BaseTheme themeType)
         {
-            var result = SkinProvider.GetBuiltinTheme(themeType);
+            var result = SkinProvider.GetBaseTheme(themeType);
 
             if (result && result.TryGetSubstitute(defaultMaterial, out var substitution) && substitution.substitute)
             {

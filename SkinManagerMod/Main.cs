@@ -16,9 +16,11 @@ namespace SkinManagerMod
 {
     public static class Main
     {
+#nullable disable
         public static UnityModManager.ModEntry Instance { get; private set; }
         public static SkinManagerSettings Settings { get; private set; }
         public static TranslationInjector TranslationInjector { get; private set; }
+#nullable restore
 
         public static string ExportFolderPath => Path.Combine(Instance.Path, Constants.EXPORT_FOLDER_NAME);
         public static string GetExportFolderForCar(string carId)
@@ -37,6 +39,7 @@ namespace SkinManagerMod
             TranslationInjector.AddTranslationsFromCsv(Path.Combine(Instance.Path, "translations.csv"));
             TranslationInjector.AddTranslationsFromWebCsv("https://docs.google.com/spreadsheets/d/1TrI4RuUgCijOuCjxM_WsOO9AV0BO4noTIZIzal3HbnY/export?format=csv&gid=1691364666");
 
+            SkinProvider.CacheDefaultThemes();
             CarMaterialData.Initialize();
             if (!SkinProvider.Initialize())
             {
@@ -61,10 +64,10 @@ namespace SkinManagerMod
         #region Settings
 
         static Vector2 scrollViewVector = Vector2.zero;
-        static TrainCarLivery trainCarSelected = null;
+        static TrainCarLivery? trainCarSelected = null;
         static bool showDropdown = false;
 
-        private static string _guiMessage;
+        private static string? _guiMessage;
 
         static void OnGUI(UnityModManager.ModEntry modEntry)
         {
@@ -90,6 +93,7 @@ namespace SkinManagerMod
                 Translations.DefaultSkinMode.PreferReskins,
                 Translations.DefaultSkinMode.AllowForCustomCars,
                 Translations.DefaultSkinMode.AllowForAllCars,
+                Translations.DefaultSkinMode.PreferDefaults,
             };
 
             Settings.defaultSkinsMode = (DefaultSkinsMode)GUILayout.SelectionGrid((int)Settings.defaultSkinsMode, defaultSkinModeTexts, 1, "toggle");
@@ -165,7 +169,7 @@ namespace SkinManagerMod
             GUILayout.EndVertical();
         }
 
-        private static Coroutine _exportAllCoro = null;
+        private static Coroutine? _exportAllCoro = null;
         private static int _completedLiveryCount = 0;
         private static int _totalLiveryCount = 0;
 
@@ -231,7 +235,8 @@ namespace SkinManagerMod
     {
         PreferReplacements,
         AllowForCustomCars,
-        AllowForAllCars
+        AllowForAllCars,
+        PreferDefaults,
     }
 
     public class SkinManagerSettings : UnityModManager.ModSettings

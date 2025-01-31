@@ -16,92 +16,82 @@ namespace SkinManagerMod
 {
     public class SkinProvider
     {
-        public static readonly string DefaultThemeName = "DVRT";
-        public static readonly string DefaultNewThemeName = "DVRT_New";
-        public static readonly string DemoThemeName = "Relic";
-        public static readonly string DemoRustyThemeName = "Relic_Rusty";
+        public const string DefaultThemeName = "DVRT";
+        public const string DefaultNewThemeName = "DVRT_New";
+        public const string DemoThemeName = "Relic";
+        public const string DemoRustyThemeName = "Relic_Rusty";
+        public const string PrimerThemeName = "Null";
 
-        public static readonly string[] BuiltInThemeNames = { DefaultThemeName, DefaultNewThemeName, DemoThemeName, DemoRustyThemeName };
+        public static readonly string[] BuiltInThemeNames = { DefaultThemeName, DefaultNewThemeName, DemoThemeName, DemoRustyThemeName, PrimerThemeName };
 
-        private static PaintTheme[] _builtInThemes = null;
-        public static PaintTheme[] BuiltInThemes
+        private static readonly Dictionary<string, PaintTheme> _builtInThemeDict = new();
+
+        public static IEnumerable<PaintTheme> BuiltInThemes => _builtInThemeDict.Values;
+        public static PaintTheme PrimerTheme => _builtInThemeDict[PrimerThemeName];
+
+        public static void CacheDefaultThemes()
         {
-            get
+            foreach (string themeName in BuiltInThemeNames)
             {
-                if (_builtInThemes == null)
-                {
-                    _builtInThemes = new PaintTheme[BuiltInThemeNames.Length];
-                    for (int i = 0; i < BuiltInThemeNames.Length; i++)
-                    {
-                        PaintTheme.TryLoad(BuiltInThemeNames[i], out var theme);
-                        _builtInThemes[i] = theme;
-                    }
-                }
-                return _builtInThemes;
+                PaintTheme.TryLoad(themeName, out var builtin);
+                _builtInThemeDict.Add(themeName, builtin);
             }
         }
 
-        public static PaintTheme GetBuiltinTheme(BaseTheme themeType)
+        public static CustomPaintTheme CustomDefaultTheme => _themeDict[DefaultThemeName];
+
+        public static BaseTheme GetThemeTypeByName(string themeName)
         {
-            PaintTheme result;
-
-            switch (themeType)
+            return themeName switch
             {
-                case BaseTheme.DVRT:
-                case BaseTheme.DVRT_NoDetails:
-                    PaintTheme.TryLoad(DefaultThemeName, out result);
-                    break;
+                DefaultNewThemeName => BaseTheme.Pristine,
+                DemoThemeName => BaseTheme.Demonstrator,
+                DemoRustyThemeName => BaseTheme.Relic,
+                _ => BaseTheme.DVRT,
+            };
+        }
 
-                case BaseTheme.Pristine:
-                case BaseTheme.Pristine_NoDetails:
-                    PaintTheme.TryLoad(DefaultNewThemeName, out result);
-                    break;
+        public static CustomPaintTheme GetBaseTheme(BaseTheme themeType)
+        {
+            string themeName = (themeType & ~BaseTheme.DVRT_NoDetails) switch
+            {
+                BaseTheme.Pristine => DefaultNewThemeName,
+                BaseTheme.Demonstrator => DemoThemeName,
+                BaseTheme.Relic => DemoRustyThemeName,
+                _ => DefaultThemeName,
+            };
 
-                case BaseTheme.Demonstrator:
-                case BaseTheme.Demonstrator_NoDetails:
-                    PaintTheme.TryLoad(DemoThemeName, out result);
-                    break;
-
-                case BaseTheme.Relic:
-                case BaseTheme.Relic_NoDetails:
-                    PaintTheme.TryLoad(DemoRustyThemeName, out result);
-                    break;
-
-                default:
-                    throw new NotImplementedException();
-            }
-
-            return result;
+            return _themeDict[themeName];
         }
 
         public static bool IsBuiltInTheme(string themeName) => BuiltInThemeNames.Contains(themeName);
+        public static bool IsBuiltInTheme(PaintTheme theme) => BuiltInThemeNames.Contains(theme.name);
 
-        public static string LastSteamerSkin { get; set; }
-        public static string LastDE6Skin { get; set; }
+        public static string? LastSteamerSkin { get; set; }
+        public static string? LastDE6Skin { get; set; }
 
         /// <summary>Emitted when skin(s) are reloaded from disk
-        public static event Action SkinsLoaded;
+        public static event Action? SkinsLoaded;
 
-        public static event Action<SkinConfig> SkinDisabled;
-        public static event Action<SkinConfig> SkinUpdated;
+        public static event Action<SkinConfig>? SkinDisabled;
+        public static event Action<SkinConfig>? SkinUpdated;
 
-        private static readonly LinkedList<ModSkinCollection> skinConfigs = new LinkedList<ModSkinCollection>();
+        private static readonly LinkedList<ModSkinCollection> skinConfigs = new();
 
         /// <summary>Livery ID to SkinGroup mapping</summary>
-        private static readonly Dictionary<string, SkinGroup> skinGroups = new Dictionary<string, SkinGroup>();
+        private static readonly Dictionary<string, SkinGroup> skinGroups = new();
         public static IEnumerable<SkinGroup> AllSkinGroups => skinGroups.Values;
 
         /// <summary>Livery ID to default skin mapping</summary>
-        private static readonly Dictionary<string, Skin> defaultSkins = new Dictionary<string, Skin>();
+        private static readonly Dictionary<string, Skin> defaultSkins = new();
 
-        private static readonly Dictionary<TrainCarLivery, Dictionary<string, string>> cachedCarTextures =
-            new Dictionary<TrainCarLivery, Dictionary<string, string>>();
+        private static readonly Dictionary<TrainCarLivery, Dictionary<string, string>> cachedCarTextures = new();
 
 
         // Skin Name to Paint Theme (combined liveries)
-        private static PaintTheme[] _cachedThemeList = null;
-        private static readonly Dictionary<string, PaintTheme> _themeDict = new Dictionary<string, PaintTheme>();
-        private static readonly Dictionary<string, ThemeSettings> _themeSettings = new Dictionary<string, ThemeSettings>();
+        private static PaintTheme[]? _cachedThemeList = null;
+        private static readonly Dictionary<string, CustomPaintTheme> _themeDict = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<string, ThemeSettings> _themeSettings = new();
         
 
         private static readonly HashSet<string> _themeableLiveries = Globals.G.Types.Liveries
@@ -112,24 +102,18 @@ namespace SkinManagerMod
         public static bool IsThemeable(TrainCarLivery livery) => _themeableLiveries.Contains(livery.id);
         public static bool IsThemeable(string liveryId) => _themeableLiveries.Contains(liveryId);
 
-        public static IEnumerable<string> ThemeableLiveryIds => _themeableLiveries;
-        public static IEnumerable<SkinGroup> ThemeableSkinGroups => skinGroups.Where(g => _themeableLiveries.Contains(g.Key)).Select(g => g.Value);
-
-        public static PaintTheme[] PaintThemes
+        public static PaintTheme[] ModdedThemes
         {
             get
             {
-                if (_cachedThemeList is null)
-                {
-                    _cachedThemeList = _themeDict.Values.ToArray();
-                }
+                _cachedThemeList ??= _themeDict.Values.Where(t => !BuiltInThemeNames.Contains(t.name)).ToArray();
                 return _cachedThemeList;
             }
         }
 
         public static List<PaintTheme> GetRandomizedStoreThemes()
         {
-            var arr = PaintThemes.Where(IsThemeAllowedInStore).ToList();
+            var arr = ModdedThemes.Where(IsThemeAllowedInStore).ToList();
 
             // Fisher Yates shuffle
             for (int i = arr.Count - 1; i > 0; i--)
@@ -150,19 +134,20 @@ namespace SkinManagerMod
             return true;
         }
 
-        public static bool TryGetTheme(string themeName, out PaintTheme theme) => _themeDict.TryGetValue(themeName, out theme);
+        public static bool TryGetTheme(string themeName, out CustomPaintTheme theme) => _themeDict.TryGetValue(themeName, out theme);
+        public static CustomPaintTheme GetTheme(string themeName) => _themeDict[themeName];
 
-        private static void RegisterNewTheme(PaintTheme theme)
+        private static void RegisterNewTheme(CustomPaintTheme theme)
         {
-            string lowerName = theme.name.ToLower();
-            if (PaintTheme.loadedThemes.ContainsKey(lowerName))
+            string key = theme.name.ToLower();
+            if (PaintTheme.loadedThemes.ContainsKey(key))
             {
                 Main.Error($"Skin \"{theme.name}\" conflicts with an existing or built-in paint theme");
                 return;
             }
 
             _themeDict.Add(theme.name, theme);
-            PaintTheme.loadedThemes.Add(lowerName, theme);
+            PaintTheme.loadedThemes.Add(key, theme);
 
             _cachedThemeList = null;
         }
@@ -197,26 +182,28 @@ namespace SkinManagerMod
             return newGroup;
         }
 
-        public static Skin GetDefaultSkin(string carId)
+        //public static Skin GetDefaultSkin(string carId, BaseTheme baseTheme = BaseTheme.DVRT)
+        //{
+        //    string key = $"{carId}_{baseTheme}";
+        //    if (defaultSkins.TryGetValue(key, out Skin existing))
+        //    {
+        //        return existing;
+        //    }
+
+        //    var livery = Globals.G.Types.Liveries.First(l => l.id == carId);
+        //    var newDefault = CreateDefaultSkin(livery, baseTheme);
+        //    defaultSkins[carId] = newDefault;
+        //    return newDefault;
+        //}
+
+        public static Skin? FindSkinByName(TrainCarLivery carType, string name) => FindSkinByName(carType.id, name);
+
+        public static Skin? FindSkinByName(string carId, string name)
         {
-            if (defaultSkins.TryGetValue(carId, out Skin existing))
-            {
-                return existing;
-            }
-
-            var newDefault = CreateDefaultSkin(Globals.G.Types.Liveries.First(l => l.id == carId));
-            defaultSkins[carId] = newDefault;
-            return newDefault;
-        }
-
-        public static Skin FindSkinByName(TrainCarLivery carType, string name) => FindSkinByName(carType.id, name);
-
-        public static Skin FindSkinByName(string carId, string name)
-        {
-            if (name == Skin.GetDefaultSkinName(carId))
-            {
-                return GetDefaultSkin(carId);
-            }
+            //if (name == Skin.GetDefaultSkinName(carId))
+            //{
+            //    return GetDefaultSkin(carId);
+            //}
 
             if (skinGroups.TryGetValue(carId, out var group))
             {
@@ -225,10 +212,10 @@ namespace SkinManagerMod
             return null;
         }
 
-        public static List<string> GetSkinsForType(TrainCarLivery carType, bool includeDefault = true, bool sort = true) =>
+        public static List<CustomPaintTheme> GetSkinsForType(TrainCarLivery carType, bool includeDefault = true, bool sort = true) =>
             GetSkinsForType(carType.id, includeDefault, sort);
 
-        public static List<string> GetSkinsForType(string carId, bool includeDefault = true, bool sort = true)
+        public static List<CustomPaintTheme> GetSkinsForType(string carId, bool includeDefault = true, bool sort = true)
         {
             var result = new List<string>();
 
@@ -253,7 +240,7 @@ namespace SkinManagerMod
                 }
                 else
                 {
-                    result.Add(Skin.GetDefaultSkinName(carId));
+                    result.Add(DefaultThemeName);
                 }
             }
 
@@ -261,7 +248,7 @@ namespace SkinManagerMod
             {
                 result.Sort();
             }
-            return result;
+            return result.Select(name => _themeDict[name]).ToList();
         }
 
         private static int CompareSkins(Skin a, Skin b)
@@ -286,7 +273,7 @@ namespace SkinManagerMod
         {
             if (CarTypes.IsTender(carType) && (LastSteamerSkin != null))
             {
-                if (FindSkinByName(carType, LastSteamerSkin) is Skin)
+                if (FindSkinByName(carType, LastSteamerSkin) is not null)
                 {
                     return LastSteamerSkin;
                 }
@@ -294,26 +281,27 @@ namespace SkinManagerMod
 
             if ((carType.id == Constants.SLUG_LIVERY_ID) && (LastDE6Skin != null))
             {
-                if (FindSkinByName(carType, LastDE6Skin) is Skin || Main.Settings.allowDE6SkinsForSlug)
+                if (FindSkinByName(carType, LastDE6Skin) is not null || Main.Settings.allowDE6SkinsForSlug)
                 {
                     return LastDE6Skin;
                 }
             }
 
             // random skin
-            if (skinGroups.TryGetValue(carType.id, out var group) && (group.Skins.Count > 0))
+            if (Main.Settings.defaultSkinsMode != DefaultSkinsMode.PreferDefaults)
             {
-                bool allowRandomDefault =
-                    (Main.Settings.defaultSkinsMode == DefaultSkinsMode.AllowForAllCars);
-                // || (CustomCarTypes.ContainsKey(carType) && (Main.Settings.defaultSkinsMode == SkinManagerSettings.DefaultSkinsMode.AllowForCustomCars));
-
-                var allowedRandom = group.Skins.Where(AllowRandomSpawning).ToList();
-                int nChoices = allowRandomDefault ? allowedRandom.Count + 1 : allowedRandom.Count;
-
-                int choice = UnityEngine.Random.Range(0, nChoices);
-                if (choice < allowedRandom.Count)
+                if (skinGroups.TryGetValue(carType.id, out var group) && (group.Skins.Count > 0))
                 {
-                    return allowedRandom[choice].Name;
+                    bool allowRandomDefault = (Main.Settings.defaultSkinsMode == DefaultSkinsMode.AllowForAllCars);
+
+                    var allowedRandom = group.Skins.Where(AllowRandomSpawning).ToList();
+                    int nChoices = allowRandomDefault ? allowedRandom.Count + 1 : allowedRandom.Count;
+
+                    int choice = UnityEngine.Random.Range(0, nChoices);
+                    if (choice < allowedRandom.Count)
+                    {
+                        return allowedRandom[choice].Name;
+                    }
                 }
             }
 
@@ -337,6 +325,7 @@ namespace SkinManagerMod
 
         public static bool Initialize()
         {
+            InjectNewDefaultThemes();
             ReloadAllSkins();
 
             UnityModManager.toggleModsListen += HandleSkinModToggle;
@@ -563,7 +552,7 @@ namespace SkinManagerMod
                 string contents = File.ReadAllText(configPath);
                 var parsedConfig = JsonConvert.DeserializeObject<ThemeConfigJson>(contents);
 
-                if ((parsedConfig.Themes is null) || (parsedConfig.Themes.Length == 0))
+                if ((parsedConfig!.Themes is null) || (parsedConfig.Themes.Length == 0))
                 {
                     Main.Warning($"Found theme config file, but it is empty: {configPath}");
                     return;
@@ -615,22 +604,67 @@ namespace SkinManagerMod
         /// <summary>
         /// Create a skin containing the default/starting textures of a car
         /// </summary>
-        private static Skin CreateDefaultSkin(TrainCarLivery carType)
+        private static void InjectNewDefaultThemes()
         {
-            GameObject carPrefab = carType.prefab;
-            if (carPrefab == null) return null;
+            var primerTexture = (Texture2D)PrimerTheme.substitutions.First().substitute.mainTexture;
 
-            var defaultSkin = Skin.Default(carType.id);
-
-            foreach (var texture in TextureUtility.EnumerateTextures(carType))
+            foreach (string themeName in BuiltInThemeNames)
             {
-                if (!defaultSkin.ContainsTexture(texture.name))
+                BaseTheme themeType = GetThemeTypeByName(themeName);
+                var existingTheme = _builtInThemeDict[themeName];
+
+                var customDefaultTheme = ScriptableObject.CreateInstance<CustomPaintTheme>();
+                UnityEngine.Object.DontDestroyOnLoad(customDefaultTheme);
+                customDefaultTheme.assetName = existingTheme.assetName;
+                customDefaultTheme.name = existingTheme.name;
+                customDefaultTheme.nameLocalizationKey = existingTheme.nameLocalizationKey;
+                customDefaultTheme.substitutions = existingTheme.substitutions;
+
+                foreach (var carType in Globals.G.Types.Liveries)
                 {
-                    defaultSkin.SkinTextures.Add(new SkinTexture(texture.name, texture));
+                    if ((themeName == DefaultThemeName) || IsThemeable(carType))
+                    {
+                        var defaultSkin = Skin.Default(carType.id, themeType);
+                        customDefaultTheme.AddSkin(defaultSkin);
+                    }
+                    else if ((themeName == PrimerThemeName) && !IsThemeable(carType))
+                    {
+                        // extend primer coverage to all cars
+                        var defaultSkin = Skin.Default(carType.id, themeType);
+                        string bodyName = DefaultTextures.GetBodyTextureName(carType.id);
+                        defaultSkin.SkinTextures.Add(new SkinTexture(bodyName, primerTexture));
+                        customDefaultTheme.AddSkin(defaultSkin);
+                    }
                 }
+
+                _themeDict[themeName] = customDefaultTheme;
+                //PaintTheme.loadedThemes[themeName.ToLower()] = customDefaultTheme;
             }
 
-            return defaultSkin;
+            // primer
+            PaintTheme.TryLoad(PrimerThemeName, out PaintTheme defaultPrimer);
+
+            var customPrimer = ScriptableObject.CreateInstance<CustomPaintTheme>();
+            UnityEngine.Object.DontDestroyOnLoad(customPrimer);
+            customPrimer.assetName = defaultPrimer.assetName;
+            customPrimer.name = defaultPrimer.name;
+            customPrimer.nameLocalizationKey = defaultPrimer.nameLocalizationKey;
+            customPrimer.substitutions = defaultPrimer.substitutions;
+
+            foreach (var carType in Globals.G.Types.Liveries)
+            {
+                if (IsThemeable(carType))
+                {
+                    var fakeSkin = Skin.Default(carType.id, BaseTheme.DVRT);
+                    var carData = CarMaterialData.GetDataForCar(carType.id);
+
+                    foreach (var substitution in customPrimer.substitutions
+                        .Where(sub => carData.GetDataForMaterial(sub.original) is not null))
+                    {
+
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -749,10 +783,10 @@ namespace SkinManagerMod
 
             skinGroup.Skins.Add(skin);
 
-            if (skin.IsThemeable && !_themeDict.TryGetValue(skin.Name, out var theme))
+            if (!_themeDict.TryGetValue(skin.Name, out var theme))
             {
                 Main.LogVerbose($"Create new theme {skin.Name}");
-                theme = ScriptableObject.CreateInstance<PaintTheme>();
+                theme = ScriptableObject.CreateInstance<CustomPaintTheme>();
                 UnityEngine.Object.DontDestroyOnLoad(theme);
                 theme.assetName = skin.Name;
                 theme.name = skin.Name;
@@ -762,9 +796,15 @@ namespace SkinManagerMod
 
                 RegisterNewTheme(theme);
             }
+            else
+            {
+                Main.LogVerbose($"Merging into theme {skin.Name}");
+            }
 
-            skin.LoadingFinished += AddSkinTexturesToTheme;
-            skin.StartLoadFinishedListener();
+            theme.AddSkin(skin);
+
+            //skin.LoadingFinished += AddSkinTexturesToTheme;
+            //skin.StartLoadFinishedListener();
         }
 
         private static SkinTexture BeginLoadTexture(string fileName, ResourceConfigJson config, string texturePath, bool linear, bool forceSync)
@@ -785,14 +825,13 @@ namespace SkinManagerMod
 
         private static void AddSkinTexturesToTheme(Skin skin)
         {
-            if (!skin.IsThemeable) return;
-
-            var subs = skin.GetSubstitutions();
+            //var subs = skin.GetSubstitutions();
 
             if (_themeDict.TryGetValue(skin.Name, out var theme))
             {
                 Main.LogVerbose($"Merging into theme {skin.Name}");
-                MergeSubstitutions(theme, subs);
+                //MergeSubstitutions(theme, subs);
+                theme.AddSkin(skin);
             }
             else
             {

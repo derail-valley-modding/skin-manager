@@ -1,7 +1,7 @@
 ﻿using HarmonyLib;
 using Newtonsoft.Json.Linq;
 
-namespace SkinManagerMod
+namespace SkinManagerMod.Patches
 {
     [HarmonyPatch(typeof(SaveGameManager))]
     internal static class SaveGameManager_Save_Patch

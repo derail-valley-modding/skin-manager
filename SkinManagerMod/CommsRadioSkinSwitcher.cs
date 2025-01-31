@@ -10,6 +10,7 @@ using HarmonyLib;
 using UnityEngine;
 using static DV.Common.GameFeatureFlags;
 
+#nullable disable
 namespace SkinManagerMod
 {
     public class CommsRadioSkinSwitcher : MonoBehaviour, ICommsRadioMode
@@ -38,10 +39,10 @@ namespace SkinManagerMod
         private MeshRenderer HighlighterRender;
         private PaintArea AreaToPaint = PaintArea.All;
 
-        private List<string> SkinsForCarType = null;
+        private List<CustomPaintTheme> SkinsForCarType = null;
         private int SelectedSkinIdx = 0;
-        private string SelectedSkin = null;
-        private string CurrentSkin = null;
+        private CustomPaintTheme SelectedSkin = null;
+        private string CurrentThemeName = null;
 
         private const float SIGNAL_RANGE = 100f;
         private static readonly Vector3 HIGHLIGHT_BOUNDS_EXTENSION = new Vector3(0.25f, 0.8f, 0f);
@@ -196,7 +197,7 @@ namespace SkinManagerMod
                 case State.SelectSkin:
                     UpdateAvailableSkinsList(SelectedCar.carLivery);
                     SetSelectedSkin(SkinsForCarType?.FirstOrDefault());
-                    CurrentSkin = SkinManager.GetCurrentCarSkin(SelectedCar, false);
+                    (CurrentThemeName, _) = SkinManager.GetCurrentCarSkin(SelectedCar, false);
 
                     ButtonBehaviour = ButtonBehaviourType.Override;
                     break;
@@ -252,7 +253,7 @@ namespace SkinManagerMod
                     {
                         PointToCar(trainCar);
 
-                        if (SelectedSkin == CurrentSkin)
+                        if (!SkinProvider.IsBuiltInTheme(SelectedSkin) && (SelectedSkin.name == CurrentThemeName))
                         {
                             display.SetAction(Translations.ReloadAction);
                         }
@@ -328,9 +329,9 @@ namespace SkinManagerMod
                     if ((PointedCar != null) && (PointedCar == SelectedCar))
                     {
                         // clicked on the selected car again, this means confirm
-                        if (SelectedSkin == CurrentSkin)
+                        if (!SkinProvider.IsBuiltInTheme(SelectedSkin) && (SelectedSkin.name == CurrentThemeName))
                         {
-                            SkinProvider.ReloadSkin(SelectedCar.carLivery.id, SelectedSkin);
+                            SkinProvider.ReloadSkin(SelectedCar.carLivery.id, SelectedSkin.name);
                             ResetState();
                         }
                         else
@@ -439,7 +440,7 @@ namespace SkinManagerMod
             }
 
             SkinManager.ApplySkin(SelectedCar, SelectedSkin, AreaToPaint);
-            CurrentSkin = SelectedSkin;
+            CurrentThemeName = SelectedSkin.name;
 
             if (CarTypes.IsMUSteamLocomotive(SelectedCar.carType) && SelectedCar.rearCoupler.IsCoupled())
             {
@@ -447,7 +448,7 @@ namespace SkinManagerMod
                 if ((attachedCar != null) && CarTypes.IsTender(attachedCar.carLivery))
                 {
                     // car attached behind loco is tender
-                    if (SkinProvider.IsBuiltInTheme(SelectedSkin) || !(SkinProvider.FindSkinByName(attachedCar.carLivery, SelectedSkin) is null))
+                    if (SelectedSkin.SupportsVehicle(attachedCar.carLivery))
                     {
                         // found a matching skin for the tender :D
                         SkinManager.ApplySkin(attachedCar, SelectedSkin, AreaToPaint);
@@ -456,9 +457,9 @@ namespace SkinManagerMod
             }
         }
 
-        private void SetSelectedSkin(string skinName)
+        private void SetSelectedSkin(CustomPaintTheme theme)
         {
-            if (string.IsNullOrEmpty(skinName))
+            if (theme is null)
             {
                 // should never actually reach this code due to built in themes
                 SelectedSkin = null;
@@ -466,14 +467,9 @@ namespace SkinManagerMod
             }
             else
             {
-                SelectedSkin = skinName;
+                SelectedSkin = theme;
 
-                if (skinName == Skin.GetDefaultSkinName(SelectedCar.carLivery.id))
-                {
-                    skinName = SkinProvider.DefaultThemeName;
-                }
-
-                string displayName = $"{Translations.SelectPaintPrompt}\n{skinName}";
+                string displayName = $"{Translations.SelectPaintPrompt}\n{SelectedSkin.LocalizedName}";
                 display.SetContent(displayName);
             }
         }

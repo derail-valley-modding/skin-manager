@@ -1,16 +1,12 @@
-﻿using DV.CabControls;
-using DV.CabControls.Spec;
-using DV.Shops;
+﻿using DV.Shops;
 using HarmonyLib;
-using System;
-using System.Collections;
+using SkinManagerMod.Items;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
 
-namespace SkinManagerMod.Items
+namespace SkinManagerMod.Patches
 {
     [HarmonyPatch]
     static internal class ShopPatches
