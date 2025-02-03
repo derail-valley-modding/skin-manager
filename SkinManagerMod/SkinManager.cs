@@ -130,59 +130,6 @@ namespace SkinManagerMod
             }
         }
 
-        //public static void ApplyNonThemeSkinToInterior(TrainCar trainCar, string skinName)
-        //{
-        //    var skin = SkinProvider.FindSkinByName(trainCar.carLivery.id, skinName);
-        //    if (skin == null) return;
-
-        //    var defaultSkin = CarMaterialData.GetDataForCar(trainCar.carLivery.id);
-
-        //    if (trainCar.loadedInterior)
-        //    {
-        //        ApplyNonThemeSkinToTransform(trainCar.loadedInterior, skin, defaultSkin);
-        //    }
-        //    if (trainCar.loadedExternalInteractables)
-        //    {
-        //        ApplyNonThemeSkinToTransform(trainCar.loadedExternalInteractables, skin, defaultSkin);
-        //    }
-        //    if (trainCar.loadedDummyExternalInteractables)
-        //    {
-        //        ApplyNonThemeSkinToTransform(trainCar.loadedDummyExternalInteractables, skin, defaultSkin);
-        //    }
-        //}
-
-        //public static void ApplySkin(TrainCar trainCar, Skin skin, PaintArea area)
-        //{
-        //    if (skin == null) return;
-
-        //    var defaultSkin = CarMaterialData.GetDataForCar(trainCar.carLivery.id);
-
-        //    if (area.HasFlag(PaintArea.Exterior))
-        //    {
-        //        ApplyNonThemeSkinToTransform(trainCar.gameObject, skin, defaultSkin);
-        //    }
-
-        //    if (area.HasFlag(PaintArea.Interior) && trainCar.loadedInterior)
-        //    {
-        //        ApplyNonThemeSkinToTransform(trainCar.loadedInterior, skin, defaultSkin);
-        //    }
-
-        //    SetAppliedCarSkin(trainCar, skin.Name, area);
-        //}
-
-        //private static void ApplyNonThemeSkinToTransform(GameObject objectRoot, Skin skin, CarMaterialData defaults)
-        //{
-        //    foreach (var renderer in objectRoot.GetComponentsInChildren<MeshRenderer>(true))
-        //    {
-        //        if (!renderer.material)
-        //        {
-        //            continue;
-        //        }
-
-        //        TextureUtility.ApplyTextures(renderer, skin, defaults);
-        //    }
-        //}
-
         #endregion
 
         //====================================================================================================

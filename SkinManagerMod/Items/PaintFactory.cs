@@ -1,12 +1,9 @@
-﻿using DV;
-using DV.CabControls;
+﻿using DV.CabControls;
 using DV.Customization.Paint;
 using DV.Interaction;
 using DV.Localization;
 using DV.Shops;
-using DV.ThingTypes;
 using OokiiTsuki.Palette;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -442,14 +439,15 @@ namespace SkinManagerMod.Items
             if (ShopDataInjected) return;
             Main.Log("Injecting global shop data");
 
-            if (UnityEngine.Object.FindObjectOfType<DisplayLoadingInfo>() is DisplayLoadingInfo info)
+            if (Object.FindObjectOfType<DisplayLoadingInfo>() is DisplayLoadingInfo info)
             {
-                info.loadProgressTMP.richText = true;
+                const float LS_SATURATION = 0.7f;
+                const float LS_VALUE = 0.8f;
+                var color = (Color32)Random.ColorHSV(0.01f, 0.9f, LS_SATURATION, LS_SATURATION, LS_VALUE, LS_VALUE);
 
-                int colorIdx = UnityEngine.Random.Range(0, _loadingScreenColors.Length - 1);
-                var color = _loadingScreenColors[colorIdx];
                 string colString = $"{color.r:X2}{color.g:X2}{color.b:X2}";
 
+                info.loadProgressTMP.richText = true;
                 info.loadProgressTMP.text += $"\n<color=#{colString}>{Translations.LoadingScreen}</color>";
             }
 
@@ -499,24 +497,9 @@ namespace SkinManagerMod.Items
             Main.Log("Destroying global shop data");
 
             _dummyItemSpecs.Clear();
-            UnityEngine.Object.Destroy(_dummyItemSpecHolder);
+            Object.Destroy(_dummyItemSpecHolder);
 
             ShopDataInjected = false;
         }
-
-        private static float LS_SATURATION = 0.6f;
-        private static float LS_VALUE = 0.7f;
-
-        private static Color32[] _loadingScreenColors =
-        {
-            Color.HSVToRGB(0.0f, LS_SATURATION, LS_VALUE),
-            Color.HSVToRGB(0.1f, LS_SATURATION, LS_VALUE),
-            Color.HSVToRGB(0.15f, LS_SATURATION, LS_VALUE),
-            Color.HSVToRGB(0.25f, LS_SATURATION, LS_VALUE),
-            Color.HSVToRGB(0.5f, LS_SATURATION, LS_VALUE),
-            Color.HSVToRGB(0.6f, LS_SATURATION, LS_VALUE),
-            Color.HSVToRGB(0.75f, LS_SATURATION, LS_VALUE),
-            Color.HSVToRGB(0.85f, LS_SATURATION, LS_VALUE),
-        };
     }
 }

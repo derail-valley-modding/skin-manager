@@ -1,5 +1,4 @@
 ﻿using DV.Customization.Paint;
-using DV.ThingTypes;
 using HarmonyLib;
 
 namespace SkinManagerMod.Patches
@@ -35,10 +34,53 @@ namespace SkinManagerMod.Patches
             var train = TrainCar.Resolve(__instance.gameObject);
             PaintArea area = (__instance.targetArea == TrainCarPaint.Target.Interior) ? PaintArea.Interior : PaintArea.Exterior;
 
-            if (__instance.currentTheme is not CustomPaintTheme theme)
+            ReapplyThemes(train);
+
+            var theme = GetCustomTheme(__instance, train);
+            SkinManager.SetAppliedCarSkin(train, theme.name, area);
+
+            return false;
+        }
+
+        public static void ReapplyThemes(TrainCar train)
+        {
+            var extTheme = GetCustomTheme(train.PaintExterior, train);
+            if (!extTheme) return;
+
+            var intTheme = train.PaintInterior ? GetCustomTheme(train.PaintInterior, train) : null;
+            
+            extTheme.Apply(train.gameObject, train);
+
+            if (intTheme is not null)
+            {
+                if (train.loadedInterior)
+                {
+                    intTheme.Apply(train.loadedInterior, train);
+                }
+                if (train.interiorLOD)
+                {
+                    intTheme.Apply(train.interiorLOD.gameObject, train);
+                }
+            }
+
+            if (train.loadedExternalInteractables)
+            {
+                extTheme.Apply(train.loadedExternalInteractables, train);
+            }
+            if (train.loadedDummyExternalInteractables)
+            {
+                extTheme.Apply(train.loadedDummyExternalInteractables, train);
+            }
+        }
+
+        private static CustomPaintTheme GetCustomTheme(TrainCarPaint paint, TrainCar train)
+        {
+            if (!paint || !paint.currentTheme) return null!;
+
+            if (paint.currentTheme is not CustomPaintTheme theme)
             {
                 // default theme
-                string themeName = __instance.currentTheme.name;
+                string themeName = paint.currentTheme.name;
 
                 if ((themeName == SkinProvider.DefaultNewThemeName) && !SkinProvider.IsThemeable(train.carLivery))
                 {
@@ -47,21 +89,7 @@ namespace SkinManagerMod.Patches
                 theme = SkinProvider.GetTheme(themeName);
             }
 
-            if (__instance.TargetArea == TrainCarPaint.Target.Interior)
-            {
-                if (train.loadedInterior)
-                {
-                    theme.Apply(train.loadedInterior, train);
-                }
-            }
-            else
-            {
-                theme.Apply(__instance.gameObject, train);
-            }
-            SkinManager.SetAppliedCarSkin(train, theme.name, area);
-            //Main.LogVerbose($"Applied {theme.name} to {train.ID} {area}");
-
-            return false;
+            return theme;
         }
     }
 }
