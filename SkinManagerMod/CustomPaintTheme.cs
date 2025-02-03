@@ -13,6 +13,9 @@ namespace SkinManagerMod
 
         public void AddSkin(Skin skin) => _skins.Add(skin.LiveryId, skin);
 
+        public void RemoveSkin(Skin skin) => _skins.Remove(skin.LiveryId);
+        public void RemoveSkin(string liveryId) => _skins.Remove(liveryId);
+
         public bool SupportsVehicle(string liveryId) => _skins.ContainsKey(liveryId);
         public bool SupportsVehicle(TrainCarLivery livery) => _skins.ContainsKey(livery.id);
 

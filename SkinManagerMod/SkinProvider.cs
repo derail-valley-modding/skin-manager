@@ -413,12 +413,7 @@ namespace SkinManagerMod
 
                 if (_themeDict.TryGetValue(skinName, out var theme))
                 {
-                    UnMergeSubstitutions(theme, existingSkin.GetSubstitutions());
-
-                    if (theme.substitutions.Length == 0)
-                    {
-                        UnregisterTheme(skinName);
-                    }
+                    theme.RemoveSkin(liveryId);
                 }
             }
         }
@@ -574,13 +569,13 @@ namespace SkinManagerMod
 
                     var newSettings = ThemeSettings.Create(configPath, configItem, version);
 
-                    if (TryGetThemeSettings(configItem.Name, out var settings))
+                    if (TryGetThemeSettings(configItem.Name!, out var settings))
                     {
                         settings.Merge(newSettings);
                     }
                     else
                     {
-                        _themeSettings.Add(configItem.Name, newSettings);
+                        _themeSettings.Add(configItem.Name!, newSettings);
                     }
                 }
             }
@@ -682,11 +677,11 @@ namespace SkinManagerMod
                 return true;
             }
 
-            if (Remaps.TryGetUpdatedTextureName(liveryId, filename, out string newName))
+            if (Remaps.TryGetUpdatedTextureName(liveryId, filename, out string? newName))
             {
-                if (textureNames.TryGetValue(newName, out textureProp))
+                if (textureNames.TryGetValue(newName!, out textureProp))
                 {
-                    filename = newName;
+                    filename = newName!;
                     return true;
                 }
             }
@@ -716,7 +711,7 @@ namespace SkinManagerMod
 
                 string fileName = Path.GetFileNameWithoutExtension(texturePath);
 
-                if (TryGetTextureForFilename(config.CarId, ref fileName, textureNames, out string textureProp))
+                if (TryGetTextureForFilename(config.CarId!, ref fileName, textureNames, out string textureProp))
                 {
                     var linear = textureProp == "_BumpMap";
 
@@ -839,50 +834,6 @@ namespace SkinManagerMod
             }
         }
 
-        private static void MergeSubstitutions(PaintTheme theme, PaintTheme.Substitution[] toMerge)
-        {
-            if (toMerge is null || toMerge.Length == 0) return;
-
-            toMerge = toMerge.Where(sub => !theme.substitutions.Any(existSub => SubstitutesSameMaterial(sub, existSub))).ToArray();
-
-            int currentLength = theme.substitutions.Length;
-            var newArray = new PaintTheme.Substitution[currentLength + toMerge.Length];
-
-            Array.Copy(theme.substitutions, newArray, currentLength);
-            Array.Copy(toMerge, 0, newArray, currentLength, toMerge.Length);
-
-            theme.substitutions = newArray;
-            theme.substitutionDictionary = null;
-        }
-
-        public static void UnMergeSubstitutions(PaintTheme theme, PaintTheme.Substitution[] toRemove)
-        {
-            if (toRemove is null || toRemove.Length == 0) return;
-
-            var result = new List<PaintTheme.Substitution>(theme.substitutions.Length - toRemove.Length);
-
-            foreach (var substitution in theme.substitutions)
-            {
-                if (!toRemove.Any(s => SubstitutionsMatch(s, substitution)))
-                {
-                    result.Add(substitution);
-                }
-            }
-
-            theme.substitutions = result.ToArray();
-            theme.substitutionDictionary = null;
-        }
-
-        private static bool SubstitutesSameMaterial(PaintTheme.Substitution a, PaintTheme.Substitution b)
-        {
-            return a.original == b.original;
-        }
-
-        private static bool SubstitutionsMatch(PaintTheme.Substitution a, PaintTheme.Substitution b)
-        {
-            return (a.original == b.original) && (a.substitute == b.substitute);
-        }
-
         #endregion
 
 
@@ -936,7 +887,7 @@ namespace SkinManagerMod
                 }
             }
 
-            if (Remaps.TryGetOldTrainCarId(livery.id, out string overhauledId))
+            if (Remaps.TryGetOldTrainCarId(livery.id, out string? overhauledId))
             {
                 folderPath = Path.Combine(parentFolder, overhauledId);
 

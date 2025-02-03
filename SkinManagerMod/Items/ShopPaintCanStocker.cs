@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+#nullable disable
 namespace SkinManagerMod.Items
 {
     public class ShopPaintCanStocker : MonoBehaviour
@@ -16,7 +17,7 @@ namespace SkinManagerMod.Items
         public CashRegisterWithModules CashRegister;
 
         private GameObject _scanModulePrototype;
-        private readonly List<ScanItemCashRegisterModule> _injectedModules = new List<ScanItemCashRegisterModule>(NUM_THEMES_TO_STOCK);
+        private readonly List<ScanItemCashRegisterModule> _injectedModules = new(NUM_THEMES_TO_STOCK);
         private ScanItemCashRegisterModule[] _preInjectionModules = null;
 
         public void Awake()

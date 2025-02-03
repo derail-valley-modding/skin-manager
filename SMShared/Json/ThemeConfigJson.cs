@@ -2,30 +2,26 @@
 using System.Collections.Generic;
 using System.Text;
 
-#if PACKAGER
-#nullable disable
-#endif
-
 namespace SMShared.Json
 {
     [Serializable]
     public class ThemeConfigJson
     {
-        public string Version = "1.0.0";
-        public ThemeConfigItem[] Themes;
+        public string? Version = "1.0.0";
+        public ThemeConfigItem[]? Themes;
     }
 
     [Serializable]
     public class ThemeConfigItem
     {
-        public string Name;
+        public string? Name;
         public bool HideFromStores;
         public bool PreventRandomSpawning;
         public float? CanPrice;
 
-        public string LabelTextureFile;
-        public string LabelBaseColor;
-        public string LabelAccentColorA;
-        public string LabelAccentColorB;
+        public string? LabelTextureFile;
+        public string? LabelBaseColor;
+        public string? LabelAccentColorA;
+        public string? LabelAccentColorB;
     }
 }

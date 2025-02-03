@@ -214,13 +214,13 @@ namespace SkinManagerMod.Items
             }
         }
 
-        private static void GenerateDefaultLabelMaterial(Material labelMaterial, string themeName, ThemeSettings themeSettings = null)
+        private static void GenerateDefaultLabelMaterial(Material labelMaterial, string themeName, ThemeSettings? themeSettings = null)
         {
             SkinProvider.TryGetTheme(themeName, out var theme);
 
             Color baseColor, accentA, accentB;
 
-            if (themeSettings != null)
+            if (themeSettings is not null)
             {
                 // use user supplied colors
                 baseColor = themeSettings.LabelBaseColor ?? Color.white;
@@ -446,7 +446,8 @@ namespace SkinManagerMod.Items
             {
                 info.loadProgressTMP.richText = true;
 
-                var color = (Color32)Color.HSVToRGB(UnityEngine.Random.value, 0.5f, 0.7f);
+                int colorIdx = UnityEngine.Random.Range(0, _loadingScreenColors.Length - 1);
+                var color = _loadingScreenColors[colorIdx];
                 string colString = $"{color.r:X2}{color.g:X2}{color.b:X2}";
 
                 info.loadProgressTMP.text += $"\n<color=#{colString}>{Translations.LoadingScreen}</color>";
@@ -502,5 +503,20 @@ namespace SkinManagerMod.Items
 
             ShopDataInjected = false;
         }
+
+        private static float LS_SATURATION = 0.6f;
+        private static float LS_VALUE = 0.7f;
+
+        private static Color32[] _loadingScreenColors =
+        {
+            Color.HSVToRGB(0.0f, LS_SATURATION, LS_VALUE),
+            Color.HSVToRGB(0.1f, LS_SATURATION, LS_VALUE),
+            Color.HSVToRGB(0.15f, LS_SATURATION, LS_VALUE),
+            Color.HSVToRGB(0.25f, LS_SATURATION, LS_VALUE),
+            Color.HSVToRGB(0.5f, LS_SATURATION, LS_VALUE),
+            Color.HSVToRGB(0.6f, LS_SATURATION, LS_VALUE),
+            Color.HSVToRGB(0.75f, LS_SATURATION, LS_VALUE),
+            Color.HSVToRGB(0.85f, LS_SATURATION, LS_VALUE),
+        };
     }
 }

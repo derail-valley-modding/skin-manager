@@ -24,12 +24,12 @@ namespace OokiiTsuki.Palette
         public List<Swatch> mSwatches;
         private int mHighestPopulation;
 
-        public Swatch VibrantSwatch { get; private set; }
-        public Swatch MutedSwatch { get; private set; }
-        public Swatch DarkVibrantSwatch { get; private set; }
-        public Swatch DarkMutedSwatch { get; private set; }
-        public Swatch LightVibrantSwatch { get; private set; }
-        public Swatch LightMutedSwatch { get; private set; }
+        public Swatch? VibrantSwatch { get; private set; }
+        public Swatch? MutedSwatch { get; private set; }
+        public Swatch? DarkVibrantSwatch { get; private set; }
+        public Swatch? DarkMutedSwatch { get; private set; }
+        public Swatch? LightVibrantSwatch { get; private set; }
+        public Swatch? LightMutedSwatch { get; private set; }
 
         public static Palette Generate(Texture2D texture, int numColors = DEFAULT_CALCULATE_NUMBER_COLORS)
         {
@@ -70,10 +70,10 @@ namespace OokiiTsuki.Palette
                     LightVibrantSwatch == swatch || MutedSwatch == swatch ||
                     DarkMutedSwatch == swatch || LightMutedSwatch == swatch;
         }
-        private Swatch FindColor(float targetLuma, float minLuma, float maxLuma,
+        private Swatch? FindColor(float targetLuma, float minLuma, float maxLuma,
                              float targetSaturation, float minSaturation, float maxSaturation)
         {
-            Swatch max = null;
+            Swatch? max = null;
             float maxValue = 0f;
             foreach (Swatch swatch in mSwatches)
             {
@@ -218,7 +218,8 @@ namespace OokiiTsuki.Palette
             public int Blue { get; private set; }
             public int Rgb { get; private set; }
             public int Population { get; private set; }
-            private float[] mHsl;
+            private float[]? mHsl;
+
             public Swatch(int rgbColor, int population)
             {
                 Red = rgbColor.Red();
@@ -250,9 +251,8 @@ namespace OokiiTsuki.Palette
             {
                 get
                 {
-                    if (mHsl == null)
-                        // Lazily generate HSL values from RGB
-                        mHsl = ColorUtils.RGBtoHSL(Red, Green, Blue);
+                    // Lazily generate HSL values from RGB
+                    mHsl ??= ColorUtils.RGBtoHSL(Red, Green, Blue);
                     return mHsl;
                 }
             }

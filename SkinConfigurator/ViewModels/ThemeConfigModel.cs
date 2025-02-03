@@ -169,7 +169,7 @@ namespace SkinConfigurator.ViewModels
             LabelAccentColorB = TryParseColor(json.LabelAccentColorB);
         }
 
-        private static Color TryParseColor(string value)
+        private static Color TryParseColor(string? value)
         {
             if (!string.IsNullOrEmpty(value))
             {

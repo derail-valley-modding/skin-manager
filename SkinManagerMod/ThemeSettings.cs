@@ -13,7 +13,7 @@ namespace SkinManagerMod
         public bool PreventRandomSpawning;
         public float? CanPrice;
 
-        public SkinTexture CanLabel;
+        public SkinTexture? CanLabel;
         public Color? LabelBaseColor;
         public Color? LabelAccentColorA;
         public Color? LabelAccentColorB;
@@ -50,7 +50,7 @@ namespace SkinManagerMod
 
         public static ThemeSettings Create(string basePath, ThemeConfigItem data, Version version)
         {
-            var result = new ThemeSettings(data.Name, version)
+            var result = new ThemeSettings(data.Name!, version)
             {
                 HideFromStores = data.HideFromStores,
                 PreventRandomSpawning = data.PreventRandomSpawning,
@@ -90,7 +90,7 @@ namespace SkinManagerMod
             return result;
         }
 
-        private static void TryParseColor(string value, string configPath, ref Color? result)
+        private static void TryParseColor(string? value, string configPath, ref Color? result)
         {
             if (string.IsNullOrEmpty(value)) return;
 

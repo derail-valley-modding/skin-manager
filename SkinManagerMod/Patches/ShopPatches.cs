@@ -73,10 +73,10 @@ namespace SkinManagerMod.Patches
 
         private static GameObject InstantiatePaintCan(InventoryItemSpec itemSpec, Vector3 position)
         {
-            if (!(itemSpec is CustomPaintInventorySpec customSpec))
+            if (itemSpec is not CustomPaintInventorySpec customSpec)
             {
                 var prefab = Resources.Load(itemSpec.ItemPrefabName) as GameObject;
-                return UnityEngine.Object.Instantiate(prefab, position, Quaternion.identity);
+                return Object.Instantiate(prefab, position, Quaternion.identity)!;
             }
 
             return PaintFactory.InstantiateCustomCan(customSpec.Theme, position, Quaternion.identity);

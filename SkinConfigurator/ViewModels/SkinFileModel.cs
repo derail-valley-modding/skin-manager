@@ -26,7 +26,7 @@ namespace SkinConfigurator.ViewModels
             set 
             {
                 SetValue(FileNameProperty, value);
-                CanUpgradeFileName = Remaps.TryGetUpdatedTextureName(Parent.CarId, Path.GetFileNameWithoutExtension(value), out _);
+                CanUpgradeFileName = Remaps.TryGetUpdatedTextureName(Parent.CarId!, Path.GetFileNameWithoutExtension(value), out _);
                 FileNameChanged?.Invoke();
             }
         }
@@ -61,7 +61,7 @@ namespace SkinConfigurator.ViewModels
         {
             string name = Path.GetFileNameWithoutExtension(FileName);
 
-            if (Remaps.TryGetUpdatedTextureName(Parent.CarId, name, out string newName))
+            if (Remaps.TryGetUpdatedTextureName(Parent.CarId!, name, out string? newName))
             {
                 FileName = $"{newName}{Extension}";
             }

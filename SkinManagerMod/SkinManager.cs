@@ -24,14 +24,20 @@ namespace SkinManagerMod
         {
             if (!CarSpawner.Instance) return;
 
+            var theme = SkinProvider.GetTheme(skinConfig.Name);
+
             foreach (var car in CarSpawner.Instance.AllCars.Where(tc => tc.carLivery.id == skinConfig.CarId))
             {
-                var toApply = GetCurrentCarSkin(car, false);
+                (string? exterior, string? interior) = GetCurrentCarSkin(car, false);
 
-                //if ((toApply != null) && (toApply == skinConfig.Name))
-                //{
-                //    ApplySkin(car, toApply);
-                //}
+                PaintArea matchingArea = PaintArea.None;
+                if (exterior == skinConfig.Name) matchingArea |= PaintArea.Exterior;
+                if (interior == skinConfig.Name) matchingArea |= PaintArea.Interior;
+
+                if (matchingArea != PaintArea.None)
+                {
+                    ApplySkin(car, theme, matchingArea);
+                }
             }
         }
 
@@ -237,6 +243,7 @@ namespace SkinManagerMod
     [Flags]
     public enum PaintArea
     {
+        None = 0,
         Exterior = 1,
         Interior = 2,
         All = Exterior | Interior,
