@@ -21,15 +21,17 @@ namespace SkinManagerMod
         public string FolderPath;
 
         [JsonIgnore]
-        public Skin Skin;
+        public Skin? Skin;
 
         [JsonIgnore]
-        public List<ResourcePack> Resources = new List<ResourcePack>();
+        public List<ResourcePack> Resources = new();
 
         [JsonIgnore]
         public string[] ResourcePaths => Resources.Select(r => r.FolderPath).ToArray();
 
+#pragma warning disable CS8618
         public SkinConfig() { }
+#pragma warning restore CS8618
 
         public SkinConfig(string name, string folderPath, TrainCarLivery livery)
         {
@@ -47,12 +49,12 @@ namespace SkinManagerMod
             _jsonSettings.Converters.Add(new StringEnumConverter());
         }
 
-        public static SkinConfig LoadFromFile(string filePath)
+        public static SkinConfig? LoadFromFile(string filePath)
         {
             try
             {
                 string contents = File.ReadAllText(filePath);
-                var result = JsonConvert.DeserializeObject<SkinConfig>(contents, _jsonSettings);
+                var result = JsonConvert.DeserializeObject<SkinConfig>(contents, _jsonSettings)!;
 
                 result.FolderPath = Path.GetDirectoryName(filePath);
                 result.Livery = Globals.G.Types.Liveries

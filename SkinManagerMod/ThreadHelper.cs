@@ -19,17 +19,14 @@ namespace SkinManagerMod
         {
             if (_toExecute.Count == 0) return;
 
-            if (_toExecute.TryDequeue(out Action action))
-            {
-                action?.Invoke();
-            }
+            _toExecute.Dequeue()?.Invoke();
         }
 
         protected override void OnDestroy()
         {
-            while (_toExecute.TryDequeue(out Action action))
+            while (_toExecute.Count > 0)
             {
-                action?.Invoke();
+                _toExecute.Dequeue()?.Invoke();
             }
 
             base.OnDestroy();

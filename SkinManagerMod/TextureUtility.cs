@@ -23,12 +23,12 @@ namespace SkinManagerMod
 
             public static readonly string[] UniqueTextures =
             {
-                Main, BumpMap, MetalGlossMap, EmissionMap,
+                Main, BumpMap, MetalGlossMap, EmissionMap, DetailAlbedo, DetailNormal
             };
 
             public static readonly string[] AllTextures =
             {
-                Main, BumpMap, MetalGlossMap, EmissionMap, OcclusionMap,
+                Main, BumpMap, MetalGlossMap, EmissionMap, OcclusionMap, DetailAlbedo, DetailNormal
             };
 
             public static readonly string[] DetailTextures =
@@ -67,16 +67,17 @@ namespace SkinManagerMod
                 Main.LogVerbose($"{renderer.name}: {cleanName}");
             }
 
-            foreach (var theme in SkinProvider.BuiltInThemes)
+            foreach (var themeName in SkinProvider.BuiltInThemeNames)
             {
-                if (theme.name == SkinProvider.DefaultThemeName) continue;
+                if (themeName == SkinProvider.DefaultThemeName) continue;
 
-                string subPath = Path.Combine(path, theme.name);
+                string subPath = Path.Combine(path, themeName);
                 if (!Directory.Exists(subPath))
                 {
                     Directory.CreateDirectory(subPath);
                 }
 
+                var theme = SkinProvider.GetTheme(themeName);
                 foreach (var substitution in theme.substitutions.Where(s => s.substitute && materialNames.Contains(s.original.name)))
                 {
                     ExportTexturesForMaterial(subPath, substitution.substitute, alreadyExported);
@@ -103,7 +104,7 @@ namespace SkinManagerMod
             ExportTexture(path, detailBump, alreadyExported, true);
         }
 
-        private static void ExportTexture(string path, Texture2D texture, Dictionary<string, Texture> alreadyExported, bool isNormal = false)
+        private static void ExportTexture(string path, Texture2D? texture, Dictionary<string, Texture> alreadyExported, bool isNormal = false)
         {
             if (texture != null && !alreadyExported.ContainsKey(texture.name))
             {
@@ -176,7 +177,7 @@ namespace SkinManagerMod
                 Color c = colors[i];
                 c.r = c.a * 2 - 1;  //red<-alpha (x<-w)
                 c.g = c.g * 2 - 1; //green is always the same (y)
-                Vector2 xy = new Vector2(c.r, c.g); //this is the xy vector
+                var xy = new Vector2(c.r, c.g); //this is the xy vector
                 c.b = Mathf.Sqrt(1 - Mathf.Clamp01(Vector2.Dot(xy, xy))); //recalculate the blue channel (z)
                 colors[i] = new Color(c.r * 0.5f + 0.5f, c.g * 0.5f + 0.5f, c.b * 0.5f + 0.5f); //back to 0-1 range
             }
@@ -189,7 +190,7 @@ namespace SkinManagerMod
         /// <summary>
         /// Get the named 2D texture property from a material
         /// </summary>
-        public static Texture2D GetMaterialTexture(Material material, string propName)
+        public static Texture2D? GetMaterialTexture(Material material, string propName)
         {
             if (!material || !material.HasProperty(propName))
             {
@@ -208,6 +209,20 @@ namespace SkinManagerMod
                 foreach (string textureName in PropNames.UniqueTextures)
                 {
                     if (GetMaterialTexture(renderer.sharedMaterial, textureName) is Texture2D texture)
+                    {
+                        yield return texture;
+                    }
+                }
+            }
+        }
+
+        public static IEnumerable<Texture2D> EnumerateTextures(IEnumerable<Material> materials)
+        {
+            foreach (var material in materials)
+            {
+                foreach (string textureName in PropNames.UniqueTextures)
+                {
+                    if (GetMaterialTexture(material, textureName) is Texture2D texture)
                     {
                         yield return texture;
                     }
@@ -278,38 +293,44 @@ namespace SkinManagerMod
         /// <summary>
         /// Actually assign applicable skin textures to a renderer, using default skin to supply fallbacks
         /// </summary>
-        public static void ApplyTextures(MeshRenderer renderer, Skin skin, Skin defaultSkin)
+        public static void ApplyTextures(MeshRenderer renderer, Skin skin, CarMaterialData defaultSkin)
         {
-            foreach (string textureID in PropNames.AllTextures)
+            var defaultData = defaultSkin.GetDataForMaterial(renderer.material);
+            if (defaultData is null) return;
+
+            var defaultMaterial = defaultData.GetMaterialForBaseTheme(skin.BaseTheme);
+
+            foreach (var defaultTexture in defaultData.AllTextures)
             {
-                var currentTexture = GetMaterialTexture(renderer.sharedMaterial, textureID);
-
-                if (currentTexture != null)
+                if (skin.ContainsTexture(defaultTexture.TextureName))
                 {
-                    if (skin.ContainsTexture(currentTexture.name))
-                    {
-                        var skinTexture = skin.GetTexture(currentTexture.name);
-                        renderer.material.SetTexture(textureID, skinTexture.TextureData);
+                    var skinTexture = skin.GetTexture(defaultTexture.TextureName)!;
+                    renderer.material.SetTexture(defaultTexture.PropertyName, skinTexture.TextureData);
 
-                        if (textureID == PropNames.MetalGlossMap)
+                    if (defaultTexture.PropertyName == PropNames.MetalGlossMap)
+                    {
+                        if (!GetMaterialTexture(renderer.material, PropNames.OcclusionMap))
                         {
-                            if (!GetMaterialTexture(renderer.sharedMaterial, PropNames.OcclusionMap))
-                            {
-                                renderer.material.SetTexture(PropNames.OcclusionMap, skinTexture.TextureData);
-                            }
+                            renderer.material.SetTexture(PropNames.OcclusionMap, skinTexture.TextureData);
                         }
                     }
-                    else if ((defaultSkin != null) && defaultSkin.ContainsTexture(currentTexture.name))
-                    {
-                        var skinTexture = defaultSkin.GetTexture(currentTexture.name);
-                        renderer.material.SetTexture(textureID, skinTexture.TextureData);
+                }
+                else
+                {
+                    var skinTexture = defaultMaterial.GetTexture(defaultTexture.PropertyName);
+                    renderer.material.SetTexture(defaultTexture.PropertyName, skinTexture);
 
-                        if (textureID == PropNames.MetalGlossMap)
+                    if (!skinTexture)
+                    {
+                        // demo bogies et al. don't have textures...
+                        renderer.material.color = defaultMaterial.color;
+                    }
+
+                    if (defaultTexture.PropertyName == PropNames.MetalGlossMap)
+                    {
+                        if (!GetMaterialTexture(renderer.material, PropNames.OcclusionMap))
                         {
-                            if (!GetMaterialTexture(renderer.sharedMaterial, PropNames.OcclusionMap))
-                            {
-                                renderer.material.SetTexture(PropNames.OcclusionMap, skinTexture.TextureData);
-                            }
+                            renderer.material.SetTexture(PropNames.OcclusionMap, skinTexture);
                         }
                     }
                 }

@@ -27,12 +27,12 @@ namespace SkinManagerMod
             Livery = livery;
         }
 
-        public static ResourcePack LoadFromFile(string filePath)
+        public static ResourcePack? LoadFromFile(string filePath)
         {
             try
             {
                 string contents = File.ReadAllText(filePath);
-                var result = JsonConvert.DeserializeObject<ResourcePack>(contents);
+                var result = JsonConvert.DeserializeObject<ResourcePack>(contents)!;
 
                 result.FolderPath = Path.GetDirectoryName(filePath);
                 result.Livery = Globals.G.Types.Liveries

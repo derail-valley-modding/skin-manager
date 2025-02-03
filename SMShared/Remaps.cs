@@ -1,10 +1,4 @@
-﻿#if PACKAGER
-    #nullable disable
-#else
-    using DV.ThingTypes;
-#endif
-
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +9,7 @@ namespace SMShared
     {
         private static readonly Dictionary<string, string> _newToOldCarIdMap;
 
-        public static bool TryGetOldTrainCarId(string newId, out string oldId)
+        public static bool TryGetOldTrainCarId(string newId, out string? oldId)
         {
             return _newToOldCarIdMap.TryGetValue(newId, out oldId);
         }
@@ -67,7 +61,7 @@ namespace SMShared
             { "CarNuclearFlask",            "NuclearFlask" },
         };
 
-        public static bool TryGetUpdatedCarId(string oldId, out string newId)
+        public static bool TryGetUpdatedCarId(string oldId, out string? newId)
         {
             return _oldToNewCarIdMap.TryGetValue(oldId, out newId);
         }
@@ -100,7 +94,7 @@ namespace SMShared
                 return ((IEnumerable<KeyValuePair<string, string>>)_map).GetEnumerator();
             }
 
-            public bool TryGetUpdatedName(string oldName, out string newName)
+            public bool TryGetUpdatedName(string oldName, out string? newName)
             {
                 return _map.TryGetValue(oldName, out newName);
             }
@@ -255,9 +249,9 @@ namespace SMShared
             });
         }
 
-        public static bool TryGetUpdatedTextureName(string liveryId, string oldName, out string newName)
+        public static bool TryGetUpdatedTextureName(string liveryId, string oldName, out string? newName)
         {
-            if (_legacyTextureNameMap.TryGetValue(liveryId, out TextureMapping textureMapping))
+            if (_legacyTextureNameMap.TryGetValue(liveryId, out TextureMapping? textureMapping))
             {
                 return textureMapping.TryGetUpdatedName(oldName, out newName);
             }
@@ -267,7 +261,3 @@ namespace SMShared
         }
     }
 }
-
-#if PACKAGER
-    #nullable restore
-#endif

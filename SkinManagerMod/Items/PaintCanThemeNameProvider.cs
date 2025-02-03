@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using SMShared;
 using UnityEngine;
 
+#nullable disable
 namespace SkinManagerMod.Items
 {
     public class PaintCanThemeNameProvider : MonoBehaviour, IInventoryItemLocalizer

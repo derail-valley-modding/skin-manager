@@ -33,7 +33,7 @@ namespace SkinConfigurator.ViewModels
                 {
                     Name = Name,
                     CarId = CarId,
-                    ResourceNames = Resources?.Select(r => r.Name).ToArray(),
+                    ResourceNames = Resources?.Select(r => r.Name!).ToArray(),
                     BaseTheme = BaseTheme,
                 };
             }

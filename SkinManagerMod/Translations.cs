@@ -5,6 +5,8 @@ namespace SkinManagerMod
 {
     public static class Translations
     {
+        public static string LoadingScreen => L("skinman/ui/loading");
+
         // Comms Radio
         public static string ReskinMode => L("skinman/radio/repaint_mode");
         public static string SelectCarPrompt => L("skinman/radio/select_car");
@@ -50,6 +52,7 @@ namespace SkinManagerMod
             public static string PreferReskins => L("skinman/skinmode/prefer_reskins");
             public static string AllowForCustomCars => L("skinman/skinmode/allow_custom");
             public static string AllowForAllCars => L("skinman/skinmode/allow_all");
+            public static string PreferDefaults => L("skinman/skinmode/prefer_default");
         }
     }
 }

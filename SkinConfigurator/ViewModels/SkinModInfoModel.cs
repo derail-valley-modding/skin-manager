@@ -20,7 +20,7 @@ namespace SkinConfigurator.ViewModels
             {
                 Id = Id,
                 DisplayName = DisplayName,
-                Version = Version,
+                Version = Version!,
                 Author = string.IsNullOrWhiteSpace(Author) ? null : Author,
             };
         }

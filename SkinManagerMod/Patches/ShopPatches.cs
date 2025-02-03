@@ -1,16 +1,12 @@
-﻿using DV.CabControls;
-using DV.CabControls.Spec;
-using DV.Shops;
+﻿using DV.Shops;
 using HarmonyLib;
-using System;
-using System.Collections;
+using SkinManagerMod.Items;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
 
-namespace SkinManagerMod.Items
+namespace SkinManagerMod.Patches
 {
     [HarmonyPatch]
     static internal class ShopPatches
@@ -77,10 +73,10 @@ namespace SkinManagerMod.Items
 
         private static GameObject InstantiatePaintCan(InventoryItemSpec itemSpec, Vector3 position)
         {
-            if (!(itemSpec is CustomPaintInventorySpec customSpec))
+            if (itemSpec is not CustomPaintInventorySpec customSpec)
             {
                 var prefab = Resources.Load(itemSpec.ItemPrefabName) as GameObject;
-                return UnityEngine.Object.Instantiate(prefab, position, Quaternion.identity);
+                return Object.Instantiate(prefab, position, Quaternion.identity)!;
             }
 
             return PaintFactory.InstantiateCustomCan(customSpec.Theme, position, Quaternion.identity);

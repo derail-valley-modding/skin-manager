@@ -6,7 +6,7 @@ namespace SkinManagerMod.Items
 {
     public class CustomPaintInventorySpec : InventoryItemSpec
     {
-        public PaintTheme Theme;
+        public PaintTheme Theme = null!;
 
         public static CustomPaintInventorySpec Create(InventoryItemSpec original, GameObject holder, PaintTheme theme)
         {

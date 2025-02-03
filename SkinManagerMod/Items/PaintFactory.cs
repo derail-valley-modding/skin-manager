@@ -1,15 +1,13 @@
-﻿using DV;
-using DV.CabControls;
+﻿using DV.CabControls;
 using DV.Customization.Paint;
 using DV.Interaction;
 using DV.Localization;
 using DV.Shops;
-using DV.ThingTypes;
 using OokiiTsuki.Palette;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using TMPro;
 using UnityEngine;
 
@@ -19,22 +17,34 @@ namespace SkinManagerMod.Items
     {
         public const string DEFAULT_CAN_PREFAB_NAME = "PaintCan";
 
-        public static string GetDummyPrefabName(string themeName) => $"SM_ItemSpec_{themeName}";
+        public const string DUMMY_CAN_PREFIX = "SM_ItemSpec";
+        public static string GetDummyPrefabName(string themeName) => $"{DUMMY_CAN_PREFIX}_{themeName}";
 
-        private static GameObject _defaultCanPrefab = null;
+        private static Regex _dummyCanRegex = new($"^{DUMMY_CAN_PREFIX}_(.+)$");
+
+        public static bool TryParseDummyPrefabName(string prefabName, out string? themeName)
+        {
+            var match = _dummyCanRegex.Match(prefabName);
+            if (match.Success)
+            {
+                themeName = match.Groups[1].Value;
+                return true;
+            }
+            themeName = null;
+            return false;
+        }
+
+        private static GameObject? _defaultCanPrefab = null;
         public static GameObject DefaultCanPrefab
         {
             get
             {
-                if (_defaultCanPrefab is null)
-                {
-                    _defaultCanPrefab = Resources.Load("PaintCan") as GameObject;
-                }
-                return _defaultCanPrefab;
+                _defaultCanPrefab ??= Resources.Load("PaintCan") as GameObject;
+                return _defaultCanPrefab!;
             }
         }
 
-        private static Material _defaultCanLabelMaterial = null;
+        private static Material? _defaultCanLabelMaterial = null;
         public static Material DefaultCanLabelMaterial
         {
             get
@@ -48,26 +58,23 @@ namespace SkinManagerMod.Items
             }
         }
 
-        private static ShopItemData _defaultCanShopData = null;
+        private static ShopItemData? _defaultCanShopData = null;
         private static ShopItemData DefaultCanShopData
         {
             get
             {
-                if (_defaultCanShopData is null)
-                {
-                    _defaultCanShopData = GlobalShopController.Instance.GetShopItemData(DEFAULT_CAN_PREFAB_NAME);
-                }
+                _defaultCanShopData ??= GlobalShopController.Instance.GetShopItemData(DEFAULT_CAN_PREFAB_NAME);
                 return _defaultCanShopData;
             }
         }
 
-        private static readonly Dictionary<string, Material> _labelMaterials = new Dictionary<string, Material>();
+        private static readonly Dictionary<string, Material> _labelMaterials = new();
 
-        private static GameObject _labelTextGizmo;
-        private static TextMeshProUGUI _themeNameTextMesh;
-        private static TextMeshProUGUI _carTypesTextMesh;
-        private static TMP_FontAsset _labelFont;
-        private static Camera _textCamera;
+        private static GameObject? _labelTextGizmo;
+        private static TextMeshProUGUI? _themeNameTextMesh;
+        private static TextMeshProUGUI? _carTypesTextMesh;
+        private static TMP_FontAsset? _labelFont;
+        private static Camera? _textCamera;
 
         private static readonly Texture2D _labelBackgroundTexture;
         private static readonly Texture2D _labelAccentBottom;
@@ -119,9 +126,12 @@ namespace SkinManagerMod.Items
 
         public static GameObject InstantiateCustomCan(PaintTheme theme, Vector3 position, Quaternion rotation)
         {
+            string prefabName = GetDummyPrefabName(theme.name);
+
             var newCan = UnityEngine.Object.Instantiate(DefaultCanPrefab, position, rotation);
 
             var itemSpec = newCan.GetComponent<InventoryItemSpec>();
+            itemSpec.itemPrefabName = prefabName;
             itemSpec.localizationKeyName = Translations.PaintCanNameKey;
             itemSpec.ItemIconSprite = _inventoryIcon;
             itemSpec.ItemIconSpriteDropped = _droppedIcon;
@@ -136,10 +146,11 @@ namespace SkinManagerMod.Items
             nameProvider.theme = theme;
 
             var restocker = newCan.GetComponent<ShopRestocker>();
-            restocker.itemPrefabName = GetDummyPrefabName(theme.name);
+            restocker.itemPrefabName = prefabName;
 
             var paintSpec = newCan.GetComponent<PaintCan>();
             paintSpec.theme = theme;
+            paintSpec.transitionsFrom = new PaintTheme[] { SkinProvider.PrimerTheme };
 
             return newCan;
         }
@@ -200,13 +211,13 @@ namespace SkinManagerMod.Items
             }
         }
 
-        private static void GenerateDefaultLabelMaterial(Material labelMaterial, string themeName, ThemeSettings themeSettings = null)
+        private static void GenerateDefaultLabelMaterial(Material labelMaterial, string themeName, ThemeSettings? themeSettings = null)
         {
             SkinProvider.TryGetTheme(themeName, out var theme);
 
             Color baseColor, accentA, accentB;
 
-            if (themeSettings != null)
+            if (themeSettings is not null)
             {
                 // use user supplied colors
                 baseColor = themeSettings.LabelBaseColor ?? Color.white;
@@ -216,19 +227,16 @@ namespace SkinManagerMod.Items
             else
             {
                 // calculate label colors from texture palette
-                var bodySubstitution = theme.substitutions.OrderBy(s => s.original.name)
-                    .FirstOrDefault(s => s.original.name.Contains("Body"));
+                var bodySubstitution = theme.GetBodyTexture();
 
-                if (!bodySubstitution.original)
+                if (!bodySubstitution)
                 {
-                    Main.Error($"No body sub for theme {themeName}");
+                    Main.Warning($"No body sub for theme {themeName}");
                     labelMaterial.mainTexture = Texture2D.whiteTexture;
                     return;
                 }
 
-                var palette = Palette.Generate((Texture2D)bodySubstitution.substitute.mainTexture, 12);
-
-                //WritePaletteBmp(palette, themeName);
+                var palette = Palette.Generate(bodySubstitution!, 12);
 
                 var byPopulation = palette.mSwatches.OrderByDescending(s => s.Population).ToList();
                 baseColor = byPopulation.First().ToColor();
@@ -251,14 +259,14 @@ namespace SkinManagerMod.Items
             BlitLabelSection(_labelAccentTop, blitTarget, accentB);
 
             if (!_labelTextGizmo) CreateTextGizmo();
-            _labelTextGizmo.SetActive(true);
+            _labelTextGizmo!.SetActive(true);
 
-            _themeNameTextMesh.color = GetOverlayTextColor(accentB);
+            _themeNameTextMesh!.color = GetOverlayTextColor(accentB);
             _themeNameTextMesh.text = theme.LocalizedName;
 
-            _carTypesTextMesh.text = GetCarTypesText(themeName);
+            _carTypesTextMesh!.text = GetCarTypesText(theme);
 
-            _textCamera.targetTexture = blitTarget;
+            _textCamera!.targetTexture = blitTarget;
             _textCamera.Render();
 
             _labelTextGizmo.SetActive(false);
@@ -325,36 +333,14 @@ namespace SkinManagerMod.Items
             return (intensity > _whiteBlackTextThreshold) ? Color.black : _whiteTextColor;
         }
 
-        private static string GetCarTypesText(string themeName)
+        private static string GetCarTypesText(CustomPaintTheme theme)
         {
-            var carNames = SkinProvider.ThemeableSkinGroups
-                .Where(g => g.Skins.Any(s => s.Name == themeName))
-                .Select(g => LocalizationAPI.L(g.TrainCarType.localizationKey));
+            var carNames = theme.SupportedCarTypes
+                .Select(l => l.parentType)
+                .Distinct()
+                .Select(type => LocalizationAPI.L(type.localizationKey));
 
             return string.Join("\n", carNames);
-        }
-
-        private static void WritePaletteBmp(Palette palette, string themeName)
-        {
-            var tex = new Texture2D(palette.mSwatches.Count, 2, TextureFormat.ARGB32, false);
-
-            var byPopulation = palette.mSwatches
-                .OrderByDescending(s => s.Population);
-
-            var mostUsedColor = byPopulation.First().ToColor();
-
-            var pixels = palette.mSwatches
-                .OrderByDescending(s => s.Population * s.ToColor().CalculateContrast(mostUsedColor))
-                .Select(s => s.ToColor());
-
-            pixels = byPopulation
-                .Select(s => s.ToColor())
-                .Concat(pixels);
-
-            tex.SetPixels(pixels.ToArray());
-            tex.Apply();
-
-            TextureUtility.SaveTextureAsPNG(tex, Path.Combine(Main.ExportFolderPath, "_Palette", $"{themeName}_palette.png"));
         }
 
         public static Palette GenPalette(string themeName)
@@ -443,8 +429,8 @@ namespace SkinManagerMod.Items
         }
 
         public static bool ShopDataInjected { get; private set; } = false;
-        private static GameObject _dummyItemSpecHolder;
-        private static readonly Dictionary<string, CustomPaintInventorySpec> _dummyItemSpecs = new Dictionary<string, CustomPaintInventorySpec>();
+        private static GameObject? _dummyItemSpecHolder;
+        private static readonly Dictionary<string, CustomPaintInventorySpec> _dummyItemSpecs = new();
 
         public static CustomPaintInventorySpec GetDummyItemSpec(string themeName) => _dummyItemSpecs[themeName];
 
@@ -453,15 +439,27 @@ namespace SkinManagerMod.Items
             if (ShopDataInjected) return;
             Main.Log("Injecting global shop data");
 
-            _dummyItemSpecHolder = new GameObject("[SM] Dummy Item Holder");
+            if (Object.FindObjectOfType<DisplayLoadingInfo>() is DisplayLoadingInfo info)
+            {
+                const float LS_SATURATION = 0.7f;
+                const float LS_VALUE = 0.8f;
+                var color = (Color32)Random.ColorHSV(0.01f, 0.9f, LS_SATURATION, LS_SATURATION, LS_VALUE, LS_VALUE);
 
-            foreach (var theme in SkinProvider.PaintThemes.Where(SkinProvider.IsThemeAllowedInStore))
+                string colString = $"{color.r:X2}{color.g:X2}{color.b:X2}";
+
+                info.loadProgressTMP.richText = true;
+                info.loadProgressTMP.text += $"\n<color=#{colString}>{Translations.LoadingScreen}</color>";
+            }
+
+            _dummyItemSpecHolder = new GameObject("[SM] Dummy Item Holder");
+            var canFab = Resources.Load<GameObject>(DEFAULT_CAN_PREFAB_NAME);
+
+            foreach (var theme in SkinProvider.ModdedThemes.Where(SkinProvider.IsThemeAllowedInStore))
             {
                 var subHolder = new GameObject($"[SM] Dummy Item Spec {theme.name}");
                 subHolder.transform.SetParent(_dummyItemSpecHolder.transform, false);
 
                 // dummy item spec
-                var canFab = Resources.Load<GameObject>(DEFAULT_CAN_PREFAB_NAME);
                 var originalItemSpec = canFab.GetComponent<InventoryItemSpec>();
                 var newItemSpec = CustomPaintInventorySpec.Create(originalItemSpec, subHolder, theme);
 
@@ -499,7 +497,7 @@ namespace SkinManagerMod.Items
             Main.Log("Destroying global shop data");
 
             _dummyItemSpecs.Clear();
-            UnityEngine.Object.Destroy(_dummyItemSpecHolder);
+            Object.Destroy(_dummyItemSpecHolder);
 
             ShopDataInjected = false;
         }
