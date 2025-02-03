@@ -158,6 +158,10 @@ namespace SkinConfigurator.ViewModels
         {
             ParentPack = parent;
             ThemeName = json.Name;
+            HideFromStores = json.HideFromStores;
+            PreventRandomSpawning = json.PreventRandomSpawning;
+            CanPrice = json.CanPrice;
+
             if (!string.IsNullOrEmpty(json.LabelTextureFile))
             {
                 string texturePath = Path.Combine(dirPath, json.LabelTextureFile);

@@ -91,7 +91,7 @@ namespace SkinConfigurator
             if ((SkinPack is not null) && (Skin is not null))
             {
                 available = SkinPack.PackComponents
-                    .Where(c => (c.Type == PackComponentType.Resource) && !string.IsNullOrWhiteSpace(c.Name) && (c.CarId == Skin.CarId))
+                    .Where(c => (c.Type == PackComponentType.Resource) && !string.IsNullOrWhiteSpace(c.Name))
                     .OrderBy(c => c.Name)
                     .ToList();
 

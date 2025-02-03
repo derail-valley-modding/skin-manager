@@ -553,17 +553,17 @@ namespace SkinManagerMod
                     return;
                 }
 
+                if (string.IsNullOrEmpty(parsedConfig.Version) || !Version.TryParse(parsedConfig.Version, out var version))
+                {
+                    Main.Warning($"Theme config contains a missing or invalid version: {configPath}");
+                    return;
+                }
+
                 foreach (var configItem in parsedConfig.Themes)
                 {
                     if (string.IsNullOrEmpty(configItem.Name))
                     {
                         Main.Warning($"Theme config contains an invalid theme name: {configPath}");
-                        continue;
-                    }
-
-                    if (string.IsNullOrEmpty(parsedConfig.Version) || !Version.TryParse(parsedConfig.Version, out var version))
-                    {
-                        Main.Warning($"Theme config contains a missing or invalid version: {configPath}");
                         continue;
                     }
 

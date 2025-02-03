@@ -1,13 +1,8 @@
 ﻿using SkinConfigurator.ViewModels;
 using SMShared;
 using SMShared.Json;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace SkinConfigurator
 {
@@ -75,7 +70,7 @@ namespace SkinConfigurator
             for (int i = 0; i < _model.ThemeConfigs.Count; i++)
             {
                 var config = _model.ThemeConfigs[i];
-                if (config.HideFromStores)
+                if (config.HasValidImage)
                 {
                     string destPath = config.PackagedLabelTexturePath;
                     File.Copy(config.TempPath, destPath, true);
