@@ -18,6 +18,9 @@ namespace SkinManagerMod
             public static readonly string EmissionMap = "_EmissionMap";
             public static readonly string OcclusionMap = "_OcclusionMap";
 
+            public static readonly string Smoothness = "_Glossiness";
+            public static readonly string Metallic = "_Metallic";
+
             public static readonly string DetailAlbedo = "_DetailAlbedoMap";
             public static readonly string DetailNormal = "_DetailNormalMap";
             public static readonly string DetailNormalScale = "_DetailNormalMapScale";
@@ -301,6 +304,17 @@ namespace SkinManagerMod
 
             var defaultMaterial = defaultData.GetMaterialForBaseTheme(skin.BaseTheme);
 
+            // Set scales etc
+            float metallic = defaultMaterial.GetFloat(PropNames.Metallic);
+            renderer.material.SetFloat(PropNames.Metallic, metallic);
+
+            float smoothness = defaultMaterial.GetFloat(PropNames.Smoothness);
+            renderer.material.SetFloat(PropNames.Smoothness, smoothness);
+
+            float intensity = defaultMaterial.GetFloat(PropNames.DetailNormalScale);
+            renderer.material.SetFloat(PropNames.DetailNormalScale, intensity);
+
+
             foreach (var defaultTexture in defaultData.AllTextures)
             {
                 if (skin.ContainsTexture(defaultTexture.TextureName))
@@ -332,13 +346,7 @@ namespace SkinManagerMod
                         var skinTexture = defaultMaterial.GetTexture(defaultTexture.PropertyName);
                         renderer.material.SetTexture(defaultTexture.PropertyName, skinTexture);
 
-                        if (defaultTexture.PropertyName == PropNames.DetailNormal)
-                        {
-                            float intensity = defaultMaterial.GetFloat(PropNames.DetailNormalScale);
-                            renderer.material.SetFloat(PropNames.DetailNormalScale, intensity);
-                        }
-
-                        if ((defaultTexture.PropertyName == PropNames.Main) && !skinTexture)
+                        if (defaultTexture.PropertyName == PropNames.Main)
                         {
                             // demo bogies et al. don't have textures...
                             renderer.material.color = defaultMaterial.color;
@@ -346,7 +354,7 @@ namespace SkinManagerMod
 
                         if (defaultTexture.PropertyName == PropNames.MetalGlossMap)
                         {
-                            if (!GetMaterialTexture(renderer.material, PropNames.OcclusionMap))
+                            if (skinTexture && !GetMaterialTexture(renderer.material, PropNames.OcclusionMap))
                             {
                                 renderer.material.SetTexture(PropNames.OcclusionMap, skinTexture);
                             }

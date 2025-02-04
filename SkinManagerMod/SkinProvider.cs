@@ -246,11 +246,13 @@ namespace SkinManagerMod
                 }
             }
 
+            var uniqueThemes = result.Distinct().Select(name => _themeDict[name]).ToList();
+
             if (sort)
             {
-                result.Sort();
+                uniqueThemes.Sort(CompareThemes);
             }
-            return result.Select(name => _themeDict[name]).ToList();
+            return uniqueThemes;
         }
 
         private static int CompareSkins(Skin a, Skin b)
@@ -292,11 +294,23 @@ namespace SkinManagerMod
             // random skin
             if (Main.Settings.defaultSkinsMode != DefaultSkinsMode.PreferDefaults)
             {
-                if (skinGroups.TryGetValue(carType.id, out var group) && (group.Skins.Count > 0))
+                var available = new List<Skin>();
+                if (skinGroups.TryGetValue(carType.id, out var group))
+                {
+                    available.AddRange(group.Skins);
+                }
+
+                if ((carType.id == Constants.SLUG_LIVERY_ID) && Main.Settings.allowDE6SkinsForSlug && skinGroups.TryGetValue(Constants.DE6_LIVERY_ID, out group))
+                {
+                    var distinct = group.Skins.Where(s => !available.Any(a => a.Name == s.Name)).ToList();
+                    available.AddRange(distinct);
+                }
+
+                if (available.Count > 0)
                 {
                     bool allowRandomDefault = (Main.Settings.defaultSkinsMode == DefaultSkinsMode.AllowForAllCars);
 
-                    var allowedRandom = group.Skins.Where(AllowRandomSpawning).ToList();
+                    var allowedRandom = available.Where(AllowRandomSpawning).ToList();
                     int nChoices = allowRandomDefault ? allowedRandom.Count + 1 : allowedRandom.Count;
 
                     int choice = UnityEngine.Random.Range(0, nChoices);
