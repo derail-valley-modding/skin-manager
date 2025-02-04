@@ -11,6 +11,7 @@ using SMShared;
 using DVLangHelper.Runtime;
 using SkinManagerMod.Items;
 using System.Collections;
+using SkinManagerMod.Patches;
 
 namespace SkinManagerMod
 {
@@ -20,6 +21,7 @@ namespace SkinManagerMod
         public static UnityModManager.ModEntry Instance { get; private set; }
         public static SkinManagerSettings Settings { get; private set; }
         public static TranslationInjector TranslationInjector { get; private set; }
+        public static Harmony Harmony { get; private set; }
 #nullable restore
 
         public static string ExportFolderPath => Path.Combine(Instance.Path, Constants.EXPORT_FOLDER_NAME);
@@ -50,8 +52,9 @@ namespace SkinManagerMod
 
             UnloadWatcher.UnloadRequested += PaintFactory.DestroyInjectedShopData;
 
-            var harmony = new Harmony(Constants.MOD_ID);
-            harmony.PatchAll(Assembly.GetExecutingAssembly());
+            LocoMeshSplitterPatches.Initialize();
+            Harmony = new Harmony(Constants.MOD_ID);
+            Harmony.PatchAll(Assembly.GetExecutingAssembly());
 
             Instance.OnGUI = OnGUI;
             Instance.OnSaveGUI = OnSaveGUI;

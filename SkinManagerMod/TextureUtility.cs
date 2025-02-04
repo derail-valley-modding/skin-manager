@@ -305,15 +305,20 @@ namespace SkinManagerMod
             var defaultMaterial = defaultData.GetMaterialForBaseTheme(skin.BaseTheme);
 
             // Set scales etc
-            float metallic = defaultMaterial.GetFloat(PropNames.Metallic);
-            renderer.material.SetFloat(PropNames.Metallic, metallic);
+            if (defaultMaterial.HasProperty(PropNames.Metallic))
+            {
+                float metallic = defaultMaterial.GetFloat(PropNames.Metallic);
+                renderer.material.SetFloat(PropNames.Metallic, metallic);
 
-            float smoothness = defaultMaterial.GetFloat(PropNames.Smoothness);
-            renderer.material.SetFloat(PropNames.Smoothness, smoothness);
+                float smoothness = defaultMaterial.GetFloat(PropNames.Smoothness);
+                renderer.material.SetFloat(PropNames.Smoothness, smoothness);
+            }
 
-            float intensity = defaultMaterial.GetFloat(PropNames.DetailNormalScale);
-            renderer.material.SetFloat(PropNames.DetailNormalScale, intensity);
-
+            if (defaultMaterial.HasProperty(PropNames.DetailNormalScale))
+            {
+                float intensity = defaultMaterial.GetFloat(PropNames.DetailNormalScale);
+                renderer.material.SetFloat(PropNames.DetailNormalScale, intensity);
+            }
 
             foreach (var defaultTexture in defaultData.AllTextures)
             {
