@@ -236,7 +236,7 @@ namespace SkinManagerMod
 
             if (includeDefault)
             {
-                if (IsThemeable(carId))
+                if (IsThemeable(carId) || (Main.Settings.allowDE6SkinsForSlug && (carId == Constants.SLUG_LIVERY_ID)))
                 {
                     result.AddRange(BuiltInThemeNames);
                 }

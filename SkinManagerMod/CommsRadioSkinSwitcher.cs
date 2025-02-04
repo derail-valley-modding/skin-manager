@@ -7,6 +7,7 @@ using DV.Customization.Paint;
 using DV.ThingTypes;
 using DV.UserManagement;
 using HarmonyLib;
+using SMShared;
 using UnityEngine;
 using static DV.Common.GameFeatureFlags;
 
@@ -456,15 +457,22 @@ namespace SkinManagerMod
             SkinManager.ApplySkin(SelectedCar, SelectedSkin, AreaToPaint);
             //CurrentThemeName = SelectedSkin.name;
 
-            if (CarTypes.IsMUSteamLocomotive(SelectedCar.carType) && SelectedCar.rearCoupler.IsCoupled())
+            if (SelectedCar.rearCoupler.IsCoupled() && (SelectedCar.rearCoupler.coupledTo?.train is TrainCar attachedCar))
             {
-                TrainCar attachedCar = SelectedCar.rearCoupler.coupledTo?.train;
-                if ((attachedCar != null) && CarTypes.IsTender(attachedCar.carLivery))
+                if (CarTypes.IsMUSteamLocomotive(SelectedCar.carType) && CarTypes.IsTender(attachedCar.carLivery))
                 {
                     // car attached behind loco is tender
                     if (SelectedSkin.SupportsVehicle(attachedCar.carLivery))
                     {
                         // found a matching skin for the tender :D
+                        SkinManager.ApplySkin(attachedCar, SelectedSkin, AreaToPaint);
+                    }
+                }
+                else if ((SelectedCar.carLivery.id == Constants.DE6_LIVERY_ID) && CarTypes.IsSlug(attachedCar.carLivery))
+                {
+                    // car attached behind DE6 is slug
+                    if (SelectedSkin.SupportsVehicle(attachedCar.carLivery))
+                    {
                         SkinManager.ApplySkin(attachedCar, SelectedSkin, AreaToPaint);
                     }
                 }

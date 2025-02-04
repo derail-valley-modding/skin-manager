@@ -1,6 +1,7 @@
 ﻿using DV;
 using DV.Customization.Paint;
 using DV.ThingTypes;
+using SMShared;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -16,8 +17,12 @@ namespace SkinManagerMod
         public void RemoveSkin(Skin skin) => _skins.Remove(skin.LiveryId);
         public void RemoveSkin(string liveryId) => _skins.Remove(liveryId);
 
-        public bool SupportsVehicle(string liveryId) => _skins.ContainsKey(liveryId);
-        public bool SupportsVehicle(TrainCarLivery livery) => _skins.ContainsKey(livery.id);
+        public bool SupportsVehicle(string liveryId)
+        {
+            if (_skins.ContainsKey(liveryId)) return true;
+            return Main.Settings.allowDE6SkinsForSlug && (liveryId == Constants.SLUG_LIVERY_ID) && _skins.ContainsKey(Constants.DE6_LIVERY_ID);
+        }
+        public bool SupportsVehicle(TrainCarLivery livery) => SupportsVehicle(livery.id);
 
         public IEnumerable<TrainCarLivery> SupportedCarTypes => Globals.G.Types.Liveries.Where(type => _skins.ContainsKey(type.id));
 
@@ -27,6 +32,13 @@ namespace SkinManagerMod
             {
                 var defaultSkin = CarMaterialData.GetDataForCar(train.carLivery.id);
 
+                ApplyToTransform(target, skin, defaultSkin);
+            }
+            else if ((train.carLivery.id == Constants.SLUG_LIVERY_ID) &&
+                Main.Settings.allowDE6SkinsForSlug &&
+                _skins.TryGetValue(Constants.DE6_LIVERY_ID, out skin))
+            {
+                var defaultSkin = CarMaterialData.GetDataForCar(Constants.SLUG_LIVERY_ID);
                 ApplyToTransform(target, skin, defaultSkin);
             }
         }
