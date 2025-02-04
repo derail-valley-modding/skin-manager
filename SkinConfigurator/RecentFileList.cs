@@ -62,7 +62,7 @@ namespace SkinConfigurator
 
 		public RecentFileList()
 		{
-			Persister = new RegistryPersister();
+			Persister = new XmlPersister();
 
 			MaxNumberOfFiles = 9;
 			MaxPathLength = 50;
