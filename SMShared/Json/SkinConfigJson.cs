@@ -16,6 +16,7 @@ namespace SMShared.Json
         Pristine = 1,
         Demonstrator = 2,
         Relic = 4,
+        Primer = 8,
 
         DVRT_NoDetails = 32,
         Pristine_NoDetails = Pristine | DVRT_NoDetails,

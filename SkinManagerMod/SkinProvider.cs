@@ -47,6 +47,7 @@ namespace SkinManagerMod
                 DefaultNewThemeName => BaseTheme.Pristine,
                 DemoThemeName => BaseTheme.Demonstrator,
                 DemoRustyThemeName => BaseTheme.Relic,
+                PrimerThemeName => BaseTheme.Primer,
                 _ => BaseTheme.DVRT,
             };
         }
@@ -58,6 +59,7 @@ namespace SkinManagerMod
                 BaseTheme.Pristine => DefaultNewThemeName,
                 BaseTheme.Demonstrator => DemoThemeName,
                 BaseTheme.Relic => DemoRustyThemeName,
+                BaseTheme.Primer => PrimerThemeName,
                 _ => DefaultThemeName,
             };
 
@@ -634,31 +636,6 @@ namespace SkinManagerMod
 
                 _themeDict[themeName] = customDefaultTheme;
                 //PaintTheme.loadedThemes[themeName.ToLower()] = customDefaultTheme;
-            }
-
-            // primer
-            PaintTheme.TryLoad(PrimerThemeName, out PaintTheme defaultPrimer);
-
-            var customPrimer = ScriptableObject.CreateInstance<CustomPaintTheme>();
-            UnityEngine.Object.DontDestroyOnLoad(customPrimer);
-            customPrimer.assetName = defaultPrimer.assetName;
-            customPrimer.name = defaultPrimer.name;
-            customPrimer.nameLocalizationKey = defaultPrimer.nameLocalizationKey;
-            customPrimer.substitutions = defaultPrimer.substitutions;
-
-            foreach (var carType in Globals.G.Types.Liveries)
-            {
-                if (IsThemeable(carType))
-                {
-                    var fakeSkin = Skin.Default(carType.id, BaseTheme.DVRT);
-                    var carData = CarMaterialData.GetDataForCar(carType.id);
-
-                    foreach (var substitution in customPrimer.substitutions
-                        .Where(sub => carData.GetDataForMaterial(sub.original) is not null))
-                    {
-
-                    }
-                }
             }
         }
 

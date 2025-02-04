@@ -20,6 +20,7 @@ namespace SkinManagerMod
 
             public static readonly string DetailAlbedo = "_DetailAlbedoMap";
             public static readonly string DetailNormal = "_DetailNormalMap";
+            public static readonly string DetailNormalScale = "_DetailNormalMapScale";
 
             public static readonly string[] UniqueTextures =
             {
@@ -307,6 +308,11 @@ namespace SkinManagerMod
                     var skinTexture = skin.GetTexture(defaultTexture.TextureName)!;
                     renderer.material.SetTexture(defaultTexture.PropertyName, skinTexture.TextureData);
 
+                    if (defaultTexture.PropertyName == PropNames.Main)
+                    {
+                        renderer.material.color = Color.white;
+                    }
+
                     if (defaultTexture.PropertyName == PropNames.MetalGlossMap)
                     {
                         if (!GetMaterialTexture(renderer.material, PropNames.OcclusionMap))
@@ -317,20 +323,33 @@ namespace SkinManagerMod
                 }
                 else
                 {
-                    var skinTexture = defaultMaterial.GetTexture(defaultTexture.PropertyName);
-                    renderer.material.SetTexture(defaultTexture.PropertyName, skinTexture);
-
-                    if (!skinTexture)
+                    if (PropNames.DetailTextures.Contains(defaultTexture.PropertyName) && skin.BaseTheme.HasFlag(BaseTheme.DVRT_NoDetails))
                     {
-                        // demo bogies et al. don't have textures...
-                        renderer.material.color = defaultMaterial.color;
+                        renderer.material.SetTexture(defaultTexture.PropertyName, null);
                     }
-
-                    if (defaultTexture.PropertyName == PropNames.MetalGlossMap)
+                    else
                     {
-                        if (!GetMaterialTexture(renderer.material, PropNames.OcclusionMap))
+                        var skinTexture = defaultMaterial.GetTexture(defaultTexture.PropertyName);
+                        renderer.material.SetTexture(defaultTexture.PropertyName, skinTexture);
+
+                        if (defaultTexture.PropertyName == PropNames.DetailNormal)
                         {
-                            renderer.material.SetTexture(PropNames.OcclusionMap, skinTexture);
+                            float intensity = defaultMaterial.GetFloat(PropNames.DetailNormalScale);
+                            renderer.material.SetFloat(PropNames.DetailNormalScale, intensity);
+                        }
+
+                        if ((defaultTexture.PropertyName == PropNames.Main) && !skinTexture)
+                        {
+                            // demo bogies et al. don't have textures...
+                            renderer.material.color = defaultMaterial.color;
+                        }
+
+                        if (defaultTexture.PropertyName == PropNames.MetalGlossMap)
+                        {
+                            if (!GetMaterialTexture(renderer.material, PropNames.OcclusionMap))
+                            {
+                                renderer.material.SetTexture(PropNames.OcclusionMap, skinTexture);
+                            }
                         }
                     }
                 }
