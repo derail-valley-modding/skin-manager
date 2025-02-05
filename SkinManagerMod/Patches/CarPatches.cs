@@ -1,5 +1,6 @@
 ﻿using DV.Customization.Paint;
 using HarmonyLib;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
@@ -23,6 +24,7 @@ namespace SkinManagerMod.Patches
                 __result.gameObject.SetActive(false);
 
                 var paintExt = __result.gameObject.AddComponent<TrainCarPaint>();
+                paintExt.sets = Array.Empty<TrainCarPaint.MaterialSet>();
                 paintExt.targetArea = TrainCarPaint.Target.Exterior;
                 paintExt.currentTheme = SkinProvider.CustomDefaultTheme;
                 __result.PaintExterior = paintExt;
@@ -30,6 +32,7 @@ namespace SkinManagerMod.Patches
                 if (__result.carLivery.interiorPrefab)
                 {
                     var paintInt = __result.gameObject.AddComponent<TrainCarPaint>();
+                    paintInt.sets = Array.Empty<TrainCarPaint.MaterialSet>();
                     paintInt.targetArea = TrainCarPaint.Target.Interior;
                     paintInt.currentTheme = SkinProvider.CustomDefaultTheme;
                     __result.PaintInterior = paintInt;
@@ -66,7 +69,7 @@ namespace SkinManagerMod.Patches
 
             foreach (var paint in obj.GetComponents<TrainCarPaint>())
             {
-                Object.Destroy(paint);
+                UnityEngine.Object.Destroy(paint);
             }
         }
 

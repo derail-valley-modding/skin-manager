@@ -52,7 +52,6 @@ namespace SkinManagerMod
 
             UnloadWatcher.UnloadRequested += PaintFactory.DestroyInjectedShopData;
 
-            LocoMeshSplitterPatches.Initialize();
             Harmony = new Harmony(Constants.MOD_ID);
             Harmony.PatchAll(Assembly.GetExecutingAssembly());
 
