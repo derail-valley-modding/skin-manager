@@ -327,7 +327,7 @@ namespace SkinManagerMod
                     var skinTexture = skin.GetTexture(defaultTexture.TextureName)!;
                     renderer.material.SetTexture(defaultTexture.PropertyName, skinTexture.TextureData);
 
-                    if (defaultTexture.PropertyName == PropNames.Main)
+                    if ((defaultTexture.PropertyName == PropNames.Main) && renderer.material.HasProperty("_Color"))
                     {
                         renderer.material.color = Color.white;
                     }
@@ -351,7 +351,7 @@ namespace SkinManagerMod
                         var skinTexture = defaultMaterial.GetTexture(defaultTexture.PropertyName);
                         renderer.material.SetTexture(defaultTexture.PropertyName, skinTexture);
 
-                        if (defaultTexture.PropertyName == PropNames.Main)
+                        if ((defaultTexture.PropertyName == PropNames.Main) && renderer.material.HasProperty("_Color"))
                         {
                             // demo bogies et al. don't have textures...
                             renderer.material.color = defaultMaterial.color;
