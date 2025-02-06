@@ -21,12 +21,11 @@ namespace SkinManagerMod.Patches
         {
             if (!__result.PaintExterior)
             {
-                __result.gameObject.SetActive(false);
-
                 var paintExt = __result.gameObject.AddComponent<TrainCarPaint>();
                 paintExt.sets = Array.Empty<TrainCarPaint.MaterialSet>();
                 paintExt.targetArea = TrainCarPaint.Target.Exterior;
                 paintExt.currentTheme = SkinProvider.CustomDefaultTheme;
+                paintExt.OriginallyAssignedTheme = SkinProvider.CustomDefaultTheme;
                 __result.PaintExterior = paintExt;
 
                 if (__result.carLivery.interiorPrefab)
@@ -35,10 +34,9 @@ namespace SkinManagerMod.Patches
                     paintInt.sets = Array.Empty<TrainCarPaint.MaterialSet>();
                     paintInt.targetArea = TrainCarPaint.Target.Interior;
                     paintInt.currentTheme = SkinProvider.CustomDefaultTheme;
+                    paintInt.OriginallyAssignedTheme = SkinProvider.CustomDefaultTheme;
                     __result.PaintInterior = paintInt;
                 }
-
-                __result.gameObject.SetActive(true);
             }
 
             if (!uniqueCar)

@@ -72,6 +72,8 @@ namespace SkinManagerMod
         /// <summary>Save the specified skin to the given car</summary>
         public static void SetAppliedCarSkin(TrainCar car, string skinName, PaintArea area)
         {
+            if (car.logicCar is null) return;
+
             Main.LogVerbose($"Setting saved skin for car {car.ID} {area} to \"{skinName}\"");
 
             if (area.HasFlag(PaintArea.Exterior))

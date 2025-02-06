@@ -788,9 +788,6 @@ namespace SkinManagerMod
             }
 
             theme.AddSkin(skin);
-
-            //skin.LoadingFinished += AddSkinTexturesToTheme;
-            //skin.StartLoadFinishedListener();
         }
 
         private static SkinTexture BeginLoadTexture(string fileName, ResourceConfigJson config, string texturePath, bool linear, bool forceSync)
