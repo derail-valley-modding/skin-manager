@@ -1,5 +1,4 @@
-﻿using DV.Customization.Paint;
-using DV.ThingTypes;
+﻿using DV.ThingTypes;
 using SMShared.Json;
 using System.Collections.Generic;
 using System.IO;
@@ -25,14 +24,33 @@ namespace SkinManagerMod
             public static readonly string DetailNormal = "_DetailNormalMap";
             public static readonly string DetailNormalScale = "_DetailNormalMapScale";
 
+            public static readonly string ModularMask = "_mask";
+            public static readonly string ModularT1 = "_t1";
+            public static readonly string ModularT1MSO = "_t1_mso";
+            public static readonly string ModularT1Normal = "_t1_normal";
+            public static readonly string ModularT3 = "_t3";
+            public static readonly string ModularT3MSO = "_t3_mso";
+            public static readonly string ModularT3Normal = "_t3_normal";
+            public static readonly string ModularT4 = "_t4";
+            public static readonly string ModularT4MSO = "_t4_mso";
+            public static readonly string ModularT4Normal = "_t4_normal";
+
             public static readonly string[] UniqueTextures =
             {
-                Main, BumpMap, MetalGlossMap, EmissionMap, DetailAlbedo, DetailNormal
+                Main, BumpMap, MetalGlossMap, EmissionMap, DetailAlbedo, DetailNormal,
+                ModularMask,
+                ModularT1, ModularT1MSO, ModularT1Normal,
+                //ModularT3, ModularT3MSO, ModularT3Normal,
+                ModularT4, ModularT4MSO, ModularT4Normal
             };
 
             public static readonly string[] AllTextures =
             {
-                Main, BumpMap, MetalGlossMap, EmissionMap, OcclusionMap, DetailAlbedo, DetailNormal
+                Main, BumpMap, MetalGlossMap, EmissionMap, OcclusionMap, DetailAlbedo, DetailNormal,
+                ModularMask,
+                ModularT1, ModularT1MSO, ModularT1Normal,
+                //ModularT3, ModularT3MSO, ModularT3Normal,
+                ModularT4, ModularT4MSO, ModularT4Normal
             };
 
             public static readonly string[] DetailTextures =
@@ -271,13 +289,16 @@ namespace SkinManagerMod
 
             foreach (var renderer in renderers)
             {
-                if (!renderer.material) continue;
-
-                foreach (string textureProperty in PropNames.UniqueTextures)
+                foreach (var mat in renderer.sharedMaterials)
                 {
-                    if (GetMaterialTexture(renderer.sharedMaterial, textureProperty) is Texture2D texture)
+                    if (!mat) continue;
+
+                    foreach (string textureProperty in PropNames.UniqueTextures)
                     {
-                        dict[texture.name] = textureProperty;
+                        if (GetMaterialTexture(mat, textureProperty) is Texture2D texture)
+                        {
+                            dict[texture.name] = textureProperty;
+                        }
                     }
                 }
             }
@@ -299,7 +320,15 @@ namespace SkinManagerMod
         /// </summary>
         public static void ApplyTextures(MeshRenderer renderer, Skin skin, CarMaterialData defaultSkin)
         {
-            var defaultData = defaultSkin.GetDataForMaterial(renderer.material);
+            foreach (var mat in renderer.materials)
+            {
+                ApplyTexturesToMaterial(mat, skin, defaultSkin);
+            }
+        }
+
+        private static void ApplyTexturesToMaterial(Material mat, Skin skin, CarMaterialData defaultSkin)
+        {
+            var defaultData = defaultSkin.GetDataForMaterial(mat);
             if (defaultData is null) return;
 
             var defaultMaterial = defaultData.GetMaterialForBaseTheme(skin.BaseTheme);
@@ -308,16 +337,16 @@ namespace SkinManagerMod
             if (defaultMaterial.HasProperty(PropNames.Metallic))
             {
                 float metallic = defaultMaterial.GetFloat(PropNames.Metallic);
-                renderer.material.SetFloat(PropNames.Metallic, metallic);
+                mat.SetFloat(PropNames.Metallic, metallic);
 
                 float smoothness = defaultMaterial.GetFloat(PropNames.Smoothness);
-                renderer.material.SetFloat(PropNames.Smoothness, smoothness);
+                mat.SetFloat(PropNames.Smoothness, smoothness);
             }
 
             if (defaultMaterial.HasProperty(PropNames.DetailNormalScale))
             {
                 float intensity = defaultMaterial.GetFloat(PropNames.DetailNormalScale);
-                renderer.material.SetFloat(PropNames.DetailNormalScale, intensity);
+                mat.SetFloat(PropNames.DetailNormalScale, intensity);
             }
 
             foreach (var defaultTexture in defaultData.AllTextures)
@@ -325,18 +354,18 @@ namespace SkinManagerMod
                 if (skin.ContainsTexture(defaultTexture.TextureName))
                 {
                     var skinTexture = skin.GetTexture(defaultTexture.TextureName)!;
-                    renderer.material.SetTexture(defaultTexture.PropertyName, skinTexture.TextureData);
+                    mat.SetTexture(defaultTexture.PropertyName, skinTexture.TextureData);
 
-                    if ((defaultTexture.PropertyName == PropNames.Main) && renderer.material.HasProperty("_Color"))
+                    if ((defaultTexture.PropertyName == PropNames.Main) && mat.HasProperty("_Color"))
                     {
-                        renderer.material.color = Color.white;
+                        mat.color = Color.white;
                     }
 
                     if (defaultTexture.PropertyName == PropNames.MetalGlossMap)
                     {
-                        if (!GetMaterialTexture(renderer.material, PropNames.OcclusionMap))
+                        if (!GetMaterialTexture(mat, PropNames.OcclusionMap))
                         {
-                            renderer.material.SetTexture(PropNames.OcclusionMap, skinTexture.TextureData);
+                            mat.SetTexture(PropNames.OcclusionMap, skinTexture.TextureData);
                         }
                     }
                 }
@@ -344,24 +373,24 @@ namespace SkinManagerMod
                 {
                     if (PropNames.DetailTextures.Contains(defaultTexture.PropertyName) && skin.BaseTheme.HasFlag(BaseTheme.DVRT_NoDetails))
                     {
-                        renderer.material.SetTexture(defaultTexture.PropertyName, null);
+                        mat.SetTexture(defaultTexture.PropertyName, null);
                     }
                     else
                     {
                         var skinTexture = defaultMaterial.GetTexture(defaultTexture.PropertyName);
-                        renderer.material.SetTexture(defaultTexture.PropertyName, skinTexture);
+                        mat.SetTexture(defaultTexture.PropertyName, skinTexture);
 
-                        if ((defaultTexture.PropertyName == PropNames.Main) && renderer.material.HasProperty("_Color"))
+                        if ((defaultTexture.PropertyName == PropNames.Main) && mat.HasProperty("_Color"))
                         {
                             // demo bogies et al. don't have textures...
-                            renderer.material.color = defaultMaterial.color;
+                            mat.color = defaultMaterial.color;
                         }
 
                         if (defaultTexture.PropertyName == PropNames.MetalGlossMap)
                         {
-                            if (skinTexture && !GetMaterialTexture(renderer.material, PropNames.OcclusionMap))
+                            if (skinTexture && !GetMaterialTexture(mat, PropNames.OcclusionMap))
                             {
-                                renderer.material.SetTexture(PropNames.OcclusionMap, skinTexture);
+                                mat.SetTexture(PropNames.OcclusionMap, skinTexture);
                             }
                         }
                     }
