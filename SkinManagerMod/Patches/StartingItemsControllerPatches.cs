@@ -16,7 +16,7 @@ namespace SkinManagerMod.Patches
 
         [HarmonyPatch(typeof(StartingItemsController), nameof(StartingItemsController.InstantiateItem))]
         [HarmonyTranspiler]
-        private static IEnumerable<CodeInstruction> TranspileInstantiateItem(IEnumerable<CodeInstruction> instructions)
+        private static IEnumerable<CodeInstruction> TranspileInstantiateItem(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
             // replace first chunk of method that checks for a valid prefab
             
@@ -33,6 +33,14 @@ namespace SkinManagerMod.Patches
             // pop/pop/call CustomInstantiateItem(itemData, instantiatedItemCount) => push result [GameObject]
             yield return CodeInstruction.Call(typeof(InventoryPatches), nameof(CustomInstantiateItem));
 
+            // if (result == null) return null;
+            Label? notNullLabel = generator.DefineLabel();
+
+            yield return new CodeInstruction(OpCodes.Dup);
+            yield return new CodeInstruction(OpCodes.Brtrue_S, notNullLabel);
+
+            yield return new CodeInstruction(OpCodes.Ret);
+
             // skip everything up until the instantiate call in original method, then continue with the original code
             bool skipping = true;
             foreach (var instruction in instructions)
@@ -46,24 +54,17 @@ namespace SkinManagerMod.Patches
                 }
                 else
                 {
-                    yield return instruction;
+                    if (notNullLabel.HasValue)
+                    {
+                        yield return instruction.WithLabels(notNullLabel.Value);
+                        notNullLabel = null;
+                    }
+                    else
+                    {
+                        yield return instruction;
+                    }
                 }
-
-                //if (instruction.opcode == OpCodes.Stloc_3)
-                //{
-                //    Main.LogVerbose("Patched instantiate item");
-                //    yield return new CodeInstruction(OpCodes.Ldarg_1); // push itemData
-                //    yield return CodeInstruction.Call(typeof(InventoryPatches), nameof(CustomInstantiateItem));
-                //    previous = instruction;
-                //}
-                //else
-                //{
-                //    if (previous != null) yield return previous;
-                //    previous = instruction;
-                //}
             }
-
-            //if (previous != null) yield return previous;
         }
 
         private static GameObject? CustomInstantiateItem(StorageItemData itemData, int instantiatedItemCount)
