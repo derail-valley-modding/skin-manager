@@ -1,12 +1,8 @@
 ﻿using DV;
-using DV.Customization.Paint;
 using DV.ThingTypes;
 using SMShared.Json;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace SkinManagerMod
@@ -108,27 +104,30 @@ namespace SkinManagerMod
 
             foreach (var renderer in renderers)
             {
-                if (!renderer.sharedMaterial) continue;
-
-                string cleanName = GetCleanName(renderer.sharedMaterial);
-                if (_materialData.ContainsKey(cleanName)) continue;
-
-                IEnumerable<ThemeAlternative> alternatives;
-                if (_materialSubstitutes.TryGetValue(cleanName, out var altList))
+                foreach (var mat in renderer.sharedMaterials)
                 {
-                    alternatives = altList;
-                }
-                else
-                {
-                    alternatives = Enumerable.Empty<ThemeAlternative>();
-                }
+                    if (!mat) continue;
 
-                var data = new MaterialTextureData(renderer.sharedMaterial, alternatives);
-                _materialData.Add(cleanName, data);
+                    string cleanName = GetCleanName(mat);
+                    if (_materialData.ContainsKey(cleanName)) continue;
 
-                foreach (var texture in data.AllTextures)
-                {
-                    RegisterTextureName(texture.TextureName, data.Material, texture.PropertyName);
+                    IEnumerable<ThemeAlternative> alternatives;
+                    if (_materialSubstitutes.TryGetValue(cleanName, out var altList))
+                    {
+                        alternatives = altList;
+                    }
+                    else
+                    {
+                        alternatives = Enumerable.Empty<ThemeAlternative>();
+                    }
+
+                    var data = new MaterialTextureData(mat, alternatives);
+                    _materialData.Add(cleanName, data);
+
+                    foreach (var texture in data.AllTextures)
+                    {
+                        RegisterTextureName(texture.TextureName, data.Material, texture.PropertyName);
+                    }
                 }
             }
         }
