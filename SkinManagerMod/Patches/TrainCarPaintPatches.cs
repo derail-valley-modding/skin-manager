@@ -47,6 +47,8 @@ namespace SkinManagerMod.Patches
             var extTheme = GetCustomTheme(train.PaintExterior, train);
             if (!extTheme) return;
 
+            train.gameObject.SendMessage("BeforeSkinChange");
+
             var intTheme = train.PaintInterior ? GetCustomTheme(train.PaintInterior, train) : null;
             
             extTheme.Apply(train.gameObject, train);
@@ -71,6 +73,8 @@ namespace SkinManagerMod.Patches
             {
                 extTheme.Apply(train.loadedDummyExternalInteractables, train);
             }
+
+            train.gameObject.SendMessage("AfterSkinChange");
         }
 
         private static CustomPaintTheme GetCustomTheme(TrainCarPaint paint, TrainCar train)
