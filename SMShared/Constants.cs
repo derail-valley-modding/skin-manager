@@ -79,6 +79,7 @@ namespace SMShared
             "HopperBrown",
             "HopperTeal",
             "HopperYellow",
+            "HopperCoveredBrown",
 
             "PassengerBlue",
             "PassengerGreen",

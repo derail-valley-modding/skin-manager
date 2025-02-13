@@ -182,10 +182,7 @@ namespace SkinConfigurator
         private void NewSkinButton_Click(object sender, RoutedEventArgs e)
         {
             string? carId = PromptForCarType();
-            if (carId != null)
-            {
-                Model.AddComponent(carId);
-            }
+            Model.AddComponent(carId);
         }
 
         private void AddSkinButton_Click(object sender, RoutedEventArgs e)
