@@ -32,7 +32,7 @@ namespace SkinManagerMod
             {
                 var defaultSkin = CarMaterialData.GetDataForCar(train.carLivery.id);
 
-                ApplyToTransform(target, skin, defaultSkin, GetExludes(train, false));
+                ApplyToTransform(target, skin, defaultSkin, GetExludes(train));
             }
             else if ((train.carLivery.id == Constants.SLUG_LIVERY_ID) &&
                 Main.Settings.allowDE6SkinsForSlug &&
@@ -49,49 +49,43 @@ namespace SkinManagerMod
             {
                 var defaultSkin = CarMaterialData.GetDataForCar(train.carLivery.id);
 
-                ApplyToTransform(target, skin, defaultSkin, GetExludes(train, true));
+                ApplyToTransform(target, skin, defaultSkin, GetExludes(train), true);
             }
         }
 
-        private static void ApplyToTransform(GameObject objectRoot, Skin skin, CarMaterialData defaults, string[]? exclude = null)
+        // The optional array 'exclude' makes the loop skip renderers with names included in it.
+        // By setting 'invert' to true, it will instead only apply to the renderers in 'exclude'.
+        private static void ApplyToTransform(GameObject objectRoot, Skin skin, CarMaterialData defaults, string[]? exclude = null, bool invert = false)
         {
             foreach (var renderer in objectRoot.GetComponentsInChildren<MeshRenderer>(true))
-            {
-                if (!renderer.material || (exclude != null && exclude.Any(x => x == renderer.name)))
+            {                
+                if (!renderer.material || SkipExludes(renderer))
                 {
                     continue;
                 }
 
                 TextureUtility.ApplyTextures(renderer, skin, defaults);
             }
+
+            bool SkipExludes(MeshRenderer renderer)
+            {
+                return exclude != null && (invert ?
+                    exclude.Any(x => x == renderer.name) :
+                    !exclude.Any(x => x == renderer.name));
+            }
         }
 
-        private static string[]? GetExludes(TrainCar car, bool interior)
+        private static string[]? GetExludes(TrainCar car)
         {
             // Not inverting this if in case more are added in the future.
             if (car.IsVanillaPassenger())
             {
-                if (interior)
+                return new[]
                 {
-                    return new[]
-                    {
-                        "CarPassenger_LOD0",
-                        "CarPassenger_LOD1",
-                        "CarPassenger_LOD2",
-                        "CarPassenger_LOD3",
-                        "CarPassengerWindowsSide",
-                        "CarPassengerWindowsEnds"
-                    };
-                }
-                else
-                {
-                    return new[]
-                    {
-                        "CarPassengerInterior_LOD0",
-                        "CarPassengerInterior_LOD1",
-                        "CarPassengerInterior_LOD2",
-                    };
-                }
+                    "CarPassengerInterior_LOD0",
+                    "CarPassengerInterior_LOD1",
+                    "CarPassengerInterior_LOD2",
+                };
             }
 
             return null;
