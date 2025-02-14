@@ -100,5 +100,6 @@ namespace SMShared
 
         public const string DE6_LIVERY_ID = "LocoDE6";
         public const string SLUG_LIVERY_ID = "LocoDE6Slug";
+        public const string PASSENGER_TYPE_ID = "Passenger";
     }
 }

@@ -63,6 +63,10 @@ namespace SkinManagerMod.Patches
                 {
                     intTheme.Apply(train.interiorLOD.gameObject, train);
                 }
+                if (train.IsVanillaPassenger())
+                {
+                    intTheme.ApplyPaxInterior(train.gameObject, train);
+                }
             }
 
             if (train.loadedExternalInteractables)

@@ -1,5 +1,6 @@
 ﻿using DV.Customization.Paint;
 using HarmonyLib;
+using SMShared;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -28,7 +29,7 @@ namespace SkinManagerMod.Patches
                 paintExt.OriginallyAssignedTheme = SkinProvider.CustomDefaultTheme;
                 __result.PaintExterior = paintExt;
 
-                if (__result.carLivery.interiorPrefab)
+                if (__result.carLivery.interiorPrefab || __result.IsVanillaPassenger())
                 {
                     var paintInt = __result.gameObject.AddComponent<TrainCarPaint>();
                     paintInt.sets = Array.Empty<TrainCarPaint.MaterialSet>();

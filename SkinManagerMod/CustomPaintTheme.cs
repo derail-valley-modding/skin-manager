@@ -32,7 +32,7 @@ namespace SkinManagerMod
             {
                 var defaultSkin = CarMaterialData.GetDataForCar(train.carLivery.id);
 
-                ApplyToTransform(target, skin, defaultSkin);
+                ApplyToTransform(target, skin, defaultSkin, GetExludes(train, false));
             }
             else if ((train.carLivery.id == Constants.SLUG_LIVERY_ID) &&
                 Main.Settings.allowDE6SkinsForSlug &&
@@ -43,17 +43,58 @@ namespace SkinManagerMod
             }
         }
 
-        private static void ApplyToTransform(GameObject objectRoot, Skin skin, CarMaterialData defaults)
+        public void ApplyPaxInterior(GameObject target, TrainCar train)
+        {
+            if (_skins.TryGetValue(train.carLivery.id, out var skin))
+            {
+                var defaultSkin = CarMaterialData.GetDataForCar(train.carLivery.id);
+
+                ApplyToTransform(target, skin, defaultSkin, GetExludes(train, true));
+            }
+        }
+
+        private static void ApplyToTransform(GameObject objectRoot, Skin skin, CarMaterialData defaults, string[]? exclude = null)
         {
             foreach (var renderer in objectRoot.GetComponentsInChildren<MeshRenderer>(true))
             {
-                if (!renderer.material)
+                if (!renderer.material || (exclude != null && exclude.Any(x => x == renderer.name)))
                 {
                     continue;
                 }
 
                 TextureUtility.ApplyTextures(renderer, skin, defaults);
             }
+        }
+
+        private static string[]? GetExludes(TrainCar car, bool interior)
+        {
+            // Not inverting this if in case more are added in the future.
+            if (car.IsVanillaPassenger())
+            {
+                if (interior)
+                {
+                    return new[]
+                    {
+                        "CarPassenger_LOD0",
+                        "CarPassenger_LOD1",
+                        "CarPassenger_LOD2",
+                        "CarPassenger_LOD3",
+                        "CarPassengerWindowsSide",
+                        "CarPassengerWindowsEnds"
+                    };
+                }
+                else
+                {
+                    return new[]
+                    {
+                        "CarPassengerInterior_LOD0",
+                        "CarPassengerInterior_LOD1",
+                        "CarPassengerInterior_LOD2",
+                    };
+                }
+            }
+
+            return null;
         }
 
         public Texture2D? GetBodyTexture()
