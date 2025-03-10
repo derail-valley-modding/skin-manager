@@ -1,7 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Reflection.Emit;
 using DV;
 using DV.Customization.Paint;
 using DV.ThingTypes;
@@ -9,7 +7,6 @@ using DV.UserManagement;
 using HarmonyLib;
 using SMShared;
 using UnityEngine;
-using static DV.Common.GameFeatureFlags;
 
 #nullable disable
 namespace SkinManagerMod
@@ -348,11 +345,13 @@ namespace SkinManagerMod
                             if (!SkinProvider.IsBuiltInTheme(SelectedSkin) && (SelectedSkin.name == CurrentThemeName.exterior))
                             {
                                 SkinProvider.ReloadSkin(SelectedCar.carLivery.id, SelectedSkin.name);
-                            }
-                            else
-                            {
+                                var tempSkin = SelectedSkin.assetName;
+                                SelectedSkin = SkinProvider.GetBaseTheme(SMShared.Json.BaseTheme.DVRT);
                                 ApplySelectedSkin();
+                                SelectedSkin = SkinProvider.GetSkinsForType(SelectedCar.carLivery).First(x => x.name == tempSkin);
                             }
+
+                            ApplySelectedSkin();
                             ResetState();
                         }
                         CommsRadioController.PlayAudioFromRadio(ConfirmSound, transform);
@@ -372,11 +371,13 @@ namespace SkinManagerMod
                         if ((AlreadyPainted == AreaToPaint) && !SkinProvider.IsBuiltInTheme(SelectedSkin))
                         {
                             SkinProvider.ReloadSkin(SelectedCar.carLivery.id, SelectedSkin.name);
-                        }
-                        else
-                        {
+                            var tempSkin = SelectedSkin.assetName;
+                            SelectedSkin = SkinProvider.GetBaseTheme(SMShared.Json.BaseTheme.DVRT);
                             ApplySelectedSkin();
+                            SelectedSkin = SkinProvider.GetSkinsForType(SelectedCar.carLivery).First(x => x.name == tempSkin);
                         }
+
+                        ApplySelectedSkin();
                         CommsRadioController.PlayAudioFromRadio(ConfirmSound, transform);
                     }
 
