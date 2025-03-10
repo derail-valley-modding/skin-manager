@@ -344,11 +344,7 @@ namespace SkinManagerMod
                             // for regular cars, skip area selection
                             if (!SkinProvider.IsBuiltInTheme(SelectedSkin) && (SelectedSkin.name == CurrentThemeName.exterior))
                             {
-                                SkinProvider.ReloadSkin(SelectedCar.carLivery.id, SelectedSkin.name);
-                                var tempSkin = SelectedSkin.assetName;
-                                SelectedSkin = SkinProvider.GetBaseTheme(SMShared.Json.BaseTheme.DVRT);
-                                ApplySelectedSkin();
-                                SelectedSkin = SkinProvider.GetSkinsForType(SelectedCar.carLivery).First(x => x.name == tempSkin);
+                                ReloadAndPrepareApplySelectedSkin();
                             }
 
                             ApplySelectedSkin();
@@ -370,11 +366,7 @@ namespace SkinManagerMod
                         // clicked on the selected car again, this means confirm
                         if ((AlreadyPainted == AreaToPaint) && !SkinProvider.IsBuiltInTheme(SelectedSkin))
                         {
-                            SkinProvider.ReloadSkin(SelectedCar.carLivery.id, SelectedSkin.name);
-                            var tempSkin = SelectedSkin.assetName;
-                            SelectedSkin = SkinProvider.GetBaseTheme(SMShared.Json.BaseTheme.DVRT);
-                            ApplySelectedSkin();
-                            SelectedSkin = SkinProvider.GetSkinsForType(SelectedCar.carLivery).First(x => x.name == tempSkin);
+                            ReloadAndPrepareApplySelectedSkin();
                         }
 
                         ApplySelectedSkin();
@@ -478,6 +470,21 @@ namespace SkinManagerMod
                     }
                 }
             }
+        }
+
+        private void ReloadAndPrepareApplySelectedSkin()
+        {
+            // Reload the skin.
+            SkinProvider.ReloadSkin(SelectedCar.carLivery.id, SelectedSkin.name);
+            // Store the original skin's name.
+            var tempSkin = SelectedSkin.assetName;
+            // Apply the default skin as a middle step to force it to update.
+            SelectedSkin = SkinProvider.GetBaseTheme(SMShared.Json.BaseTheme.DVRT);
+            ApplySelectedSkin();
+            // Refresh the current skins to use the updated version.
+            // No need to reset the index as no skins were added/removed.
+            SkinsForCarType = SkinProvider.GetSkinsForType(SelectedCar.carLivery);
+            SelectedSkin = SkinsForCarType.First(x => x.name == tempSkin);
         }
 
         private void SetSelectedSkin(CustomPaintTheme theme)
