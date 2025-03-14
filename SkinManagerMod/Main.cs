@@ -3,7 +3,6 @@ using DV;
 using DV.Localization;
 using DV.ThingTypes;
 using HarmonyLib;
-using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using UnityEngine;
@@ -11,7 +10,6 @@ using SMShared;
 using DVLangHelper.Runtime;
 using SkinManagerMod.Items;
 using System.Collections;
-using SkinManagerMod.Patches;
 
 namespace SkinManagerMod
 {

@@ -1,7 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Reflection.Emit;
 using DV;
 using DV.Customization.Paint;
 using DV.ThingTypes;
@@ -9,7 +7,6 @@ using DV.UserManagement;
 using HarmonyLib;
 using SMShared;
 using UnityEngine;
-using static DV.Common.GameFeatureFlags;
 
 #nullable disable
 namespace SkinManagerMod
@@ -347,12 +344,10 @@ namespace SkinManagerMod
                             // for regular cars, skip area selection
                             if (!SkinProvider.IsBuiltInTheme(SelectedSkin) && (SelectedSkin.name == CurrentThemeName.exterior))
                             {
-                                SkinProvider.ReloadSkin(SelectedCar.carLivery.id, SelectedSkin.name);
+                                ReloadAndPrepareApplySelectedSkin();
                             }
-                            else
-                            {
-                                ApplySelectedSkin();
-                            }
+
+                            ApplySelectedSkin();
                             ResetState();
                         }
                         CommsRadioController.PlayAudioFromRadio(ConfirmSound, transform);
@@ -371,12 +366,10 @@ namespace SkinManagerMod
                         // clicked on the selected car again, this means confirm
                         if ((AlreadyPainted == AreaToPaint) && !SkinProvider.IsBuiltInTheme(SelectedSkin))
                         {
-                            SkinProvider.ReloadSkin(SelectedCar.carLivery.id, SelectedSkin.name);
+                            ReloadAndPrepareApplySelectedSkin();
                         }
-                        else
-                        {
-                            ApplySelectedSkin();
-                        }
+
+                        ApplySelectedSkin();
                         CommsRadioController.PlayAudioFromRadio(ConfirmSound, transform);
                     }
 
@@ -477,6 +470,21 @@ namespace SkinManagerMod
                     }
                 }
             }
+        }
+
+        private void ReloadAndPrepareApplySelectedSkin()
+        {
+            // Reload the skin.
+            SkinProvider.ReloadSkin(SelectedCar.carLivery.id, SelectedSkin.name);
+            // Store the original skin's name.
+            var tempSkin = SelectedSkin.assetName;
+            // Apply the default skin as a middle step to force it to update.
+            SelectedSkin = SkinProvider.GetBaseTheme(SMShared.Json.BaseTheme.DVRT);
+            ApplySelectedSkin();
+            // Refresh the current skins to use the updated version.
+            // No need to reset the index as no skins were added/removed.
+            SkinsForCarType = SkinProvider.GetSkinsForType(SelectedCar.carLivery);
+            SelectedSkin = SkinsForCarType.First(x => x.name == tempSkin);
         }
 
         private void SetSelectedSkin(CustomPaintTheme theme)
