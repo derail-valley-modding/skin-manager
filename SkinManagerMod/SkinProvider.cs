@@ -629,6 +629,7 @@ namespace SkinManagerMod
                 customDefaultTheme.assetName = existingTheme.assetName;
                 customDefaultTheme.name = existingTheme.name;
                 customDefaultTheme.nameLocalizationKey = existingTheme.nameLocalizationKey;
+                customDefaultTheme.isStrippedSurface = existingTheme.isStrippedSurface;
                 customDefaultTheme.substitutions = existingTheme.substitutions;
 
                 foreach (var carType in Globals.G.Types.Liveries)
@@ -641,7 +642,7 @@ namespace SkinManagerMod
                     else if ((themeName == PrimerThemeName) && !IsThemeable(carType))
                     {
                         // extend primer coverage to all cars
-                        var defaultSkin = Skin.Default(carType.id, themeType);
+                        var defaultSkin = Skin.Primer(carType.id, themeType);
                         string bodyName = DefaultTextures.GetBodyTextureName(carType.id);
                         defaultSkin.SkinTextures.Add(new SkinTexture(bodyName, primerTexture));
                         customDefaultTheme.AddSkin(defaultSkin);

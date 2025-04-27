@@ -34,6 +34,8 @@ namespace SkinManagerMod
             public static readonly string ModularT4 = "_t4";
             public static readonly string ModularT4MSO = "_t4_mso";
             public static readonly string ModularT4Normal = "_t4_normal";
+            public static readonly string ModularTint = "_tint1";
+            public static readonly string ModularT4Offset = "_t4_offset";
 
             public static readonly string[] UniqueTextures =
             {
@@ -57,6 +59,25 @@ namespace SkinManagerMod
             {
                 DetailAlbedo, DetailNormal,
             };
+
+            public static string[] GetPropertiesToCopyIfNull(Texture? texture, string propName)
+            {
+                if (texture != null)
+                {
+                    return new string[0];
+                }
+
+                if (propName == MetalGlossMap)
+                {
+                    return new[]
+                    {
+                        Metallic,
+                        Smoothness
+                    };
+                }
+
+                return new string[0];
+            }
         }
 
         /// <summary>
@@ -333,16 +354,6 @@ namespace SkinManagerMod
 
             var defaultMaterial = defaultData.GetMaterialForBaseTheme(skin.BaseTheme);
 
-            // Set scales etc
-            if (defaultMaterial.HasProperty(PropNames.Metallic))
-            {
-                float metallic = defaultMaterial.GetFloat(PropNames.Metallic);
-                mat.SetFloat(PropNames.Metallic, metallic);
-
-                float smoothness = defaultMaterial.GetFloat(PropNames.Smoothness);
-                mat.SetFloat(PropNames.Smoothness, smoothness);
-            }
-
             if (defaultMaterial.HasProperty(PropNames.DetailNormalScale))
             {
                 float intensity = defaultMaterial.GetFloat(PropNames.DetailNormalScale);
@@ -367,6 +378,12 @@ namespace SkinManagerMod
                         {
                             mat.SetTexture(PropNames.OcclusionMap, skinTexture.TextureData);
                         }
+
+                        if (mat.HasProperty(PropNames.Metallic))
+                        {
+                            mat.SetFloat(PropNames.Metallic, mat.GetFloat(PropNames.Metallic));
+                            mat.SetFloat(PropNames.Smoothness, mat.GetFloat(PropNames.Smoothness));
+                        }
                     }
                 }
                 else
@@ -386,12 +403,21 @@ namespace SkinManagerMod
                             mat.color = defaultMaterial.color;
                         }
 
-                        if (defaultTexture.PropertyName == PropNames.MetalGlossMap)
+                        // attempted to fix railbus and be2 primer glossiness issue, doesnt work...
+                        if (defaultTexture.PropertyName == PropNames.MetalGlossMap && mat.HasProperty(PropNames.Metallic))
                         {
-                            if (skinTexture && !GetMaterialTexture(mat, PropNames.OcclusionMap))
-                            {
-                                mat.SetTexture(PropNames.OcclusionMap, skinTexture);
-                            }
+                            mat.SetFloat(PropNames.Metallic, mat.GetFloat(PropNames.Metallic));
+                            mat.SetFloat(PropNames.Smoothness, mat.GetFloat(PropNames.Smoothness));
+                        }
+
+                        if ((defaultTexture.PropertyName == PropNames.ModularT1) && mat.HasProperty(PropNames.ModularTint))
+                        {
+                            mat.SetVector(PropNames.ModularTint, defaultMaterial.GetVector(PropNames.ModularTint));
+                        }
+
+                        if ((defaultTexture.PropertyName == PropNames.ModularT4) && mat.HasProperty(PropNames.ModularT4Offset))
+                        {
+                            mat.SetFloat(PropNames.ModularT4Offset, defaultMaterial.GetFloat(PropNames.ModularT4Offset));
                         }
                     }
                 }
