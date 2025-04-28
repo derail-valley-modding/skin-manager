@@ -16,33 +16,40 @@ namespace SkinManagerMod
         public readonly string Name;
         public readonly string? Path;
         public readonly bool IsDefault;
+        public readonly bool IsStrippedSurface;
         public readonly List<SkinTexture> SkinTextures = new();
         public readonly string[]? ResourcePaths;
         public readonly BaseTheme BaseTheme;
 
-        private Skin(string liveryId, string name, string? directory, bool isDefault, string[]? resourcePaths, BaseTheme baseTheme)
+        private Skin(string liveryId, string name, string? directory, bool isDefault, bool isStrippedSurface, string[]? resourcePaths, BaseTheme baseTheme)
         {
             LiveryId = liveryId;
             Name = name;
             Path = directory;
             IsDefault = isDefault;
+            IsStrippedSurface = isStrippedSurface;
             ResourcePaths = resourcePaths;
             BaseTheme = baseTheme;
         }
 
         public static Skin Custom(string liveryId, string name, string directory, BaseTheme baseTheme, string[]? resourcePaths = null)
         {
-            return new Skin(liveryId, name, directory, false, resourcePaths, baseTheme);
+            return new Skin(liveryId, name, directory, false, false, resourcePaths, baseTheme);
         }
 
         public static Skin Custom(SkinConfig config)
         {
-            return new Skin(config.CarId, config.Name, config.FolderPath, false, config.ResourcePaths, config.BaseTheme);
+            return new Skin(config.CarId, config.Name, config.FolderPath, false, false, config.ResourcePaths, config.BaseTheme);
         }
 
         public static Skin Default(string liveryId, BaseTheme baseTheme)
         {
-            return new Skin(liveryId, GetDefaultSkinName(liveryId), null, true, null, baseTheme);
+            return new Skin(liveryId, GetDefaultSkinName(liveryId), null, true, false, null, baseTheme);
+        }
+
+        public static Skin Primer(string liveryId, BaseTheme baseTheme)
+        {
+            return new Skin(liveryId, GetDefaultSkinName(liveryId), null, true, true, null, baseTheme);
         }
 
         public bool ContainsTexture(string name)

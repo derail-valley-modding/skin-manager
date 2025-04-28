@@ -24,7 +24,7 @@ namespace SkinManagerMod.Patches
         {
             if ((__result == PaintCan.Validity.Incompatible) && themeFrom)
             {
-                if (CarTypes.IsRegularCar(target.carLivery))
+                if (CarTypes.IsRegularCar(target.carLivery) || themeFrom.IsStrippedSurface)
                 {
                     __result = PaintCan.Validity.Ok;
                 }

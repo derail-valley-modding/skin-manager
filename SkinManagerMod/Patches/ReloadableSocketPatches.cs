@@ -1,6 +1,7 @@
 ﻿using DV.CabControls;
 using DV.Items;
 using DV.JObjectExtstensions;
+using DV.Shops;
 using DV.Utils;
 using HarmonyLib;
 using Newtonsoft.Json.Linq;
@@ -9,7 +10,51 @@ using UnityEngine;
 
 namespace SkinManagerMod.Patches
 {
-    [HarmonyPatch(typeof(ReloadableSocket))]
+    // reloadablesocket is obsolete, replaced by container system i think
+    [HarmonyPatch(typeof(ItemContainer))]
+    internal static class ItemContainerPatches
+    {
+        [HarmonyPatch(nameof(ItemContainer.OnItemSaveDataLoaded))]
+        [HarmonyPostfix]
+        private static void SaveDataLoaded(ItemContainer __instance, JObject data)
+        {
+            data = data.GetJObject(ItemContainer.CONTAINER_ID_SAVE_KEY);
+            if (data is null)
+            {
+                return;
+            }
+
+            string prefabName = data.GetString("prefabName") ?? string.Empty;
+            GameObject can;
+
+            if (PaintFactory.TryParseDummyPrefabName(prefabName, out string? themeName) &&
+                SkinProvider.TryGetTheme(themeName!, out var theme))
+            {
+                // skin manager can
+                can = PaintFactory.InstantiateCustomCan(theme, __instance.transform.position, Quaternion.identity);
+            }
+            else
+            {
+                // other item
+                GameObject prefab = Resources.Load<GameObject>(prefabName);
+                if (!prefab)
+                {
+                    Debug.LogError($"[Reloadable] Couldn't find item prefab with the name '{prefabName}'. Loading of item '{prefabName}' skipped.");
+                    return;
+                }
+                can = Object.Instantiate(prefab, __instance.transform.position, Quaternion.identity);
+            }
+
+            can.name = prefabName;
+            can.GetComponent<InventoryItemSpec>().BelongsToPlayer = data.GetBool("belongsToPlayer") ?? false;
+
+            ItemSaveData saveData = can.GetComponent<ItemSaveData>();
+            saveData?.LoadItemData(data.GetJObject("data"));
+        }
+    }
+
+
+    /*[HarmonyPatch(typeof(ReloadableSocket))]
     internal static class ReloadableSocketPatches
     {
         [HarmonyPatch(nameof(ReloadableSocket.SaveDataLoaded))]
@@ -61,5 +106,5 @@ namespace SkinManagerMod.Patches
 
             return false;
         }
-    }
+    }*/
 }

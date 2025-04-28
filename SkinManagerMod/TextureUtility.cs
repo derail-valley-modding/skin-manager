@@ -12,6 +12,7 @@ namespace SkinManagerMod
         public static class PropNames
         {
             public static readonly string Main = "_MainTex";
+            public static readonly string Color = "_Color";
             public static readonly string BumpMap = "_BumpMap";
             public static readonly string MetalGlossMap = "_MetallicGlossMap";
             public static readonly string EmissionMap = "_EmissionMap";
@@ -19,6 +20,7 @@ namespace SkinManagerMod
 
             public static readonly string Smoothness = "_Glossiness";
             public static readonly string Metallic = "_Metallic";
+            public static readonly string MetalGlossScale = "_GlossMapScale";
 
             public static readonly string DetailAlbedo = "_DetailAlbedoMap";
             public static readonly string DetailNormal = "_DetailNormalMap";
@@ -34,6 +36,8 @@ namespace SkinManagerMod
             public static readonly string ModularT4 = "_t4";
             public static readonly string ModularT4MSO = "_t4_mso";
             public static readonly string ModularT4Normal = "_t4_normal";
+            public static readonly string ModularTint = "_tint1";
+            public static readonly string ModularT4Offset = "_t4_offset";
 
             public static readonly string[] UniqueTextures =
             {
@@ -57,6 +61,12 @@ namespace SkinManagerMod
             {
                 DetailAlbedo, DetailNormal,
             };
+        }
+
+        public static class Keywords
+        {
+            public static readonly string UseMetalGlossMap = "_METALLICGLOSSMAP";
+            public static readonly string UseNormalMap = "_NORMALMAP";
         }
 
         /// <summary>
@@ -333,66 +343,94 @@ namespace SkinManagerMod
 
             var defaultMaterial = defaultData.GetMaterialForBaseTheme(skin.BaseTheme);
 
-            // Set scales etc
-            if (defaultMaterial.HasProperty(PropNames.Metallic))
-            {
-                float metallic = defaultMaterial.GetFloat(PropNames.Metallic);
-                mat.SetFloat(PropNames.Metallic, metallic);
-
-                float smoothness = defaultMaterial.GetFloat(PropNames.Smoothness);
-                mat.SetFloat(PropNames.Smoothness, smoothness);
-            }
-
             if (defaultMaterial.HasProperty(PropNames.DetailNormalScale))
             {
                 float intensity = defaultMaterial.GetFloat(PropNames.DetailNormalScale);
                 mat.SetFloat(PropNames.DetailNormalScale, intensity);
             }
 
+            if (mat.HasProperty(PropNames.Metallic))
+            {
+                mat.SetFloat(PropNames.Metallic, defaultMaterial.GetFloat(PropNames.Metallic));
+                mat.SetFloat(PropNames.Smoothness, defaultMaterial.GetFloat(PropNames.Smoothness));
+            }
+
+            if (mat.HasProperty(PropNames.ModularTint))
+            {
+                mat.SetVector(PropNames.ModularTint, defaultMaterial.GetVector(PropNames.ModularTint));
+            }
+
+            if (mat.HasProperty(PropNames.ModularT4Offset))
+            {
+                mat.SetFloat(PropNames.ModularT4Offset, defaultMaterial.GetFloat(PropNames.ModularT4Offset));
+            }
+
             foreach (var defaultTexture in defaultData.AllTextures)
             {
                 if (skin.ContainsTexture(defaultTexture.TextureName))
                 {
-                    var skinTexture = skin.GetTexture(defaultTexture.TextureName)!;
-                    mat.SetTexture(defaultTexture.PropertyName, skinTexture.TextureData);
-
-                    if ((defaultTexture.PropertyName == PropNames.Main) && mat.HasProperty("_Color"))
-                    {
-                        mat.color = Color.white;
-                    }
-
-                    if (defaultTexture.PropertyName == PropNames.MetalGlossMap)
-                    {
-                        if (!GetMaterialTexture(mat, PropNames.OcclusionMap))
-                        {
-                            mat.SetTexture(PropNames.OcclusionMap, skinTexture.TextureData);
-                        }
-                    }
+                    ApplySkinProvidedTexture(mat, skin, defaultTexture);
                 }
                 else
                 {
-                    if (PropNames.DetailTextures.Contains(defaultTexture.PropertyName) && skin.BaseTheme.HasFlag(BaseTheme.DVRT_NoDetails))
+                    ApplyDefaultFallbackTexture(mat, skin, defaultMaterial, defaultTexture);
+                }
+            }
+        }
+
+        private static void ApplySkinProvidedTexture(Material mat, Skin skin, TexturePropNamePair defaultTexture)
+        {
+            var skinTexture = skin.GetTexture(defaultTexture.TextureName)!;
+            mat.SetTexture(defaultTexture.PropertyName, skinTexture.TextureData);
+
+            if ((defaultTexture.PropertyName == PropNames.Main) && mat.HasProperty(PropNames.Color))
+            {
+                mat.color = Color.white;
+            }
+
+            // this is a skin-provided specular texture
+            if (defaultTexture.PropertyName == PropNames.MetalGlossMap)
+            {
+                mat.EnableKeyword(Keywords.UseMetalGlossMap);
+
+                if (!GetMaterialTexture(mat, PropNames.OcclusionMap))
+                {
+                    mat.SetTexture(PropNames.OcclusionMap, skinTexture.TextureData);
+                }
+            }
+            else if (defaultTexture.PropertyName == PropNames.BumpMap)
+            {
+                mat.EnableKeyword(Keywords.UseNormalMap);
+            }
+        }
+
+        private static void ApplyDefaultFallbackTexture(Material mat, Skin skin, Material defaultMaterial, TexturePropNamePair defaultTexture)
+        {
+            if (PropNames.DetailTextures.Contains(defaultTexture.PropertyName) && skin.BaseTheme.HasFlag(BaseTheme.DVRT_NoDetails))
+            {
+                // strip the default detail textures if that was specified in the skin
+                mat.SetTexture(defaultTexture.PropertyName, null);
+            }
+            else
+            {
+                var skinTexture = defaultMaterial.GetTexture(defaultTexture.PropertyName);
+                mat.SetTexture(defaultTexture.PropertyName, skinTexture);
+
+                if ((defaultTexture.PropertyName == PropNames.Main) && mat.HasProperty(PropNames.Color))
+                {
+                    // demo bogies et al. don't have textures...
+                    mat.color = defaultMaterial.color;
+                }
+                else if (!skinTexture)
+                {
+                    if (defaultTexture.PropertyName == PropNames.MetalGlossMap)
                     {
-                        mat.SetTexture(defaultTexture.PropertyName, null);
+                        // there is no specular map provided by the skin or base theme, so we need to disable the keyword
+                        mat.DisableKeyword(Keywords.UseMetalGlossMap);
                     }
-                    else
+                    else if (defaultTexture.PropertyName == PropNames.BumpMap)
                     {
-                        var skinTexture = defaultMaterial.GetTexture(defaultTexture.PropertyName);
-                        mat.SetTexture(defaultTexture.PropertyName, skinTexture);
-
-                        if ((defaultTexture.PropertyName == PropNames.Main) && mat.HasProperty("_Color"))
-                        {
-                            // demo bogies et al. don't have textures...
-                            mat.color = defaultMaterial.color;
-                        }
-
-                        if (defaultTexture.PropertyName == PropNames.MetalGlossMap)
-                        {
-                            if (skinTexture && !GetMaterialTexture(mat, PropNames.OcclusionMap))
-                            {
-                                mat.SetTexture(PropNames.OcclusionMap, skinTexture);
-                            }
-                        }
+                        mat.DisableKeyword(Keywords.UseNormalMap);
                     }
                 }
             }
