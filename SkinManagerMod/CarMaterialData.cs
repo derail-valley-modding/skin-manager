@@ -21,7 +21,7 @@ namespace SkinManagerMod
 
                 BaseTheme themeType = SkinProvider.GetThemeTypeByName(defaultTheme.name);
 
-                foreach (var substitute in defaultTheme.substitutions)
+                foreach (var substitute in defaultTheme.substitutions.Concat(defaultTheme.minorSubstitutions))
                 {
                     if (!substitute.substitute) continue;
 
