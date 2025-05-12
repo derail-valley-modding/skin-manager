@@ -631,7 +631,7 @@ namespace SkinManagerMod
                 customDefaultTheme.nameLocalizationKey = existingTheme.nameLocalizationKey;
                 customDefaultTheme.isStrippedSurface = existingTheme.isStrippedSurface;
                 customDefaultTheme.substitutions = existingTheme.substitutions;
-                customDefaultTheme.minorSubstitutions = existingTheme.minorSubstitutions;
+                customDefaultTheme.forbiddenLiveries = existingTheme.forbiddenLiveries;
 
                 foreach (var carType in Globals.G.Types.Liveries)
                 {
