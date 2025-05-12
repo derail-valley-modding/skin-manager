@@ -2,6 +2,7 @@
 using DV.Interaction;
 using DV.ThingTypes;
 using HarmonyLib;
+using UnityEngine;
 
 namespace SkinManagerMod.Patches
 {
@@ -20,8 +21,23 @@ namespace SkinManagerMod.Patches
 
         [HarmonyPatch(nameof(PaintCan.CheckPaintApplicationValidity))]
         [HarmonyPostfix]
-        public static void FixAlreadyPaintedValidity(ref PaintCan.Validity __result, PaintTheme themeFrom, TrainCar target)
+        public static void FixAlreadyPaintedValidity(PaintCan __instance, ref PaintCan.Validity __result, PaintTheme themeFrom, TrainCar target)
         {
+            if (__instance.theme.isStrippedSurface && themeFrom.IsStrippedSurface)
+            {
+                __result = PaintCan.Validity.AlreadyPainted;
+                return;
+            }
+
+            if (__instance.theme is CustomPaintTheme customTheme)
+            {
+                if (!customTheme.SupportsVehicle(target.carLivery))
+                {
+                    __result = PaintCan.Validity.Incompatible;
+                    return;
+                }
+            }
+
             if ((__result == PaintCan.Validity.Incompatible) && themeFrom)
             {
                 if (CarTypes.IsRegularCar(target.carLivery) || themeFrom.IsStrippedSurface)
