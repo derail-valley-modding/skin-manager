@@ -47,7 +47,7 @@ namespace SkinManagerMod.Patches
                 __instance.magazine.AddItem(emptyCan, 0);
                 __instance.ignoreMagazineChange = false;
                 __instance.insertedCan = emptyCan.GetComponent<PaintCan>();
-                __instance.paintSprayerEffects.OnInserted(emptyCan.transform, playSound: false);
+                __instance.paintSprayerEffects.OnInserted(emptyCan.GetComponent<PaintCan>(), playSound: false);
                 __instance.paintSprayerEffects.OnSpent();
             }
             else
