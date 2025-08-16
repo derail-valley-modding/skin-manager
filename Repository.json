@@ -2,6 +2,11 @@
 	"Releases": [
 		{
 			"Id": "SkinManagerMod",
+			"Version": "4.3.2",
+			"DownloadUrl": "https://github.com/derail-valley-modding/skin-manager/releases/download/v4.3.2/SkinManagerMod.zip"
+		},
+		{
+			"Id": "SkinManagerMod",
 			"Version": "4.3.1",
 			"DownloadUrl": "https://github.com/derail-valley-modding/skin-manager/releases/download/v4.3.1/SkinManagerMod.zip"
 		},
@@ -126,3 +131,4 @@
 		}
 	]
 }
+
