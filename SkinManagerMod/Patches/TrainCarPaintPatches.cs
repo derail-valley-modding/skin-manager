@@ -1,5 +1,6 @@
 ﻿using DV.Customization.Paint;
 using HarmonyLib;
+using UnityEngine;
 
 namespace SkinManagerMod.Patches
 {
@@ -51,6 +52,8 @@ namespace SkinManagerMod.Patches
 
             var intTheme = train.PaintInterior ? GetCustomTheme(train.PaintInterior, train) : null;
             
+            ApplyAllCCLSubstitutions(train, extTheme, intTheme);
+
             extTheme.Apply(train.gameObject, train);
 
             if (intTheme is not null)
@@ -79,6 +82,32 @@ namespace SkinManagerMod.Patches
             }
 
             train.gameObject.SendMessage("AfterSkinChange");
+        }
+
+        private static void ApplyAllCCLSubstitutions(TrainCar train, CustomPaintTheme extTheme, CustomPaintTheme? intTheme)
+        {
+            ApplyCCLSubstitutions(train.PaintExterior, extTheme);
+            if (train.paintCabExterior) ApplyCCLSubstitutions(train.paintCabExterior, extTheme);
+            if (train.paintEIExterior) ApplyCCLSubstitutions(train.paintEIExterior, extTheme);
+
+            if (intTheme)
+            {
+                if (train.PaintInterior) ApplyCCLSubstitutions(train.PaintInterior, intTheme!);
+                if (train.paintCabInterior) ApplyCCLSubstitutions(train.paintCabInterior, intTheme!);
+                if (train.paintEIInterior) ApplyCCLSubstitutions(train.paintEIInterior, intTheme!);
+            }
+        }
+
+        private static void ApplyCCLSubstitutions(TrainCarPaint paint, CustomPaintTheme theme)
+        {
+            foreach (var materialSet in paint.sets)
+            {
+                if (!(theme.TryGetCCLSubstitution(materialSet.OriginalMaterial, out Material? material) && material))
+                {
+                    material = materialSet.OriginalMaterial;
+                }
+                materialSet.ApplyMaterial(material);
+            }
         }
 
         private static CustomPaintTheme GetCustomTheme(TrainCarPaint paint, TrainCar train)

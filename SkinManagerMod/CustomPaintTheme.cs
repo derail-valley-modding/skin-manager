@@ -10,7 +10,7 @@ namespace SkinManagerMod
 {
     public class CustomPaintTheme : PaintTheme
     {
-        private Dictionary<string, Skin> _skins = new();
+        private readonly Dictionary<string, Skin> _skins = new();
 
         public void AddSkin(Skin skin) => _skins.Add(skin.LiveryId, skin);
 
@@ -19,12 +19,12 @@ namespace SkinManagerMod
 
         public bool SupportsVehicle(string liveryId)
         {
-            if (_skins.ContainsKey(liveryId)) return true;
-            return Main.Settings.allowDE6SkinsForSlug && (liveryId == Constants.SLUG_LIVERY_ID) && _skins.ContainsKey(Constants.DE6_LIVERY_ID);
+            if (_skins.ContainsKey(liveryId) || SupportedCCLIds.Contains(liveryId)) return true;
+            return Main.Settings.allowDE6SkinsForSlug && (liveryId == Constants.SLUG_LIVERY_ID) && SupportsVehicle(Constants.DE6_LIVERY_ID);
         }
         public bool SupportsVehicle(TrainCarLivery livery) => SupportsVehicle(livery.id);
 
-        public IEnumerable<TrainCarLivery> SupportedCarTypes => Globals.G.Types.Liveries.Where(type => _skins.ContainsKey(type.id));
+        public IEnumerable<TrainCarLivery> SupportedCarTypes => Globals.G.Types.Liveries.Where(type => SupportsVehicle(type.id));
 
         public void Apply(GameObject target, TrainCar train)
         {
@@ -114,6 +114,25 @@ namespace SkinManagerMod
             }
 
             return null;
+        }
+
+
+        public readonly List<Substitution> CCLSubstitutions = new();
+
+        public readonly HashSet<string> SupportedCCLIds = new();
+
+        public bool TryGetCCLSubstitution(Material original, out Material? substitute)
+        {
+            foreach (var substitution in CCLSubstitutions)
+            {
+                if (substitution.original == original)
+                {
+                    substitute = substitution.substitute;
+                    return true;
+                }
+            }
+            substitute = null;
+            return false;
         }
     }
 }

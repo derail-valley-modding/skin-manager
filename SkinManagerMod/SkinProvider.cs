@@ -3,6 +3,7 @@ using DV.Customization.Paint;
 using DV.ThingTypes;
 using DVLangHelper.Data;
 using Newtonsoft.Json;
+using SkinManagerMod.Patches;
 using SMShared;
 using SMShared.Json;
 using System;
@@ -14,7 +15,7 @@ using UnityModManagerNet;
 
 namespace SkinManagerMod
 {
-    public class SkinProvider
+    public static class SkinProvider
     {
         public const string DefaultThemeName = "DVRT";
         public const string DefaultNewThemeName = "DVRT_New";
@@ -91,20 +92,29 @@ namespace SkinManagerMod
 
 
         // Skin Name to Paint Theme (combined liveries)
-        private static PaintTheme[]? _cachedThemeList = null;
+        private static CustomPaintTheme[]? _cachedThemeList = null;
         private static readonly Dictionary<string, CustomPaintTheme> _themeDict = new(StringComparer.OrdinalIgnoreCase);
         private static readonly Dictionary<string, ThemeSettings> _themeSettings = new();
-        
 
-        private static readonly HashSet<string> _themeableLiveries = Globals.G.Types.Liveries
-            .Where(l => l.prefab.GetComponentInChildren<TrainCarPaint>(true))
-            .Select(l => l.id)
-            .ToHashSet();
+
+        private static readonly HashSet<string> _themeableLiveries = new();
+
+        private static void UpdateThemeableLiveries()
+        {
+            _themeableLiveries.Clear();
+
+            var themable = Globals.G.Types.Liveries.Where(l => l.prefab.GetComponentInChildren<TrainCarPaint>(true));
+            foreach (var livery in themable)
+            {
+                _themeableLiveries.Add(livery.id);
+            }
+        }
 
         public static bool IsThemeable(TrainCarLivery livery) => _themeableLiveries.Contains(livery.id);
         public static bool IsThemeable(string liveryId) => _themeableLiveries.Contains(liveryId);
 
-        public static PaintTheme[] ModdedThemes
+        public static IEnumerable<CustomPaintTheme> AllThemes => _themeDict.Values;
+        public static IEnumerable<CustomPaintTheme> ModdedThemes
         {
             get
             {
@@ -115,7 +125,7 @@ namespace SkinManagerMod
 
         public static List<PaintTheme> GetRandomizedStoreThemes()
         {
-            var arr = ModdedThemes.Where(IsThemeAllowedInStore).ToList();
+            var arr = ModdedThemes.Where(IsThemeAllowedInStore).Cast<PaintTheme>().ToList();
 
             // Fisher Yates shuffle
             for (int i = arr.Count - 1; i > 0; i--)
@@ -219,40 +229,17 @@ namespace SkinManagerMod
 
         public static List<CustomPaintTheme> GetSkinsForType(string carId, bool includeDefault = true, bool sort = true)
         {
-            var result = new List<string>();
-
-            if (skinGroups.TryGetValue(carId, out var group))
+            IEnumerable<CustomPaintTheme> themes = AllThemes.Where(t => t.SupportsVehicle(carId));
+            if (!includeDefault)
             {
-                result.AddRange(group.Skins.Select(s => s.Name));
+                themes = themes.Where(t => !IsBuiltInTheme(t));
             }
-
-            if (Main.Settings.allowDE6SkinsForSlug && (carId == Constants.SLUG_LIVERY_ID))
-            {
-                if (skinGroups.TryGetValue(Constants.DE6_LIVERY_ID, out group))
-                {
-                    result.AddRange(group.Skins.Select(s => s.Name));
-                }
-            }
-
-            if (includeDefault)
-            {
-                if (IsThemeable(carId) || (Main.Settings.allowDE6SkinsForSlug && (carId == Constants.SLUG_LIVERY_ID)))
-                {
-                    result.AddRange(BuiltInThemeNames);
-                }
-                else
-                {
-                    result.Add(DefaultThemeName);
-                }
-            }
-
-            var uniqueThemes = result.Distinct().Select(name => _themeDict[name]).ToList();
-
+            var list = themes.ToList();
             if (sort)
             {
-                uniqueThemes.Sort(CompareThemes);
+                list.Sort(CompareThemes);
             }
-            return uniqueThemes;
+            return list;
         }
 
         private static int CompareSkins(Skin a, Skin b)
@@ -341,10 +328,9 @@ namespace SkinManagerMod
 
         public static bool Initialize()
         {
+            UpdateThemeableLiveries();
             InjectNewDefaultThemes();
             ReloadAllSkins();
-
-            UnityModManager.toggleModsListen += HandleSkinModToggle;
 
             SkinsLoaded?.Invoke();
 
@@ -434,13 +420,40 @@ namespace SkinManagerMod
             }
         }
 
-        private static void HandleSkinModToggle(UnityModManager.ModEntry mod, bool nowActive)
+        private static HashSet<string> _checkedLiveries = new();
+
+        public static void HandleModToggle(UnityModManager.ModEntry mod, bool nowActive)
         {
+            UpdateThemeableLiveries();
+
+            if (CCLPatcher.Enabled && (Globals.G.Types.Liveries.Count > _checkedLiveries.Count))
+            {
+                foreach (var livery in Globals.G.Types.Liveries)
+                {
+                    if (!_checkedLiveries.Contains(livery.id))
+                    {
+                        EnsureDefaultSkinForLivery(CustomDefaultTheme, livery);
+                        CCLPatches.CheckCCLSubstitutionSupport(livery);
+                        _checkedLiveries.Add(livery.id);
+                    }
+                }
+            }
+
             if (!IsPotentialSkinMod(mod)) return;
 
             Main.LogVerbose($"Detected mod enabled toggle: {mod.Info.Id} -> {nowActive}");
             if (nowActive)
             {
+                foreach (string defaultThemeName in BuiltInThemeNames)
+                {
+                    var theme = GetTheme(defaultThemeName);
+
+                    foreach (var carType in Globals.G.types.Liveries)
+                    {
+                        EnsureDefaultSkinForLivery(CustomDefaultTheme, carType);
+                    }
+                }
+
                 ReloadSkinMod(mod, WorldStreamingInit.IsStreamingDone); // force synchronous if in-game
             }
             else
@@ -617,11 +630,9 @@ namespace SkinManagerMod
         /// </summary>
         private static void InjectNewDefaultThemes()
         {
-            var primerTexture = (Texture2D)PrimerTheme.substitutions.First().substitute.mainTexture;
 
             foreach (string themeName in BuiltInThemeNames)
             {
-                BaseTheme themeType = GetThemeTypeByName(themeName);
                 var existingTheme = _builtInThemeDict[themeName];
 
                 var customDefaultTheme = ScriptableObject.CreateInstance<CustomPaintTheme>();
@@ -635,23 +646,62 @@ namespace SkinManagerMod
 
                 foreach (var carType in Globals.G.Types.Liveries)
                 {
-                    if ((themeName == DefaultThemeName) || IsThemeable(carType))
-                    {
-                        var defaultSkin = Skin.Default(carType.id, themeType);
-                        customDefaultTheme.AddSkin(defaultSkin);
-                    }
-                    else if ((themeName == PrimerThemeName) && !IsThemeable(carType))
-                    {
-                        // extend primer coverage to all cars
-                        var defaultSkin = Skin.Primer(carType.id, themeType);
-                        string bodyName = DefaultTextures.GetBodyTextureName(carType.id);
-                        defaultSkin.SkinTextures.Add(new SkinTexture(bodyName, primerTexture));
-                        customDefaultTheme.AddSkin(defaultSkin);
-                    }
+                    EnsureDefaultSkinForLivery(customDefaultTheme, carType);
                 }
 
                 _themeDict[themeName] = customDefaultTheme;
-                //PaintTheme.loadedThemes[themeName.ToLower()] = customDefaultTheme;
+                PaintTheme.loadedThemes[themeName.ToLower()] = customDefaultTheme;
+            }
+        }
+
+        public static CustomPaintTheme GetOrCreateTheme(string themeName)
+        {
+            if (!_themeDict.TryGetValue(themeName, out var theme))
+            {
+                Main.LogVerbose($"Create new theme {themeName}");
+                theme = ScriptableObject.CreateInstance<CustomPaintTheme>();
+                UnityEngine.Object.DontDestroyOnLoad(theme);
+                theme.assetName = themeName;
+                theme.name = themeName;
+
+                theme.nameLocalizationKey = "mod/skins/" + themeName.Replace(' ', '_').ToLowerInvariant();
+                Main.TranslationInjector.AddTranslation(theme.nameLocalizationKey, DVLanguage.English, themeName.Replace('_', ' '));
+
+                RegisterNewTheme(theme);
+            }
+            else
+            {
+                Main.LogVerbose($"Merging into theme {themeName}");
+            }
+            return theme;
+        }
+
+        private static void EnsureDefaultSkinForLivery(CustomPaintTheme customDefaultTheme, TrainCarLivery carType)
+        {
+            if (customDefaultTheme.SupportsVehicle(carType))
+            {
+                return;
+            }
+
+            string themeName = customDefaultTheme.name;
+            BaseTheme themeType = GetThemeTypeByName(themeName);
+
+            if ((themeName == DefaultThemeName) || IsThemeable(carType))
+            {
+                var defaultSkin = Skin.Default(carType.id, themeType);
+                customDefaultTheme.AddSkin(defaultSkin);
+            }
+            else if ((themeName == PrimerThemeName) && !IsThemeable(carType))
+            {
+                // extend primer coverage to all cars
+                var primerTexture = (Texture2D)PrimerTheme.substitutions.First().substitute.mainTexture;
+
+                var defaultSkin = Skin.Primer(carType.id, themeType);
+                if (DefaultTextures.TryGetBodyTextureName(carType.id, out string bodyName))
+                {
+                    defaultSkin.SkinTextures.Add(new SkinTexture(bodyName, primerTexture));
+                    customDefaultTheme.AddSkin(defaultSkin);
+                }
             }
         }
 
@@ -771,23 +821,7 @@ namespace SkinManagerMod
 
             skinGroup.Skins.Add(skin);
 
-            if (!_themeDict.TryGetValue(skin.Name, out var theme))
-            {
-                Main.LogVerbose($"Create new theme {skin.Name}");
-                theme = ScriptableObject.CreateInstance<CustomPaintTheme>();
-                UnityEngine.Object.DontDestroyOnLoad(theme);
-                theme.assetName = skin.Name;
-                theme.name = skin.Name;
-
-                theme.nameLocalizationKey = "mod/skins/" + skin.Name.Replace(' ', '_').ToLowerInvariant();
-                Main.TranslationInjector.AddTranslation(theme.nameLocalizationKey, DVLanguage.English, skin.Name.Replace('_', ' '));
-
-                RegisterNewTheme(theme);
-            }
-            else
-            {
-                Main.LogVerbose($"Merging into theme {skin.Name}");
-            }
+            var theme = GetOrCreateTheme(skin.Name);
 
             theme.AddSkin(skin);
         }

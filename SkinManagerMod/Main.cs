@@ -10,6 +10,7 @@ using SMShared;
 using DVLangHelper.Runtime;
 using SkinManagerMod.Items;
 using System.Collections;
+using SkinManagerMod.Patches;
 
 namespace SkinManagerMod
 {
@@ -40,7 +41,7 @@ namespace SkinManagerMod
             TranslationInjector.AddTranslationsFromWebCsv("https://docs.google.com/spreadsheets/d/1TrI4RuUgCijOuCjxM_WsOO9AV0BO4noTIZIzal3HbnY/export?format=csv&gid=1691364666");
 
             SkinProvider.CacheDefaultThemes();
-            CarMaterialData.Initialize();
+            CarMaterialData.FetchNewMaterialData();
             if (!SkinProvider.Initialize())
             {
                 Error("Failed to initialize skin manager");
@@ -48,10 +49,13 @@ namespace SkinManagerMod
             }
             SkinManager.Initialize();
 
+            UnityModManager.toggleModsListen += OnModToggle;
             UnloadWatcher.UnloadRequested += PaintFactory.DestroyInjectedShopData;
 
             Harmony = new Harmony(Constants.MOD_ID);
             Harmony.PatchAll(Assembly.GetExecutingAssembly());
+
+            CCLPatcher.SetupCCLListener();
 
             Instance.OnGUI = OnGUI;
             Instance.OnSaveGUI = OnSaveGUI;
@@ -59,6 +63,27 @@ namespace SkinManagerMod
 
             QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
             return true;
+        }
+
+        private static void OnModToggle(UnityModManager.ModEntry mod, bool nowActive)
+        {
+            if (nowActive && (_delayedMaterialFetch is null))
+            {
+                _delayedMaterialFetch = CoroutineManager.Instance.StartCoroutine(DelayedMaterialFetch());
+            }
+
+            SkinProvider.HandleModToggle(mod, nowActive);
+        }
+
+        private static Coroutine? _delayedMaterialFetch = null;
+
+        private static IEnumerator DelayedMaterialFetch()
+        {
+            yield return null;
+
+            CarMaterialData.FetchNewMaterialData();
+
+            _delayedMaterialFetch = null;
         }
 
         #region Settings
