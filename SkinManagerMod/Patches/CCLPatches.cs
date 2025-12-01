@@ -38,10 +38,6 @@ namespace SkinManagerMod.Patches
             var patchMethod = AccessTools.Method(typeof(CCLPatches), nameof(CCLPatches.AfterLoadSubstitutions));
             Main.Harmony.Patch(origMethod, postfix: patchMethod);
 
-            // origMethod = AccessTools.Method(typeof(StartingItemsController), nameof(StartingItemsController.AddStartingItems));
-            // patchMethod = AccessTools.Method(typeof(CCLPatches), nameof(CCLPatches.OnWorldStart));
-            // Main.Harmony.Patch(origMethod, prefix: patchMethod);
-
             Main.Log("Patched CCL Methods");
             Enabled = true;
         }
@@ -49,16 +45,19 @@ namespace SkinManagerMod.Patches
 
     internal static class CCLPatches
     {
-        internal static void AfterLoadSubstitutions(IEnumerable<CCL.Types.PaintSubstitutions> substitutions)
+        internal static void AfterLoadSubstitutions(dynamic substitutions)
         {
-            foreach (var sub in substitutions)
+            foreach (dynamic sub in substitutions)
             {
                 var theme = SkinProvider.GetOrCreateTheme(sub.Paint);
-                theme.CCLSubstitutions.AddRange(sub.Substitutions.Select(s => new PaintTheme.Substitution()
+                foreach (dynamic s in sub.Substitutions)
                 {
-                    original = s.Original,
-                    substitute = s.Substitute,
-                }));
+                    theme.CCLSubstitutions.Add(new PaintTheme.Substitution()
+                    {
+                        original = s.Original,
+                        substitute = s.Substitute,
+                    });
+                }
             }
         }
 
@@ -73,16 +72,12 @@ namespace SkinManagerMod.Patches
 
             foreach (var customTheme in SkinProvider.AllThemes)
             {
-                //Skin? skin = null;
-                    
                 foreach (var materialSet in sets)
                 {
                     if (!materialSet.OriginalMaterial) continue;
 
-                    if (customTheme.TryGetCCLSubstitution(materialSet.OriginalMaterial, out var substitute))// && substitute)
+                    if (customTheme.TryGetCCLSubstitution(materialSet.OriginalMaterial, out var substitute))
                     {
-                        // skin ??= SkinProvider.GetCCLSkin(customTheme.name, cclLivery);
-                        // AddSubstitutionToSkin(skin, materialSet.OriginalMaterial, substitute!);
                         customTheme.SupportedCCLIds.Add(cclLivery.id);
                     }
                 }
