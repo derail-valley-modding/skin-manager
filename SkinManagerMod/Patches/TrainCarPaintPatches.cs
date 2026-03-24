@@ -35,10 +35,12 @@ namespace SkinManagerMod.Patches
             var train = TrainCar.Resolve(__instance.gameObject);
             PaintArea area = (__instance.targetArea == TrainCarPaint.Target.Interior) ? PaintArea.Interior : PaintArea.Exterior;
 
-            ReapplyThemes(train);
-
             var theme = GetCustomTheme(__instance, train);
             SkinManager.SetAppliedCarSkin(train, theme.name, area);
+
+            ReapplyThemes(train);
+
+            SkinManager.RaiseThemeAppliedToRegion(train, __instance, theme);
 
             return false;
         }
@@ -82,6 +84,7 @@ namespace SkinManagerMod.Patches
             }
 
             train.gameObject.SendMessage("AfterSkinChange");
+            SkinManager.RaiseThemesReapplied(train);
         }
 
         private static void ApplyAllCCLSubstitutions(TrainCar train, CustomPaintTheme extTheme, CustomPaintTheme? intTheme)
