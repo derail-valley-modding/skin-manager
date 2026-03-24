@@ -15,6 +15,24 @@ namespace SkinManagerMod
         private static readonly Dictionary<string, string> carGuidToAppliedSkinMap = new();
         private static readonly Dictionary<string, string> interiorSkinMap = new();
 
+        public delegate void ThemeAppliedDelegate(TrainCar car, TrainCarPaint paint, CustomPaintTheme newTheme);
+        public static event ThemeAppliedDelegate? ThemeAppliedToRegion;
+
+        internal static void RaiseThemeAppliedToRegion(TrainCar car, TrainCarPaint paint, CustomPaintTheme newTheme) =>
+            ThemeAppliedToRegion?.Invoke(car, paint, newTheme);
+
+        public delegate void ThemesReappliedDelegate(TrainCar car);
+        public static event ThemesReappliedDelegate? ThemesReapplied;
+
+        internal static void RaiseThemesReapplied(TrainCar car) =>
+            ThemesReapplied?.Invoke(car);
+
+        public delegate void SkinAppliedDelegate(TrainCar car, CustomPaintTheme theme, PaintArea area);
+        public static event SkinAppliedDelegate? SkinApplied;
+
+        public delegate void SkinChangingDelegate(TrainCar car, PaintTheme? oldTheme, CustomPaintTheme newTheme, PaintArea area);
+        public static event SkinChangingDelegate? SkinChanging;
+
         public static void Initialize()
         {
             SkinProvider.SkinUpdated += ReapplySkinToUsers;
@@ -120,15 +138,17 @@ namespace SkinManagerMod
             {
                 if (area.HasFlag(PaintArea.Interior) && trainCar.PaintInterior)
                 {
+                    SkinChanging?.Invoke(trainCar, trainCar.PaintInterior.CurrentTheme, newTheme, PaintArea.Interior);
                     trainCar.PaintInterior.CurrentTheme = newTheme;
                 }
 
                 if (area.HasFlag(PaintArea.Exterior) && trainCar.PaintExterior)
                 {
+                    SkinChanging?.Invoke(trainCar, trainCar.PaintExterior.CurrentTheme, newTheme, PaintArea.Exterior);
                     trainCar.PaintExterior.CurrentTheme = newTheme;
                 }
 
-                //SetAppliedCarSkin(trainCar, newTheme.name, area);
+                SkinApplied?.Invoke(trainCar, newTheme, area);
             }
         }
 

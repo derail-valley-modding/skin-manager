@@ -11,11 +11,14 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0" PrivateAssets="All"/>
   </ItemGroup>
   
   <ItemGroup>
     <Reference Include="0Harmony" />
     <Reference Include="Assembly-CSharp" />
+    <Reference Include="CCL.Types" />
+    <Reference Include="CCL.Importer" />
     <Reference Include="DV.Common" />
     <Reference Include="DV.Inventory" />
     <Reference Include="DV.Localization" />
@@ -50,7 +53,10 @@
   </ItemGroup>
   <Import Project="..\SMShared\SMShared.projitems" Label="Shared" />
   
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(OS)' == 'Windows_NT'">
     <Exec Command="curl.exe &quot;https://docs.google.com/spreadsheets/d/1TrI4RuUgCijOuCjxM_WsOO9AV0BO4noTIZIzal3HbnY/export?format=csv&amp;gid=1691364666&quot; -L &quot;https://docs.google.com&quot; -o &quot;$(TargetDir)\translations.csv&quot; &gt;NUL" />
+  </Target>
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(OS)' != 'Windows_NT'">
+    <Exec Command="curl &quot;https://docs.google.com/spreadsheets/d/1TrI4RuUgCijOuCjxM_WsOO9AV0BO4noTIZIzal3HbnY/export?format=csv&amp;gid=1691364666&quot; -L &quot;https://docs.google.com&quot; -o &quot;$(TargetDir)/translations.csv&quot; &gt; /dev/null" />
   </Target>
 </Project>

@@ -1,6 +1,7 @@
 ﻿using DV;
 using DV.ThingTypes;
 using SMShared.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -12,7 +13,7 @@ namespace SkinManagerMod
         private static readonly Dictionary<string, CarMaterialData> _liveryToMaterialsMap = new();
         private static readonly Dictionary<string, List<ThemeAlternative>> _materialSubstitutes = new();
 
-        public static void Initialize()
+        public static void FetchNewMaterialData()
         {
             // built map of all substituted textures
             foreach (var defaultTheme in SkinProvider.BuiltInThemes)
@@ -32,14 +33,22 @@ namespace SkinManagerMod
                         alternatives = new List<ThemeAlternative>();
                         _materialSubstitutes.Add(originalName, alternatives);
                     }
-                    alternatives.Add(new ThemeAlternative(themeType, substitute.substitute));
+
+                    var newAlternative = new ThemeAlternative(themeType, substitute.substitute);
+                    if (!alternatives.Contains(newAlternative))
+                    {
+                        alternatives.Add(newAlternative);
+                    }
                 }
             }
 
             foreach (var livery in Globals.G.Types.Liveries)
             {
-                var carData = new CarMaterialData(livery);
-                _liveryToMaterialsMap.Add(livery.id, carData);
+                if (!_liveryToMaterialsMap.ContainsKey(livery.id))
+                {
+                    var carData = new CarMaterialData(livery);
+                    _liveryToMaterialsMap.Add(livery.id, carData);
+                }
             }
         }
 
@@ -194,7 +203,7 @@ namespace SkinManagerMod
             }
         }
 
-        public readonly struct ThemeAlternative
+        public readonly struct ThemeAlternative : IEquatable<ThemeAlternative>
         {
             public readonly BaseTheme Theme;
             public readonly Material Material;
@@ -203,6 +212,25 @@ namespace SkinManagerMod
             {
                 Theme = theme;
                 Material = substitute;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return (obj is ThemeAlternative other) && Equals(other);
+            }
+
+            public bool Equals(ThemeAlternative other)
+            {
+                return (Theme == other.Theme) && (Material == other.Material);
+            }
+
+            public override int GetHashCode()
+            {
+                // VS Generated
+                int hashCode = 549895394;
+                hashCode = hashCode * -1521134295 + Theme.GetHashCode();
+                hashCode = hashCode * -1521134295 + EqualityComparer<Material>.Default.GetHashCode(Material);
+                return hashCode;
             }
         }
     }

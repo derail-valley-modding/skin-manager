@@ -232,7 +232,7 @@ namespace SkinManagerMod
             return material.GetTexture(propName) as Texture2D;
         }
 
-        public static IEnumerable<Texture2D> EnumerateTextures(IEnumerable<MeshRenderer> renderers)
+        public static IEnumerable<Texture2D> EnumerateTextures(IEnumerable<Renderer> renderers)
         {
             foreach (var renderer in renderers)
             {
@@ -271,18 +271,18 @@ namespace SkinManagerMod
         /// <summary>
         /// Aggregate all renderers assigned to a car variant's prefab, interior, and interactables
         /// </summary>
-        public static IEnumerable<MeshRenderer> GetAllCarRenderers(TrainCarLivery carType)
+        public static IEnumerable<Renderer> GetAllCarRenderers(TrainCarLivery carType)
         {
-            IEnumerable<MeshRenderer> cmps = carType.prefab.gameObject.GetComponentsInChildren<MeshRenderer>();
+            IEnumerable<Renderer> cmps = carType.prefab.gameObject.GetComponentsInChildren<Renderer>(true);
 
             if (carType.interiorPrefab != null)
             {
-                var interiorCmps = carType.interiorPrefab.GetComponentsInChildren<MeshRenderer>();
+                var interiorCmps = carType.interiorPrefab.GetComponentsInChildren<Renderer>(true);
                 cmps = cmps.Concat(interiorCmps);
             }
             if (carType.externalInteractablesPrefab != null)
             {
-                var interactCmps = carType.externalInteractablesPrefab.GetComponentsInChildren<MeshRenderer>();
+                var interactCmps = carType.externalInteractablesPrefab.GetComponentsInChildren<Renderer>(true);
                 cmps = cmps.Concat(interactCmps);
             }
 
@@ -293,7 +293,7 @@ namespace SkinManagerMod
         /// Get all textures assigned to each renderers, and which material property they are assigned to
         /// </summary>
         /// <returns>Dictionary of texture name to material property id</returns>
-        public static Dictionary<string, string> GetRendererTextureNames(IEnumerable<MeshRenderer> renderers)
+        public static Dictionary<string, string> GetRendererTextureNames(IEnumerable<Renderer> renderers)
         {
             var dict = new Dictionary<string, string>();
 

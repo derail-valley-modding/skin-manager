@@ -71,5 +71,10 @@ namespace SkinManagerMod
         {
             return _bodyTextures[liveryId];
         }
+
+        public static bool TryGetBodyTextureName(string liveryId, out string textureName)
+        {
+            return _bodyTextures.TryGetValue(liveryId, out textureName);
+        }
     }
 }
