@@ -68,7 +68,7 @@ namespace SkinManagerMod
             {
                 if (returnNewSkin)
                 {
-                    exterior = SkinProvider.GetNewSkin(car.carLivery);
+                    exterior = SkinProvider.GetNewSkin(car);
                 }
                 else
                 {

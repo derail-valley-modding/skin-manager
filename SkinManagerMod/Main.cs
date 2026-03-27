@@ -10,7 +10,7 @@ using SMShared;
 using DVLangHelper.Runtime;
 using SkinManagerMod.Items;
 using System.Collections;
-using SkinManagerMod.Patches;
+using System;
 
 namespace SkinManagerMod
 {
@@ -55,8 +55,6 @@ namespace SkinManagerMod
             Harmony = new Harmony(Constants.MOD_ID);
             Harmony.PatchAll(Assembly.GetExecutingAssembly());
 
-            CCLPatcher.SetupCCLListener();
-
             Instance.OnGUI = OnGUI;
             Instance.OnSaveGUI = OnSaveGUI;
             Instance.OnHideGUI = OnHideGUI;
@@ -67,12 +65,38 @@ namespace SkinManagerMod
 
         private static void OnModToggle(UnityModManager.ModEntry mod, bool nowActive)
         {
+            if (nowActive && (mod.Info.Id == "DVCustomCarLoader"))
+            {
+                TryBoostrapCCLSupport();
+                return;
+            }
+
             if (nowActive && (_delayedMaterialFetch is null))
             {
                 _delayedMaterialFetch = CoroutineManager.Instance.StartCoroutine(DelayedMaterialFetch());
             }
 
             SkinProvider.HandleModToggle(mod, nowActive);
+        }
+
+        private static void TryBoostrapCCLSupport()
+        {
+            try
+            {
+                var cclAssembly = Assembly.LoadFrom(Path.Combine(Instance.Path, "SkinManagerMod.CCL.dll"));
+                var bootstrapClass = cclAssembly!.GetType("SkinManagerMod.CCL.Bootstrap");
+                var initMethod = bootstrapClass!.GetMethod("Initialize", BindingFlags.Public | BindingFlags.Static);
+                initMethod!.Invoke(null, Array.Empty<object>());
+
+                SkinProvider.UpdateSkinChooserTypes();
+
+                Log("Successfully loaded CCL support");
+            }
+            catch (Exception ex)
+            {
+                Error("Failed to load CCL support:");
+                Instance.Logger.LogException(ex);
+            }
         }
 
         private static Coroutine? _delayedMaterialFetch = null;
@@ -122,6 +146,9 @@ namespace SkinManagerMod
             };
 
             Settings.defaultSkinsMode = (DefaultSkinsMode)GUILayout.SelectionGrid((int)Settings.defaultSkinsMode, defaultSkinModeTexts, 1, "toggle");
+            GUILayout.Space(5);
+
+            Settings.allowRandomDemonstrators = GUILayout.Toggle(Settings.allowRandomDemonstrators, Translations.Settings.AllowRandomDemonstrators);
             GUILayout.Space(5);
 
             // disable texture tools while exporting
@@ -273,6 +300,7 @@ namespace SkinManagerMod
         public bool aniso5 = true;
         public bool parallelLoading = true;
         public DefaultSkinsMode defaultSkinsMode = DefaultSkinsMode.AllowForCustomCars;
+        public bool allowRandomDemonstrators = true;
         public bool verboseLogging = false;
 
         public override void Save(UnityModManager.ModEntry modEntry)

@@ -27,6 +27,7 @@ namespace SkinManagerMod
             public static string AlwaysAllowRadioReskin => L("skinman/ui/allow_career_reskin");
             public static string AllowPaintingUnowned => L("skinman/ui/paint_unowned");
             public static string AllowSlugDE6Skins => L("skinman/ui/de6_for_slug");
+            public static string AllowRandomDemonstrators => L("skinman/ui/allow_random_demos");
 
             public static string IncreaseAniso => L("skinman/ui/increase_aniso");
             public static string ParallelLoading => L("skinman/ui/parallel_load");
