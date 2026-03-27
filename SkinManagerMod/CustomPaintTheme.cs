@@ -12,7 +12,14 @@ namespace SkinManagerMod
     {
         private readonly Dictionary<string, Skin> _skins = new();
 
-        public void AddSkin(Skin skin) => _skins.Add(skin.LiveryId, skin);
+        public void AddSkin(Skin skin)
+        {
+            if (_skins.ContainsKey(skin.LiveryId))
+            {
+                Main.Warning($"Skin {skin.Name} already exists for livery {skin.LiveryId}, replacing it");
+            }
+            _skins[skin.LiveryId] = skin;
+        }
 
         public void RemoveSkin(Skin skin) => _skins.Remove(skin.LiveryId);
         public void RemoveSkin(string liveryId) => _skins.Remove(liveryId);

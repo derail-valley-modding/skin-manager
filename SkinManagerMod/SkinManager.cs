@@ -1,6 +1,7 @@
 ﻿using DV.Customization.Paint;
 using DV.JObjectExtstensions;
 using DV.ThingTypes;
+using HarmonyLib;
 using Newtonsoft.Json.Linq;
 using SMShared;
 using System;
@@ -161,41 +162,67 @@ namespace SkinManagerMod
         {
             JObject carsSaveData = new JObject();
 
-            JObject[] array = new JObject[carGuidToAppliedSkinMap.Count];
-
+            var exteriorSaveData = new JObject[carGuidToAppliedSkinMap.Count];
             int i = 0;
-
             foreach (var kvp in carGuidToAppliedSkinMap)
+            {
+                var dataObject = new JObject();
+
+                dataObject.SetString("guid", kvp.Key);
+                dataObject.SetString("name", kvp.Value);
+
+                exteriorSaveData[i] = dataObject;
+                i++;
+            }
+            carsSaveData.SetJObjectArray("carsData", exteriorSaveData);
+
+            var interiorSaveData = new JObject[interiorSkinMap.Count];
+            i = 0;
+
+            foreach (var kvp in interiorSkinMap)
             {
                 JObject dataObject = new JObject();
 
                 dataObject.SetString("guid", kvp.Key);
                 dataObject.SetString("name", kvp.Value);
 
-                array[i] = dataObject;
-
+                interiorSaveData[i] = dataObject;
                 i++;
             }
-
-            carsSaveData.SetJObjectArray("carsData", array);
+            carsSaveData.SetJObjectArray("interiorData", interiorSaveData);
 
             return carsSaveData;
         }
 
         public static void LoadCarsSaveData(JObject carsSaveData)
         {
-            JObject[] jobjectArray = carsSaveData.GetJObjectArray("carsData");
+            JObject[] exteriorSaveData = carsSaveData.GetJObjectArray("carsData");
 
-            if (jobjectArray != null)
+            if (exteriorSaveData != null)
             {
-                foreach (JObject jobject in jobjectArray)
+                foreach (JObject entry in exteriorSaveData)
                 {
-                    var guid = jobject.GetString("guid");
-                    var name = jobject.GetString("name");
+                    var guid = entry.GetString("guid");
+                    var name = entry.GetString("name");
 
                     if (!carGuidToAppliedSkinMap.ContainsKey(guid))
                     {
                         carGuidToAppliedSkinMap.Add(guid, name);
+                    }
+                }
+            }
+
+            var interiorSaveData = carsSaveData.GetJObjectArray("interiorData");
+            if (interiorSaveData != null)
+            {
+                foreach (JObject entry in interiorSaveData)
+                {
+                    var guid = entry.GetString("guid");
+                    var name = entry.GetString("name");
+
+                    if (!interiorSkinMap.ContainsKey(guid))
+                    {
+                        interiorSkinMap.Add(guid, name);
                     }
                 }
             }
