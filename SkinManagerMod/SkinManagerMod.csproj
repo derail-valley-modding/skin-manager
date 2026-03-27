@@ -17,8 +17,6 @@
   <ItemGroup>
     <Reference Include="0Harmony" />
     <Reference Include="Assembly-CSharp" />
-    <Reference Include="CCL.Types" />
-    <Reference Include="CCL.Importer" />
     <Reference Include="DV.Common" />
     <Reference Include="DV.Inventory" />
     <Reference Include="DV.Localization" />
@@ -58,5 +56,10 @@
   </Target>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(OS)' != 'Windows_NT'">
     <Exec Command="curl &quot;https://docs.google.com/spreadsheets/d/1TrI4RuUgCijOuCjxM_WsOO9AV0BO4noTIZIzal3HbnY/export?format=csv&amp;gid=1691364666&quot; -L &quot;https://docs.google.com&quot; -o &quot;$(TargetDir)/translations.csv&quot; &gt; /dev/null" />
+  </Target>
+
+  <Target Name="CopyOutputs" AfterTargets="PostBuild">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(SolutionDir)bin"/>
+    <Copy SourceFiles="$(TargetDir)/translations.csv" DestinationFolder="$(SolutionDir)bin"/>
   </Target>
 </Project>

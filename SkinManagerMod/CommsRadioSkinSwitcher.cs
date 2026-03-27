@@ -434,6 +434,8 @@ namespace SkinManagerMod
 
         #region Skin Shenanigans
 
+        public static event SkinManager.SkinAppliedDelegate RadioSkinApplied;
+
         private void UpdateAvailableSkinsList(TrainCarLivery carType)
         {
             SkinsForCarType = SkinProvider.GetSkinsForType(carType);
@@ -470,6 +472,8 @@ namespace SkinManagerMod
                     }
                 }
             }
+
+            RadioSkinApplied?.Invoke(SelectedCar, SelectedSkin, AreaToPaint);
         }
 
         private void ReloadAndPrepareApplySelectedSkin()

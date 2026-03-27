@@ -9,6 +9,8 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "SMShared", "SMShared\SMShar
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SkinConfigurator", "SkinConfigurator\SkinConfigurator.csproj", "{3C5DFEE2-5DA9-4674-96D8-C1503EFCA3C0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SkinManagerMod.CCL", "SkinManagerMod.CCL\SkinManagerMod.CCL.csproj", "{54090990-4D92-4A49-88B1-911EF18F7CDF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,6 +25,10 @@ Global
 		{3C5DFEE2-5DA9-4674-96D8-C1503EFCA3C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3C5DFEE2-5DA9-4674-96D8-C1503EFCA3C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3C5DFEE2-5DA9-4674-96D8-C1503EFCA3C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{54090990-4D92-4A49-88B1-911EF18F7CDF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{54090990-4D92-4A49-88B1-911EF18F7CDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{54090990-4D92-4A49-88B1-911EF18F7CDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{54090990-4D92-4A49-88B1-911EF18F7CDF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

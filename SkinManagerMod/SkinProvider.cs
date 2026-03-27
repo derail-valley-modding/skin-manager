@@ -2,8 +2,8 @@
 using DV.Customization.Paint;
 using DV.ThingTypes;
 using DVLangHelper.Data;
+using HarmonyLib;
 using Newtonsoft.Json;
-using SkinManagerMod.Patches;
 using SMShared;
 using SMShared.Json;
 using System;
@@ -194,19 +194,11 @@ namespace SkinManagerMod
             return newGroup;
         }
 
-        //public static Skin GetDefaultSkin(string carId, BaseTheme baseTheme = BaseTheme.DVRT)
-        //{
-        //    string key = $"{carId}_{baseTheme}";
-        //    if (defaultSkins.TryGetValue(key, out Skin existing))
-        //    {
-        //        return existing;
-        //    }
-
-        //    var livery = Globals.G.Types.Liveries.First(l => l.id == carId);
-        //    var newDefault = CreateDefaultSkin(livery, baseTheme);
-        //    defaultSkins[carId] = newDefault;
-        //    return newDefault;
-        //}
+        public static bool TryGetSkinGroup(TrainCarLivery livery, out SkinGroup? group) =>
+            skinGroups.TryGetValue(livery.id, out group);
+        
+        public static bool TryGetSkinGroup(string liveryId, out SkinGroup? group) =>
+            skinGroups.TryGetValue(liveryId, out group);
 
         public static Skin? FindSkinByName(TrainCarLivery carType, string name) => FindSkinByName(carType.id, name);
 
@@ -260,65 +252,64 @@ namespace SkinManagerMod
 
         private static PaintTheme GetThemeForSkin(Skin skin) => _themeDict[skin.Name];
 
-        public static string GetNewSkin(TrainCarLivery carType)
+        public static List<SkinChooser> SkinChoosers = new();
+
+        public static void UpdateSkinChooserTypes()
         {
-            if (CarTypes.IsTender(carType) && (LastSteamerSkin != null))
+            var allChooserTypes = AccessTools.AllTypes().Where(t => t.IsSubclassOf(typeof(SkinChooser))).ToList();
+            if (allChooserTypes.Count != SkinChoosers.Count)
             {
-                if (FindSkinByName(carType, LastSteamerSkin) is not null)
+                SkinChoosers.Clear();
+                foreach (var chooserType in allChooserTypes)
                 {
-                    return LastSteamerSkin;
-                }
-            }
-
-            if ((carType.id == Constants.SLUG_LIVERY_ID) && (LastDE6Skin != null))
-            {
-                if (FindSkinByName(carType, LastDE6Skin) is not null || Main.Settings.allowDE6SkinsForSlug)
-                {
-                    return LastDE6Skin;
-                }
-            }
-
-            // random skin
-            if (Main.Settings.defaultSkinsMode != DefaultSkinsMode.PreferDefaults)
-            {
-                var available = new List<Skin>();
-                if (skinGroups.TryGetValue(carType.id, out var group))
-                {
-                    available.AddRange(group.Skins);
-                }
-
-                if ((carType.id == Constants.SLUG_LIVERY_ID) && Main.Settings.allowDE6SkinsForSlug && skinGroups.TryGetValue(Constants.DE6_LIVERY_ID, out group))
-                {
-                    var distinct = group.Skins.Where(s => !available.Any(a => a.Name == s.Name)).ToList();
-                    available.AddRange(distinct);
-                }
-
-                if (available.Count > 0)
-                {
-                    bool allowRandomDefault = (Main.Settings.defaultSkinsMode == DefaultSkinsMode.AllowForAllCars);
-
-                    var allowedRandom = available.Where(AllowRandomSpawning).ToList();
-                    int nChoices = allowRandomDefault ? allowedRandom.Count + 1 : allowedRandom.Count;
-
-                    int choice = UnityEngine.Random.Range(0, nChoices);
-                    if (choice < allowedRandom.Count)
+                    try
                     {
-                        return allowedRandom[choice].Name;
+                        var instance = (SkinChooser)Activator.CreateInstance(chooserType);
+                        SkinChoosers.Add(instance);
                     }
+                    catch (Exception ex)
+                    {
+                        Main.Error($"Failed to create a skin chooser instance of type \"{chooserType.Name}\"");
+                        Main.Instance.Logger.LogException(ex);
+                    }
+                }
+                SkinChoosers.Sort();
+
+                Main.Log("Updated skin chooser types:\n -" + string.Join("\n -", SkinChoosers.Select(s => s.Id)));
+            }
+        }
+
+        public readonly struct CarTypeSkinPair
+        {
+            public readonly TrainCarLivery CarType;
+            public readonly string SkinName;
+
+            public CarTypeSkinPair(TrainCarLivery carType, string skinName)
+            {
+                CarType = carType;
+                SkinName = skinName;
+            }
+        }
+
+        public static CarTypeSkinPair LastChosenSkin { get; private set; }
+
+        public static string GetNewSkin(TrainCar car)
+        {
+            foreach (var skinChooser in SkinChoosers)
+            {
+                if (skinChooser.TryChooseSkin(car, out string? skinName))
+                {
+                    Main.LogVerbose($"Chose new skin {skinName} using {skinChooser.Id}");
+                    LastChosenSkin = new(car.carLivery, skinName!);
+                    return skinName!;
                 }
             }
 
             // fall back to default skin
-            return DefaultThemeName;
-        }
+            Main.LogVerbose("No skin chosen, falling back to DVRT/default");
 
-        private static bool AllowRandomSpawning(Skin skin)
-        {
-            if (TryGetThemeSettings(skin.Name, out var settings))
-            {
-                return !settings.PreventRandomSpawning;
-            }
-            return true;
+            LastChosenSkin = new(car.carLivery, DefaultThemeName);
+            return DefaultThemeName;
         }
 
         #endregion
@@ -328,6 +319,7 @@ namespace SkinManagerMod
 
         public static bool Initialize()
         {
+            UpdateSkinChooserTypes();
             UpdateThemeableLiveries();
             InjectNewDefaultThemes();
             ReloadAllSkins();
@@ -422,18 +414,22 @@ namespace SkinManagerMod
 
         private static HashSet<string> _checkedLiveries = new();
 
+        public delegate void NewLiveryDelegate(TrainCarLivery newLivery);
+        public static event NewLiveryDelegate? NewLiveryDetected;
+
         public static void HandleModToggle(UnityModManager.ModEntry mod, bool nowActive)
         {
+            UpdateSkinChooserTypes();
             UpdateThemeableLiveries();
 
-            if (CCLPatcher.Enabled && (Globals.G.Types.Liveries.Count > _checkedLiveries.Count))
+            if (Globals.G.Types.Liveries.Count > _checkedLiveries.Count)
             {
                 foreach (var livery in Globals.G.Types.Liveries)
                 {
                     if (!_checkedLiveries.Contains(livery.id))
                     {
                         EnsureDefaultSkinForLivery(CustomDefaultTheme, livery);
-                        CCLPatches.CheckCCLSubstitutionSupport(livery);
+                        NewLiveryDetected?.Invoke(livery);
                         _checkedLiveries.Add(livery.id);
                     }
                 }

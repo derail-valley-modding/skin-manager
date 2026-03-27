@@ -1,0 +1,45 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netframework4.8</TargetFramework>
+    <LangVersion>9</LangVersion>
+    <AssemblyName>SkinManagerMod.CCL</AssemblyName>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Krafs.Publicizer" Version="2.3.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0" PrivateAssets="All"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../SkinManagerMod/SkinManagerMod.csproj"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="0Harmony"/>
+    <Reference Include="Assembly-CSharp"/>
+    <Reference Include="CCL.Types"/>
+    <Reference Include="CCL.Importer" />
+    <Reference Include="DV.ThingTypes"/>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="UnityEngine.CoreModule"/>
+    <Reference Include="UnityModManager"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Publicize Include="Assembly-CSharp" IncludeCompilerGeneratedMembers="false" />
+    <Publicize Include="CCL.Importer:CCL.Importer.PaintLoader" IncludeCompilerGeneratedMembers="false" />
+  </ItemGroup>
+
+  
+  <Target Name="CopyOutputs" AfterTargets="PostBuildEvent">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(SolutionDir)bin"/>
+  </Target>
+</Project>
