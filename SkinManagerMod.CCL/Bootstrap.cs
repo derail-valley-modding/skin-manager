@@ -12,6 +12,7 @@ namespace SkinManagerMod.CCL
         public static void Initialize()
         {
             SkinProvider.NewLiveryDetected += CheckCCLSubstitutionSupport;
+            CommsRadioSkinSwitcher.RadioSkinApplied += TrainsetPropagator.OnRadioSkinApplied;
             RandomSkinChooser.IsCCLCarType = IsCCLCarType;
 
             Main.Harmony.PatchAll(typeof(Bootstrap).Assembly);
