@@ -498,8 +498,7 @@ namespace SkinManagerMod
             {
                 var newConfig = new ModSkinCollection(mod);
 
-                string themeConfigPath = Path.Combine(mod.Path, Constants.THEME_CONFIG_FILE);
-                if (File.Exists(themeConfigPath))
+                foreach (string themeConfigPath in Directory.EnumerateFiles(mod.Path, Constants.THEME_CONFIG_FILE, SearchOption.AllDirectories))
                 {
                     TryLoadThemeConfigFile(themeConfigPath);
                 }
