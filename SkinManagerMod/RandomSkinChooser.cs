@@ -28,6 +28,8 @@ namespace SkinManagerMod
                 );
             }
 
+            available.RemoveAll(PreventRandomSpawning);
+
             bool allowDefaults =
                 (Main.Settings.defaultSkinsMode == DefaultSkinsMode.AllowForAllCars) ||
                 (IsCCLCarType(car.carLivery) && Main.Settings.defaultSkinsMode == DefaultSkinsMode.AllowForCustomCars);
@@ -52,13 +54,13 @@ namespace SkinManagerMod
             return false;
         }
 
-        private static bool AllowRandomSpawning(Skin skin)
+        private static bool PreventRandomSpawning(CustomPaintTheme skin)
         {
-            if (SkinProvider.TryGetThemeSettings(skin.Name, out var settings))
+            if (SkinProvider.TryGetThemeSettings(skin.name, out var settings))
             {
-                return !settings.PreventRandomSpawning;
+                return settings.PreventRandomSpawning;
             }
-            return true;
+            return false;
         }
     }
 }
