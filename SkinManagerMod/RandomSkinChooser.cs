@@ -1,7 +1,5 @@
-using DV.ThingTypes;
 using SMShared;
 using SMShared.Json;
-using System;
 using System.Linq;
 
 namespace SkinManagerMod
@@ -9,9 +7,6 @@ namespace SkinManagerMod
     public class RandomSkinChooser : SkinChooser
     {
         internal override bool IsBuiltIn => true;
-
-        private static bool DummyIsCCLCarType(TrainCarLivery _) => false;
-        public static Func<TrainCarLivery, bool> IsCCLCarType { get; set; } = DummyIsCCLCarType;
 
         public override bool TryChooseSkin(TrainCar car, out string? skinName)
         {
@@ -32,7 +27,7 @@ namespace SkinManagerMod
 
             bool allowDefaults =
                 (Main.Settings.defaultSkinsMode == DefaultSkinsMode.AllowForAllCars) ||
-                (IsCCLCarType(car.carLivery) && Main.Settings.defaultSkinsMode == DefaultSkinsMode.AllowForCustomCars);
+                (SkinManager.IsCCLCarType(car.carLivery) && Main.Settings.defaultSkinsMode == DefaultSkinsMode.AllowForCustomCars);
 
             if (allowDefaults)
             {
