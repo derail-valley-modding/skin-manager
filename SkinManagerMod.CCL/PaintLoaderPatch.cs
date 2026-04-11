@@ -10,14 +10,15 @@ namespace SkinManagerMod.CCL
     public static class PaintLoaderPatch
     {
         [HarmonyPatch(nameof(PaintLoader.LoadSubstitutions))]
-        [HarmonyPostfix]
-        internal static void AfterLoadSubstitutions(IEnumerable<PaintSubstitutions> substitutions)
+        [HarmonyPrefix]
+        internal static void BeforeLoadSubstitutions(IEnumerable<PaintSubstitutions> substitutions)
         {
             foreach (var sub in substitutions)
             {
                 var theme = SkinProvider.GetOrCreateTheme(sub.Paint);
                 foreach (var s in sub.Substitutions)
                 {
+                    Main.LogVerbose($"Add CCL substitution {s.Original?.name} -> {s.Substitute?.name}");
                     theme.CCLSubstitutions.Add(new PaintTheme.Substitution()
                     {
                         original = s.Original,

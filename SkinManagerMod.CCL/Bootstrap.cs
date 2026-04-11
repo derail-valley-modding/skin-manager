@@ -11,39 +11,14 @@ namespace SkinManagerMod.CCL
     {
         public static void Initialize()
         {
-            SkinProvider.NewLiveryDetected += CheckCCLSubstitutionSupport;
             CommsRadioSkinSwitcher.RadioSkinApplied += TrainsetPropagator.OnRadioSkinApplied;
-            RandomSkinChooser.IsCCLCarType = IsCCLCarType;
+            SkinManager.IsCCLCarType = IsCCLCarType;
 
             Main.Harmony.PatchAll(typeof(Bootstrap).Assembly);
         }
 
         private static bool IsCCLCarType(TrainCarLivery livery) =>
             CarTypeInjector.IdToLiveryMap.ContainsKey(livery.id);
-
-        private static void CheckCCLSubstitutionSupport(TrainCarLivery cclLivery)
-        {
-            if (!CarTypeInjector.IdToLiveryMap.ContainsKey(cclLivery.id)) return;
-
-            // build ccl material matching
-            Main.LogVerbose($"Check CCL livery {cclLivery.id}");
-
-            IEnumerable<TrainCarPaint.MaterialSet> sets = cclLivery.prefab.GetComponentsInChildren<TrainCarPaint>(true).SelectMany(tcp => tcp.sets);
-
-            foreach (var customTheme in SkinProvider.AllThemes)
-            {
-                foreach (var materialSet in sets)
-                {
-                    if (!materialSet.OriginalMaterial) continue;
-
-                    if (customTheme.TryGetCCLSubstitution(materialSet.OriginalMaterial, out var substitute))
-                    {
-                        customTheme.SupportedCCLIds.Add(cclLivery.id);
-                    }
-                }
-            }
-        }
-
 
         private static Dictionary<TrainCarLivery, List<TrainCarLivery[]>> _fullTrainsetMap = new();
 

@@ -297,6 +297,7 @@ namespace SkinManagerMod
         {
             foreach (var skinChooser in SkinChoosers)
             {
+                Main.LogVerbose($"Try skin chooser {skinChooser.GetType()}");
                 if (skinChooser.TryChooseSkin(car, out string? skinName))
                 {
                     Main.LogVerbose($"Chose new skin {skinName} using {skinChooser.Id}");

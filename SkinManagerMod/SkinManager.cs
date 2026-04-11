@@ -34,6 +34,10 @@ namespace SkinManagerMod
         public delegate void SkinChangingDelegate(TrainCar car, PaintTheme? oldTheme, CustomPaintTheme newTheme, PaintArea area);
         public static event SkinChangingDelegate? SkinChanging;
 
+        private static bool DummyIsCCLCarType(TrainCarLivery _) => false;
+        public static Func<TrainCarLivery, bool> IsCCLCarType { get; set; } = DummyIsCCLCarType;
+
+
         public static void Initialize()
         {
             SkinProvider.SkinUpdated += ReapplySkinToUsers;
@@ -69,6 +73,7 @@ namespace SkinManagerMod
             {
                 if (returnNewSkin)
                 {
+                    Main.LogVerbose($"Get new skin {car.ID}");
                     exterior = SkinProvider.GetNewSkin(car);
                 }
                 else
